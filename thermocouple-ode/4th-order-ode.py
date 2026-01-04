@@ -78,4 +78,5 @@ plt.text(
 )
 
 plt.legend()
+plt.savefig('plot.png')
 plt.show()
