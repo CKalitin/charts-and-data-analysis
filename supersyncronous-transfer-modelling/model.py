@@ -29,6 +29,11 @@ class Orbit:
     def v_apogee(self):
         return np.sqrt(self.mu * (2/self.r_apogee - 1/self.a))
 
+    @property
+    def period(self):
+        """Orbital period in seconds"""
+        return 2 * np.pi * np.sqrt(self.a**3 / self.mu)
+
     @classmethod
     def from_apsides(cls, apogee_alt, perigee_alt, i=0, Omega=0, omega=0, nu=0, R_earth=6371):
         """Creates an Orbit object from altitudes."""
@@ -133,10 +138,12 @@ class Maneuvers:
         v_final_req = np.sqrt(start_orbit.mu * (2/r_fixed - 1/a_final))
         
         total_dv_needed = v_final_req - v_current
-        num_passes = int(np.ceil(abs(total_dv_needed) / dv_limit))
-        dv_step = total_dv_needed / num_passes
+        abs_dv_needed = abs(total_dv_needed)
+        num_passes = int(np.ceil(abs_dv_needed / dv_limit))
+        sign = np.sign(total_dv_needed) if total_dv_needed != 0 else 1
+        dv_per_pass = sign * dv_limit
         
-        print(f"Total dV: {total_dv_needed:.4f} km/s | Passes: {num_passes}")
+        print(f"Total dV: {abs_dv_needed:.4f} km/s | Passes: {num_passes}")
 
         # Print initial orbit
         initial_apogee = (start_orbit.r_apogee - 6371)
@@ -145,7 +152,8 @@ class Maneuvers:
 
         # 2. Iteratively create intermediate orbits
         current_v = v_current
-        for _ in range(num_passes):
+        for i in range(num_passes):
+            dv_step = dv_per_pass if i < num_passes - 1 else sign * (abs_dv_needed - (num_passes - 1) * dv_limit)
             current_v += dv_step
             # New semi-major axis based on new velocity at the same r_fixed
             # Solve Vis-viva for a: a = 1 / (2/r - v^2/mu)
@@ -162,14 +170,15 @@ class Maneuvers:
             history.append(new_orb)
             apogee_alt = (new_orb.r_apogee - 6371)
             perigee_alt = (new_orb.r_perigee - 6371)
-            print(f"Pass {_+1}: Apogee = {apogee_alt:.1f} km, Perigee = {perigee_alt:.1f} km, dV = {dv_step:.4f} km/s")            
-        return history
+            print(f"Pass {i+1}: Apogee = {apogee_alt:.1f} km, Perigee = {perigee_alt:.1f} km, dV = {dv_step:.4f} km/s")            
+        return history, abs(total_dv_needed)
 
 class OrbitVisualizer:
     def __init__(self, title="Orbital Transfer Visualization"):
         self.fig = plt.figure(figsize=(8, 8))
         self.ax = self.fig.add_subplot(111, projection='3d')
         self.ax.set_title(title)
+        plt.subplots_adjust(top=1)
         self.ax.set_xlabel("X (km)", labelpad=15)
         self.ax.set_ylabel("Y (km)", labelpad=15)
         self.ax.set_zlabel("Z (km)", labelpad=15)
@@ -220,6 +229,11 @@ class OrbitVisualizer:
         self.ax.set_box_aspect([1, 1, 1])
 
     def show(self):
-        self.ax.legend(loc='upper left', fontsize='small')
+        self.ax.legend(bbox_to_anchor=(0.02, 0.98), loc='upper left', fontsize='small')
         self._set_axes_equal()
         plt.show()
+
+    def save(self, filename):
+        self.ax.legend(bbox_to_anchor=(0.02, 0.98), loc='upper left', fontsize='small')
+        self._set_axes_equal()
+        plt.savefig(filename, bbox_inches='tight', dpi=200)
