@@ -100,13 +100,13 @@ def geo_transfer(initial_apo_alt, initial_peri_alt, initial_inc, initial_Omega=0
                   verticalalignment='top', horizontalalignment='right', 
                   bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.8))
     
-    os.makedirs('geo_transfers_charts', exist_ok=True)
-    filename = 'geo_transfers_charts/' + title.lower().replace(' ', '_') + '.png'
+    os.makedirs('geo_transfers_charts_1ms_dV_lim', exist_ok=True)
+    filename = 'geo_transfers_charts_1ms_dV_lim/' + title.lower().replace(' ', '_') + '.png'
     viz.save(filename)
     
     # Save intermediary orbits to CSV
-    os.makedirs('geo_transfers_orbit_data', exist_ok=True)
-    filename_csv = 'geo_transfers_orbit_data/' + title.lower().replace(' ', '_') + '.csv'
+    os.makedirs('geo_transfers_orbit_data_1ms_dV_lim', exist_ok=True)
+    filename_csv = 'geo_transfers_orbit_data_1ms_dV_lim/' + title.lower().replace(' ', '_') + '.csv'
     with open(filename_csv, 'w', newline='') as f:
         writer = csv.writer(f)
         writer.writerow(['step', 'a_km', 'e', 'i_deg', 'Omega_deg', 'omega_deg', 'nu_deg', 'period_s', 'r_apogee_km', 'r_perigee_km'])
@@ -127,13 +127,13 @@ def geo_transfer(initial_apo_alt, initial_peri_alt, initial_inc, initial_Omega=0
         'total_time_days': total_time_days
     }
 
-def sweep_geo_transfer_apogees(min, max, step):
+def sweep_geo_transfer_apogees(min, max, step, dv_limit=0.2):
     # Go from 35786 to 40000 to 200000 km apogee in steps of 5000 km
     apogees = [35786] + list(range(min, max, step)) #+ list(range(500000, 10000000, 500000))
 
     results = []
     for apo in apogees:
-        result = geo_transfer(initial_apo_alt=apo, initial_peri_alt=400, initial_inc=28.5, dv_limit=0.1, title=f"{apo} km Apogee Transfer to GEO", show=False)
+        result = geo_transfer(initial_apo_alt=apo, initial_peri_alt=400, initial_inc=28.5, dv_limit=dv_limit, title=f"{apo} km Apogee Transfer to GEO", show=False)
         results.append((apo, result))
         print(f"Apogee: {apo} km, Total ΔV: {result['total_dv']:.3f} km/s, Total Time: {result['total_time_days']:.1f} days")
 
@@ -165,7 +165,7 @@ def plot_apogees_vs_dv_time(results, file_suffix=""):
     plt.show()
     plt.close(fig)
 
-results = sweep_geo_transfer_apogees(36000, 200001, 1000)
-plot_apogees_vs_dv_time(results, "_200km")
-results = sweep_geo_transfer_apogees(250000, 10000001, 250000)
-plot_apogees_vs_dv_time(results, "_10000km")
+results = sweep_geo_transfer_apogees(40000, 200001, 10000, dv_limit=0.001)
+plot_apogees_vs_dv_time(results, "_200km_1ms_dV_lim")
+"""results = sweep_geo_transfer_apogees(250000, 10000001, 250000, dv_limit=0.5)
+plot_apogees_vs_dv_time(results, "_10000km_no_dV_lim")"""
