@@ -4,6 +4,7 @@ import model
 import os
 import csv
 from math import floor
+from dataclasses import dataclass
 
 def example_orbits():
     # Start at 400km circular LEO
@@ -100,13 +101,13 @@ def geo_transfer(initial_apo_alt, initial_peri_alt, initial_inc, initial_Omega=0
                   verticalalignment='top', horizontalalignment='right', 
                   bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.8))
     
-    os.makedirs(f'geo_transfers_{int(dv_limit*1000)}ms_dV_lim', exist_ok=True)
-    filename = f'geo_transfers_{int(dv_limit*1000)}ms_dV_lim/' + title.lower().replace(' ', '_') + '.png'
+    os.makedirs(f'geo_transfers_{int(dv_limit*1000)}ms_dV_lim_inc{int(initial_inc)}', exist_ok=True)
+    filename = f'geo_transfers_{int(dv_limit*1000)}ms_dV_lim_inc{int(initial_inc)}/' + title.lower().replace(' ', '_') + '.png'
     viz.save(filename)
     
     # Save intermediary orbits to CSV
-    os.makedirs(f'geo_transfers_{int(dv_limit*1000)}ms_dV_lim/orbit_data', exist_ok=True)
-    filename_csv = f'geo_transfers_{int(dv_limit*1000)}ms_dV_lim/orbit_data/' + title.lower().replace(' ', '_') + '.csv'
+    os.makedirs(f'geo_transfers_{int(dv_limit*1000)}ms_dV_lim_inc{int(initial_inc)}/orbit_data', exist_ok=True)
+    filename_csv = f'geo_transfers_{int(dv_limit*1000)}ms_dV_lim_inc{int(initial_inc)}/orbit_data/' + title.lower().replace(' ', '_') + '.csv'
     with open(filename_csv, 'w', newline='') as f:
         writer = csv.writer(f)
         writer.writerow(['step', 'a_km', 'e', 'i_deg', 'Omega_deg', 'omega_deg', 'nu_deg', 'period_s', 'r_apogee_km', 'r_perigee_km'])
@@ -127,20 +128,20 @@ def geo_transfer(initial_apo_alt, initial_peri_alt, initial_inc, initial_Omega=0
         'total_time_days': total_time_days
     }
 
-def sweep_geo_transfer_apogees(min, max, step, dv_limit=0.2):
+def sweep_geo_transfer_apogees(min, max, step, dv_limit=0.2, inc=45):
     # Go from 35786 to 40000 to 200000 km apogee in steps of 5000 km
     apogees = [35786] + list(range(min, max, step)) #+ list(range(500000, 10000000, 500000))
 
     results = []
     for apo in apogees:
-        result = geo_transfer(initial_apo_alt=apo, initial_peri_alt=400, initial_inc=45, dv_limit=dv_limit, title=f"{apo} km Apogee Transfer to GEO", show=False)
+        result = geo_transfer(initial_apo_alt=apo, initial_peri_alt=400, initial_inc=inc, dv_limit=dv_limit, title=f"{apo} km Apogee Transfer to GEO", show=False)
         results.append((apo, result))
         print(f"Apogee: {apo} km, Total ΔV: {result['total_dv']:.3f} km/s, Total Time: {result['total_time_days']:.1f} days")
 
     # return apogees vs results
     return results
 
-def plot_apogees_vs_dv_time(results, dv_limit, file_suffix=""):
+def plot_apogees_vs_dv_time(results, dv_limit, inc, file_suffix=""):
     apogees = [r[0] for r in results]
     total_dvs = [r[1]['total_dv'] for r in results]
     total_times = [r[1]['total_time_days'] for r in results]
@@ -166,23 +167,113 @@ def plot_apogees_vs_dv_time(results, dv_limit, file_suffix=""):
              f"ΔV limit per maneuver: {dv_limit*1000:.0f} m/s", 
              ha='center', fontsize=9, style='italic')
     fig.text(0.5, 0.85,
-             f"Inclination: 45°, Perigee: 400 km", 
+             f"Inclination: {inc}°, Perigee: 400 km", 
              ha='center', fontsize=9, style='italic')
     
     fig.tight_layout()  
     plt.subplots_adjust(bottom=0.08)  # Make room for the note
-    plt.savefig(f'apogee_vs_dv_time{file_suffix}.png', bbox_inches='tight', dpi=300)
+    os.makedirs('results', exist_ok=True)
+    plt.savefig(f'results/apogee_vs_dv_time{file_suffix}.png', bbox_inches='tight', dpi=300)
     #plt.show()
     plt.close(fig)
 
-"""dv_limit = 0.2
-results = sweep_geo_transfer_apogees(40000, 200001, 10000, dv_limit=dv_limit)
-plot_apogees_vs_dv_time(results, dv_limit, f"_200Mm_{int(dv_limit*1000)}ms_dV_lim") # Mm = mega meter, 1000 * km
-"""
-dv_limit = 100
-results = sweep_geo_transfer_apogees(500000, 10000001, 100000, dv_limit=dv_limit)
-plot_apogees_vs_dv_time(results, dv_limit, f"_10000Mm_{int(dv_limit*1000)}ms_dV_lim")
+def plot_dv_components_vs_apogees(results, dv_limit, inc, file_suffix=""):
+    apogees = [r[0] for r in results]
+    inc_dvs = [r[1]['inc_dv_total'] for r in results]
+    apo_dvs = [r[1]['apo_dv_total'] for r in results]
+    peri_dvs = [r[1]['peri_dv_total'] for r in results]
+    total_dvs = [r[1]['total_dv'] for r in results]
 
-"""dv_limit = 0.001
-results = sweep_geo_transfer_apogees(40000, 200001, 10000, dv_limit=dv_limit)
-plot_apogees_vs_dv_time(results, dv_limit, f"_200Mm_{int(dv_limit*1000)}ms_dV_lim")"""
+    fig, ax = plt.subplots()
+
+    ax.plot(apogees, inc_dvs, color='tab:blue', label='Inclination Change ΔV', marker='o', markersize=3)
+    ax.plot(apogees, apo_dvs, color='tab:red', label='Apogee Change ΔV', marker='s', markersize=3)
+    ax.plot(apogees, peri_dvs, color='tab:green', label='Perigee Change ΔV', marker='^', markersize=3)
+    ax.plot(apogees, total_dvs, color='tab:purple', label='Total ΔV', marker='d', markersize=3, linewidth=2)
+    
+    ax.set_xlabel('Insertion Apogee Altitude (km)')
+    ax.set_ylabel('ΔV (km/s)')
+    ax.legend()
+    ax.grid(True, alpha=0.3)
+    
+    plt.title('ΔV Components vs Initial Apogee')
+    
+    # Add note about parameters in a box
+    info_text = f"ΔV limit: {dv_limit*1000:.0f} m/s\nInclination: {inc}°\nPerigee: 400 km"
+    ax.text(0.98, 0.98, info_text, transform=ax.transAxes, fontsize=9,
+            verticalalignment='top', horizontalalignment='right',
+            bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.8))
+    
+    fig.tight_layout()
+    os.makedirs('results', exist_ok=True)
+    plt.savefig(f'results/apogee_vs_dv_components{file_suffix}.png', bbox_inches='tight', dpi=300)
+    plt.close(fig)
+
+def plot_dv_rates_vs_apogees(results, dv_limit, inc, file_suffix=""):
+    apogees = [r[0] for r in results]
+    inc_dvs = [r[1]['inc_dv_total'] for r in results]
+    apo_dvs = [r[1]['apo_dv_total'] for r in results]
+    peri_dvs = [r[1]['peri_dv_total'] for r in results]
+    
+    # Calculate rates of change (derivatives) using finite differences
+    # d(dV)/d(apogee)
+    inc_dv_rates = []
+    apo_dv_rates = []
+    peri_dv_rates = []
+    
+    for i in range(len(apogees) - 1):
+        d_apogee = apogees[i+1] - apogees[i]
+        d_inc_dv = inc_dvs[i+1] - inc_dvs[i]
+        d_apo_dv = apo_dvs[i+1] - apo_dvs[i]
+        d_peri_dv = peri_dvs[i+1] - peri_dvs[i]
+        
+        inc_dv_rates.append(d_inc_dv / d_apogee)
+        apo_dv_rates.append(d_apo_dv / d_apogee)
+        peri_dv_rates.append(d_peri_dv / d_apogee)
+    
+    # Use apogees[:-1] to align with rates array
+    fig, ax = plt.subplots()
+    
+    ax.plot(apogees[:-1], inc_dv_rates, color='tab:blue', label='d(Inc ΔV)/d(Apogee)', marker='o', markersize=3)
+    ax.plot(apogees[:-1], apo_dv_rates, color='tab:red', label='d(Apo ΔV)/d(Apogee)', marker='s', markersize=3)
+    ax.plot(apogees[:-1], peri_dv_rates, color='tab:green', label='d(Peri ΔV)/d(Apogee)', marker='^', markersize=3)
+    
+    ax.set_xlabel('Insertion Apogee Altitude (km)')
+    ax.set_ylabel('Rate of Change (1/km)')
+    ax.legend()
+    ax.grid(True, alpha=0.3)
+    
+    plt.title('ΔV Component Rates vs Initial Apogee')
+    
+    # Add note about parameters in a box
+    info_text = f"ΔV limit: {dv_limit*1000:.0f} m/s\nInclination: {inc}°\nPerigee: 400 km"
+    ax.text(0.98, 0.98, info_text, transform=ax.transAxes, fontsize=9,
+            verticalalignment='top', horizontalalignment='right',
+            bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.8))
+    
+    fig.tight_layout()
+    os.makedirs('results', exist_ok=True)
+    plt.savefig(f'results/apogee_vs_dv_rates{file_suffix}.png', bbox_inches='tight', dpi=300)
+    plt.close(fig)
+
+@dataclass
+class SweepParameters:
+    min_apogee: int
+    max_apogee: int
+    step_apogee: int
+    dv_limit: float
+    inc: int
+
+sweep_params =[
+    SweepParameters(250000, 10000001, 250000, 100, 0),
+    SweepParameters(40000, 200001, 10000, 0.2, 45),
+    SweepParameters(250000, 10000001, 250000, 100, 45),
+    SweepParameters(40000, 200001, 10000, 0.001, 45),
+]
+
+for params in sweep_params:
+    results = sweep_geo_transfer_apogees(params.min_apogee, params.max_apogee, params.step_apogee, dv_limit=params.dv_limit, inc=params.inc)
+    file_suffix = f"_{int(params.max_apogee/1000)}Mm_{int(params.dv_limit*1000)}ms_dV_lim_inc{params.inc}"
+    plot_apogees_vs_dv_time(results, params.dv_limit, params.inc, file_suffix)
+    plot_dv_components_vs_apogees(results, params.dv_limit, params.inc, file_suffix)
+    plot_dv_rates_vs_apogees(results, params.dv_limit, params.inc, file_suffix)
