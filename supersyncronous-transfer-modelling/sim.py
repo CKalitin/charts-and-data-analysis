@@ -328,13 +328,16 @@ sweep_params =[
     SweepParameters(250000, 10000001, 250000, 100, 45),
     SweepParameters(40000, 200001, 10000, 0.001, 45),
     SweepParameters(250000, 10000001, 250000, 0.001, 45),
+    SweepParameters(250000, 10000001, 250000, 0.001, 0),
 ]
 
 # Store results for comparison
 results_inc0_10Mm_100ms = None
 results_inc45_10Mm_100ms = None
-results_inc0_10Mm_1ms = None
-results_inc45_10Mm_1ms = None
+results_inc0_10000Mm_1ms = None
+results_inc45_10000Mm_1ms = None
+results_inc0_200Mm_1ms = None
+results_inc45_200Mm_1ms = None
 
 for params in sweep_params:
     results = sweep_geo_transfer_apogees(params.min_apogee, params.max_apogee, params.step_apogee, dv_limit=params.dv_limit, inc=params.inc)
@@ -349,11 +352,17 @@ for params in sweep_params:
     elif params.max_apogee == 10000001 and params.dv_limit == 100 and params.inc == 45:
         results_inc45_10Mm_100ms = results
     
-    # Store the 10Mm 1ms results for both inclinations
+    # Store the 10000Mm 1ms results for both inclinations
     if params.max_apogee == 10000001 and params.dv_limit == 0.001 and params.inc == 0:
         results_inc0_10Mm_1ms = results
     elif params.max_apogee == 10000001 and params.dv_limit == 0.001 and params.inc == 45:
         results_inc45_10Mm_1ms = results
+        
+    # Store the 200Mm 1ms results for both inclinations
+    if params.max_apogee == 200001 and params.dv_limit == 0.001 and params.inc == 0:
+        results_inc0_200Mm_1ms = results
+    elif params.max_apogee == 200001 and params.dv_limit == 0.001 and params.inc == 45:
+        results_inc45_200Mm_1ms = results
         
 # Create combined comparison plots
 if results_inc0_10Mm_100ms is not None and results_inc45_10Mm_100ms is not None:
@@ -361,3 +370,6 @@ if results_inc0_10Mm_100ms is not None and results_inc45_10Mm_100ms is not None:
 
 if results_inc0_10Mm_1ms is not None and results_inc45_10Mm_1ms is not None:
     plot_combined_inclination_comparison(results_inc0_10Mm_1ms, results_inc45_10Mm_1ms, dV_limit=0.001, max_apogee=10000001)
+    
+if results_inc0_200Mm_1ms is not None and results_inc45_200Mm_1ms is not None:
+    plot_combined_inclination_comparison(results_inc0_200Mm_1ms, results_inc45_200Mm_1ms, dV_limit=0.001, max_apogee=200001)
