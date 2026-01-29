@@ -261,7 +261,7 @@ def plot_dv_rates_vs_apogees(results, dv_limit, inc, file_suffix=""):
     plt.savefig(f'results/apogee_vs_dv_rates{file_suffix}.png', bbox_inches='tight', dpi=300)
     plt.close(fig)
 
-def plot_combined_inclination_comparison(results_inc0, results_inc45, dv_limit, dV_limit_val, max_apogee=None):
+def plot_combined_inclination_comparison(results_inc0, results_inc45, dV_limit, max_apogee=None):
     """Plot DV and Time comparison between two inclinations on the same graph."""
     apogees_0 = [r[0] for r in results_inc0]
     total_dvs_0 = [r[1]['total_dv'] for r in results_inc0]
@@ -277,13 +277,13 @@ def plot_combined_inclination_comparison(results_inc0, results_inc45, dv_limit, 
     ax1.set_xlabel('Insertion Apogee Altitude (km)', fontsize=11)
     ax1.set_ylabel('Total ΔV (km/s)', fontsize=11)
     ax1.plot(apogees_0, total_dvs_0, color='tab:blue', label='Inc 0° ΔV', linewidth=2)
-    ax1.plot(apogees_45, total_dvs_45, color='tab:cyan', label='Inc 45° ΔV', linewidth=2, linestyle='--')
+    ax1.plot(apogees_45, total_dvs_45, color='tab:red', label='Inc 45° ΔV', linewidth=2)
     ax1.tick_params(axis='y')
 
     ax2 = ax1.twinx()  
     ax2.set_ylabel('Total Time (days)', fontsize=11)
-    ax2.plot(apogees_0, total_times_0, color='tab:red', label='Inc 0° Time', linewidth=2, alpha=0.7)
-    ax2.plot(apogees_45, total_times_45, color='tab:orange', label='Inc 45° Time', linewidth=2, linestyle='--', alpha=0.7)
+    ax2.plot(apogees_0, total_times_0, color='tab:blue', label='Inc 0° Time', linewidth=2, linestyle='--', alpha=0.7)
+    ax2.plot(apogees_45, total_times_45, color='tab:red', label='Inc 45° Time', linewidth=2, linestyle='--', alpha=0.7)
     ax2.tick_params(axis='y')
 
     plt.title('Inclination Comparison: Initial Apogee vs Total ΔV and Time to GEO', fontsize=12, fontweight='bold')
@@ -295,7 +295,7 @@ def plot_combined_inclination_comparison(results_inc0, results_inc45, dv_limit, 
     
     # Add note about parameters
     fig.text(0.5, 0.88,
-             f"ΔV limit per maneuver: {dV_limit_val*1000:.0f} m/s | Perigee: 400 km", 
+             f"ΔV limit per maneuver: {dV_limit*1000:.0f} m/s | Perigee: 400 km", 
              ha='center', fontsize=9, style='italic')
     
     fig.tight_layout()  
@@ -304,7 +304,7 @@ def plot_combined_inclination_comparison(results_inc0, results_inc45, dv_limit, 
     
     # Build filename based on parameters
     if max_apogee is not None:
-        file_suffix = f"_{int(max_apogee/1000)}Mm_{int(dV_limit_val*1000)}ms_dV_lim_inc_comparison"
+        file_suffix = f"_{int(max_apogee/1000)}Mm_{int(dV_limit*1000)}ms_dV_lim_inc_comparison"
     else:
         file_suffix = f"_comparison"
     
@@ -327,13 +327,14 @@ sweep_params =[
     SweepParameters(40000, 200001, 10000, 0.2, 45),
     SweepParameters(250000, 10000001, 250000, 100, 45),
     SweepParameters(40000, 200001, 10000, 0.001, 45),
+    SweepParameters(250000, 10000001, 250000, 0.001, 45),
 ]
 
 # Store results for comparison
 results_inc0_10Mm_100ms = None
 results_inc45_10Mm_100ms = None
-results_inc0_200K_1ms = None
-results_inc45_200K_1ms = None
+results_inc0_10Mm_1ms = None
+results_inc45_10Mm_1ms = None
 
 for params in sweep_params:
     results = sweep_geo_transfer_apogees(params.min_apogee, params.max_apogee, params.step_apogee, dv_limit=params.dv_limit, inc=params.inc)
@@ -348,15 +349,15 @@ for params in sweep_params:
     elif params.max_apogee == 10000001 and params.dv_limit == 100 and params.inc == 45:
         results_inc45_10Mm_100ms = results
     
-    # Store the 200K 1ms results for both inclinations
-    if params.max_apogee == 200001 and params.dv_limit == 0.001 and params.inc == 0:
-        results_inc0_200K_1ms = results
-    elif params.max_apogee == 200001 and params.dv_limit == 0.001 and params.inc == 45:
-        results_inc45_200K_1ms = results
-
+    # Store the 10Mm 1ms results for both inclinations
+    if params.max_apogee == 10000001 and params.dv_limit == 0.001 and params.inc == 0:
+        results_inc0_10Mm_1ms = results
+    elif params.max_apogee == 10000001 and params.dv_limit == 0.001 and params.inc == 45:
+        results_inc45_10Mm_1ms = results
+        
 # Create combined comparison plots
 if results_inc0_10Mm_100ms is not None and results_inc45_10Mm_100ms is not None:
-    plot_combined_inclination_comparison(results_inc0_10Mm_100ms, results_inc45_10Mm_100ms, dv_limit=100, dV_limit_val=100, max_apogee=10000001)
+    plot_combined_inclination_comparison(results_inc0_10Mm_100ms, results_inc45_10Mm_100ms, dV_limit=100, max_apogee=10000001)
 
-if results_inc0_200K_1ms is not None and results_inc45_200K_1ms is not None:
-    plot_combined_inclination_comparison(results_inc0_200K_1ms, results_inc45_200K_1ms, dv_limit=0.001, dV_limit_val=0.001, max_apogee=200001)
+if results_inc0_10Mm_1ms is not None and results_inc45_10Mm_1ms is not None:
+    plot_combined_inclination_comparison(results_inc0_10Mm_1ms, results_inc45_10Mm_1ms, dV_limit=0.001, max_apogee=10000001)
