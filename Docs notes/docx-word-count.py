@@ -69,7 +69,8 @@ def plot_word_distribution(categorized_counts, total_words):
     color_map = {
         'Books/Podcasts': 'skyblue',
         'Learning': 'lightgreen',
-        'Projects': 'salmon'
+        'Projects': 'salmon',
+        'Classes': 'gold'
     }
     colors = [color_map[cat] for cat in categories]
     
@@ -79,7 +80,7 @@ def plot_word_distribution(categorized_counts, total_words):
     plt.xlabel('Document')
     plt.ylabel('Word Count')
     plt.title('Word Count Distribution by Document')
-    plt.xticks(rotation=45, ha='right')
+    plt.xticks(rotation=45, ha='right', fontsize=9)
     
     # Add legend
     handles = [plt.Rectangle((0,0),1,1, color=color) for color in color_map.values()]
@@ -96,11 +97,13 @@ if __name__ == "__main__":
     counts_books_podcasts = count_words_in_directory("Notes Books - Podcasts/")
     counts_learning = count_words_in_directory("Notes Learning/")
     counts_projects = count_words_in_directory("Notes Projects/")
+    counts_classes = count_words_in_directory("Notes Classes/")
     
     categorized_counts = [
         ('Books/Podcasts', counts_books_podcasts),
         ('Learning', counts_learning),
-        ('Projects', counts_projects)
+        ('Projects', counts_projects),
+        ('Classes', counts_classes)
     ]
     
     # Calculate total words
