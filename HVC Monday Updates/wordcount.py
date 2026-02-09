@@ -42,7 +42,7 @@ def count_words_in_content(content):
     content = re.sub(r'^\s*>\s', '', content, flags=re.MULTILINE)
     content = re.sub(r'^-{3,}$', '', content, flags=re.MULTILINE)
     content = re.sub(r'^\*{3,}$', '', content, flags=re.MULTILINE)
-    content = re.sub(r'<[^>]+>', '', content)
+    content = re.sub(r'</?[a-zA-Z][^>]*>', '', content)
 
     # Split into words and count non-empty ones
     words = [word.strip() for word in content.split() if word.strip()]
