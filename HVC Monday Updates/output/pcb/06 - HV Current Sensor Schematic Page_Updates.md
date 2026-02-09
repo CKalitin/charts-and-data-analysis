@@ -1,3 +1,129 @@
+# Untitled
+
+**Author:** Christopher Kalitin
+
+**Date:** 11h
+
+**Simulating Optocoupler DCH_ON Circuit**
+
+LTSpice sims saved [in the Drive](https://drive.google.com/drive/folders/1d_N84UDBGEXQGZUtdiL4UZMFQ7Z3tRlc?usp=drive_link).
+
+**Problem Background**
+
+![](../../images/image_2743899550.png)
+
+I was concerned the circuit above wouldn't work due to R11.8, the emitter
+pull-down / load resistor. I simulated pretty much the same circuit
+shown above, where it's very important for emitter voltage to rise high
+enough to close the MOSFETs.
+
+**Problem Description**
+
+As described in the [previous update](https://ubcsolar26.monday.com/boards/9702086049/pulses/18134735438/posts/4850567476),
+I used an RC circuit to extend the pulse of DISCHARGE_GND_IN by ~10x to
+ensure that even a pulse as short as 2 ms will extend to be long enough
+to latch the discharge relay.
+
+<img src="../../images/image_2743899543.png" width="169" height="121">
+
+![](../../images/image_2743899536.png)
+
+During the team-wide DR yesterday, Saman pointed out I used a few
+Optocoupler's incorrectly with common collectors instead of common
+emitters.
+
+Notice in the images above that an Optocoupler contains
+an NPN BJT on the output-side. NPNs require V_BE > 0.7 to conduct.
+If, for example, the emitter was at 3.3 V and the base was at 3.3 V,
+then the NPN wouldn't conduct.
+
+For an optocoupler, base voltage
+is proportional to LED input voltage (Pin 1 in the first image of this
+update). So, if LED voltage input is 3.3 V, base will be around 3.3 V.
+
+This
+could occur if the load-resistor is placed low-side (on the emitter)
+instead of high-side (on the collector). My LTSpice sims below show this
+topology.
+
+In this case, voltage will drop over the low-side
+resistor, meaning the emitter will be at GND + V_Resistor. There are
+only two places in this circuit where voltage drops, the NPN (V_CE ~=
+0.2 V) and the resistor. So, the resistor will drop most of the voltage,
+and hence V_E ~= 3.3 V - 0.2 V = 3.1 V.
+
+If anything is unclear, look at the circuit below and remember 2nd year circuit analysis.
+
+**Theory As To Why The Circuit Would Work**
+
+I had a theory that output voltage will converge to around V_CC - V_CE (3.3 V - 0.2 V) because the NPN wants to conduct.
+
+Example of states:
+1. V_LED = 3.3 V, V_C = 3.3V, V_E = 0 V -> NPN conducts (V_BE > 0.2 V)
+2. V_LED = 3.3 V, V_C = 3.3 V, V_E = 3.1 V -> NPN reaches equilibrium
+
+This however will only occur if the emitter resistor (R1 & R3 in the sim below) is of great enough resistance.
+
+Important points:
+1. NPNs are current sources
+2. In optocouplers, their current is dependent on LED current and Current Transfer Ratio (~100% In:Out)
+3. V=IR
+
+Because we're limited in how much current can be produced, the emitter voltage is limited (V=IR, I is limited, R is a constant).
+
+My
+worry was that if the ratio of the input to output resistor (LED to NPN
+resistor) was too small, the emitter voltage wouldn't rise high enough
+to close a MOSFET (shown at the top of this update.
+
+**Simulation**
+
+![](../../images/image_2743899559.png)
+
+I
+simulated an optocoupler circuit in LTSpice and took a sweep of input
+voltages. The green line in both graphs is input voltage, blue/red is
+output voltage (emitter), and teal/pink is current through the NPN load
+resistor.
+
+Above you see two cases of the circuit:
+1. Both have LED resistors of 100 ohms.
+2. The first circuit (left circuit, top graph), has an NPN load resistor of 1000 ohms.
+2. The second circuit (right circuit, bottom graph) has an NPN load resistor of 100 ohms.
+
+Notice that when the NPN load resistor of 1000 ohms, the emitter voltage goes to ~3.1 V very quickly.
+
+However,
+if the NPN load resistor of 100 ohms, we saturated NPN current and it
+only increases at LED input voltage increases. Hence, the NPN resistor
+is current-limiting component, instead of the resistor being the
+current-limiting component.
+
+This results in emitter voltage slowly climbing, instead of quickly converging to 3.3V.
+
+These
+results simply tell us that using a 100 ohm LED resistor and 1000 ohm
+NPN resistor is a valid circuit to get output voltage (at the emitter)
+high enough for our purposes.
+
+Hence, the circuit I showed at the beginning will work:
+
+![](../../images/image_2743899556.png)
+
+Note:
+
+Yesterday R11.5 was a 1k resistor, which wouldn't have worked! Very good that Saman scrutinized my design days before ordering!
+
+> **Christopher Kalitin** (11h)
+>
+> My original question to Saman:
+> 
+> ![](../../images/image_2743899651.png)
+> 
+> ![](../../images/image_2743899659.png)
+
+---
+
 # Differential + Common Mode Capacitors
 
 **Author:** Christopher Kalitin

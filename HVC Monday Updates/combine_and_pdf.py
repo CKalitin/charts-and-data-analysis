@@ -9,13 +9,13 @@ Step 2: Convert combined markdown to PDF with images embedded inline.
 import re
 import base64
 from pathlib import Path
-
+import markdown
+from xhtml2pdf import pisa
 
 ROOT = Path(__file__).parent
 IMAGES_DIR = ROOT / "images"
-OUTPUT_MD = ROOT / "combined_updates.md"
-OUTPUT_PDF = ROOT / "combined_updates.pdf"
-
+OUTPUT_MD = ROOT / "output" / "combined_updates.md"
+OUTPUT_PDF = ROOT / "output" / "combined_updates.pdf"
 
 def combine_markdown_files():
     """Combine all MD files from output/pcb and output/research into one."""
@@ -52,9 +52,6 @@ def combine_markdown_files():
 
 def generate_pdf(md_path):
     """Convert combined markdown to PDF with base64-embedded images."""
-    import markdown
-    from xhtml2pdf import pisa
-
     md_text = md_path.read_text(encoding="utf-8")
 
     # Replace markdown image references with base64 data URIs

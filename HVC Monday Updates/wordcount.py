@@ -97,5 +97,6 @@ csv_output = output.getvalue()
 print(csv_output)
 
 # Save to file
-with open('word_counts.csv', 'w', encoding='utf-8') as f:
+output_path = Path(__file__).parent / "output" / "word_counts.csv"
+with open(output_path, 'w', encoding='utf-8') as f:
     f.write(csv_output)

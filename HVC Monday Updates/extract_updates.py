@@ -16,7 +16,6 @@ from bs4 import BeautifulSoup, NavigableString, Tag
 # Max seconds to wait for each image download before timing out
 IMAGE_DOWNLOAD_WAIT_TIME = 5
 
-
 def get_image_ext(img_tag):
     """Always use .png for local image files."""
     return 'png'

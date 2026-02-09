@@ -1,0 +1,21 @@
+Category,#,Title,Words
+PCB,01,Schematic,1439
+PCB,02,Power Schematic Page,695
+PCB,03,LV Control Schematic Page,810
+PCB,04,Contactor Control Schematic Page,1296
+PCB,05,Fan Control Schematic Page,557
+PCB,06,HV Current Sensor Schematic Page,2393
+PCB,07,Startup Relays _ Power Path Prioritizer Schematic Page,5697
+PCB,08,LV Current Sensor Schematic Page,674
+PCB,09,Discharge Relay Schematic Page,610
+PCB,10,DCDC Selection _ Schematic Page,373
+PCB,11,Connections & Junction Board Interface,3693
+PCB,12,Driver Startup Switch Pinout,727
+PCB,13,Supplemental Inline Fuse,146
+Research,01,LVS Current Sensor Investigation,2761
+Research,02,Startup Switch Testing,2751
+Research,03,Pre_Discharge Resistors Mounted on HVC,1163
+Research,04,Current Sensor Options,4594
+Research,05,Power Integrations DCDC Testing,2830
+
+,,TOTAL,33209
