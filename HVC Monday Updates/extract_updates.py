@@ -8,6 +8,7 @@ import re
 import sys
 import glob
 import time
+import html
 import shutil
 import webbrowser
 from urllib.parse import unquote
@@ -294,23 +295,110 @@ def get_asset_ids_from_html(html_content):
 
 def get_image_url(html_content, asset_id):
     """Extract the full image URL for an asset ID from the HTML."""
-    # Try to find the exact src URL for this asset
-    pattern = rf'src="(https?://[^"]+/resources/{asset_id}/[^"]+)"'
-    match = re.search(pattern, html_content)
-    if match:
-        return match.group(1)
+    # Decode HTML entities first so query params like &amp;asset_id=... are searchable.
+    decoded_html = html.unescape(html_content)
+
+    patterns = [
+        # Direct file/resource URL format
+        rf'https?://[^"\'\s>]+/resources/{asset_id}/[^"\'\s>]+',
+        # Monday pulse URL format (e.g. .../pulses/<id>?asset_id=<asset_id>)
+        rf'https?://[^"\'\s>]*monday\.com/boards/[^"\'\s>]+[?&]asset_id={asset_id}\b[^"\'\s>]*',
+        # Generic fallback with asset_id query param
+        rf'https?://[^"\'\s>]+[?&]asset_id={asset_id}\b[^"\'\s>]*',
+    ]
+
+    for pattern in patterns:
+        match = re.search(pattern, decoded_html)
+        if match:
+            return match.group(0)
+
     return None
 
 
-def download_missing_images(html_content, images_dir, asset_ids, wait_time=IMAGE_DOWNLOAD_WAIT_TIME):
+def build_asset_src_index(html_content):
+    """Map asset_id -> src from img tags in the export HTML."""
+    soup = BeautifulSoup(html_content, 'html.parser')
+    index = {}
+    for img in soup.find_all('img', attrs={'data-asset_id': True}):
+        aid = img.get('data-asset_id')
+        src = img.get('src')
+        if aid and src and aid not in index:
+            index[aid] = html.unescape(src)
+    return index
+
+
+def get_asset_monday_fallback_url(html_content, asset_id):
+    """Build a Monday URL fallback from the asset's parent post link."""
+    soup = BeautifulSoup(html_content, 'html.parser')
+    img = soup.find('img', attrs={'data-asset_id': str(asset_id)})
+    if not img:
+        return None
+
+    post = img.find_parent('div', attrs={'data-testid': 'post-component'})
+    search_root = post if post else soup
+
+    for anchor in search_root.find_all('a', href=True):
+        href = html.unescape(anchor['href'])
+        if 'monday.com/boards/' not in href:
+            continue
+
+        # Prefer pulse links and normalize by removing /posts/<id> suffix.
+        pulse_match = re.search(r'(https?://[^\s"\']*monday\.com/boards/\d+/pulses/\d+)', href)
+        if pulse_match:
+            return f"{pulse_match.group(1)}?asset_id={asset_id}"
+
+        # Fallback: board link only.
+        board_match = re.search(r'(https?://[^\s"\']*monday\.com/boards/\d+)', href)
+        if board_match:
+            return f"{board_match.group(1)}?asset_id={asset_id}"
+
+    return None
+
+
+def find_asset_url_candidates(html_content, asset_id, limit=5):
+    """Return possible URLs containing a specific asset ID for debugging."""
+    decoded_html = html.unescape(html_content)
+    pattern = rf'https?://[^"\'\s>]*{asset_id}[^"\'\s>]*'
+    matches = re.findall(pattern, decoded_html)
+
+    seen = set()
+    unique = []
+    for match in matches:
+        if match not in seen:
+            seen.add(match)
+            unique.append(match)
+            if len(unique) >= limit:
+                break
+
+    return unique
+
+
+def get_asset_context_snippet(html_content, asset_id, radius=120):
+    """Return a short snippet around the first appearance of an asset ID."""
+    decoded_html = html.unescape(html_content)
+    asset_text = str(asset_id)
+    idx = decoded_html.find(asset_text)
+    if idx < 0:
+        return None
+
+    start = max(0, idx - radius)
+    end = min(len(decoded_html), idx + len(asset_text) + radius)
+    snippet = decoded_html[start:end]
+    snippet = re.sub(r'\s+', ' ', snippet).strip()
+    return snippet
+
+
+def download_missing_images(html_content, images_dir, asset_ids, wait_time=IMAGE_DOWNLOAD_WAIT_TIME, html_file=None):
     """
     For each asset ID missing a local image, open the Monday.com URL in the
     browser (which has auth cookies), wait for the download, and move it
     into the images dir with the correct name.
     """
     downloads_dir = os.path.expanduser('~/Downloads')
+    html_dir = os.path.dirname(os.path.abspath(html_file)) if html_file else os.getcwd()
     poll_interval = 0.5
     max_polls = int(wait_time / poll_interval)
+    asset_src_index = build_asset_src_index(html_content)
 
     missing = []
     for aid, ext in asset_ids:
@@ -325,9 +413,40 @@ def download_missing_images(html_content, images_dir, asset_ids, wait_time=IMAGE
     print(f"\n{len(missing)} image(s) need downloading. Opening in browser...")
     print("(Make sure you are logged into Monday.com in your default browser)\n")
 
+    skipped_missing_url = 0
+    copied_from_export = 0
+
     for aid, ext in missing:
         url = get_image_url(html_content, aid)
+        src = asset_src_index.get(str(aid))
         target = os.path.join(images_dir, f"image_{aid}.{ext}")
+
+        if not url and src and src.startswith(('http://', 'https://')):
+            url = src
+
+        if not url and src and not src.startswith(('http://', 'https://')):
+            src_path = os.path.normpath(os.path.join(html_dir, unquote(src)))
+            if os.path.exists(src_path):
+                shutil.copy2(src_path, target)
+                copied_from_export += 1
+                print(f"  Copied:  {src_path}")
+                print(f"  Saved:   image_{aid}.{ext} ({os.path.getsize(target):,} bytes)")
+                continue
+
+        if not url:
+            fallback_url = get_asset_monday_fallback_url(html_content, aid)
+            if fallback_url:
+                url = fallback_url
+                print(f"  Using Monday fallback URL: {url}")
+
+        if not url:
+            skipped_missing_url += 1
+            failed_source = src if src else f"asset_id={aid} (no URL in export HTML)"
+            print(f"Failed to download image: {failed_source}")
+            print(f"  Asset ID: {aid}")
+            print(f"  Save as:  {target}")
+
+            continue
 
         # Extract the expected download filename from the URL
         url_filename = os.path.basename(url.split('?')[0]) if url else ''
@@ -341,7 +460,14 @@ def download_missing_images(html_content, images_dir, asset_ids, wait_time=IMAGE
             before |= set(glob.glob(os.path.join(downloads_dir, pattern)))
 
         print(f"  Opening: {url}")
-        webbrowser.open(url)
+        try:
+            webbrowser.open(url)
+        except Exception as exc:
+            print(f"Failed to download image: {url}")
+            print(f"  Asset ID: {aid}")
+            print(f"  Error:    {exc}")
+            print(f"  Save as:  {target}")
+            continue
 
         # Wait for a new image file to appear (up to wait_time seconds)
         new_file = None
@@ -366,9 +492,15 @@ def download_missing_images(html_content, images_dir, asset_ids, wait_time=IMAGE
             shutil.move(new_file, target)
             print(f"  Saved:   image_{aid}.{ext} ({os.path.getsize(target):,} bytes)")
         else:
-            print(f"  TIMEOUT: Could not detect download for asset {aid}")
-            print(f"           Please download manually from: {url}")
-            print(f"           Save as: {target}")
+            print(f"Failed to download image: {url}")
+            print(f"  Asset ID: {aid}")
+            print("  Error:    Timed out waiting for downloaded file in Downloads")
+            print(f"  Save as:  {target}")
+
+    if skipped_missing_url:
+        print(f"Skipped {skipped_missing_url} image(s) because no URL was found in the export HTML.")
+    if copied_from_export:
+        print(f"Copied {copied_from_export} image(s) directly from the exported HTML _files folder.")
 
     print()
 
@@ -387,7 +519,7 @@ def extract_updates(html_file, output_md, images_dir='images', image_rel_path='.
     # Build asset ID list and download any missing images
     asset_ids = get_asset_ids_from_html(html_content)
     print(f"Found {len(asset_ids)} unique content images in HTML")
-    download_missing_images(html_content, images_dir, asset_ids)
+    download_missing_images(html_content, images_dir, asset_ids, html_file=html_file)
 
     with open(output_md, 'w', encoding='utf-8') as md_file:
         for post_index, post in enumerate(posts, 1):

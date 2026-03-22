@@ -50,8 +50,11 @@ def combine_markdown_files():
     return OUTPUT_MD
 
 
-def generate_pdf(md_path):
-    """Convert combined markdown to PDF with base64-embedded images."""
+def generate_pdf(md_path, output_pdf=None):
+    """Convert markdown to PDF with base64-embedded images."""
+    if output_pdf is None:
+        output_pdf = OUTPUT_PDF
+
     md_text = md_path.read_text(encoding="utf-8")
 
     # Replace markdown image references with base64 data URIs
@@ -155,13 +158,13 @@ def generate_pdf(md_path):
 </body>
 </html>"""
 
-    with open(OUTPUT_PDF, "wb") as pdf_file:
+    with open(output_pdf, "wb") as pdf_file:
         status = pisa.CreatePDF(html_doc, dest=pdf_file)
 
     if status.err:
         print(f"PDF generation had errors (code {status.err})")
     else:
-        print(f"PDF saved to: {OUTPUT_PDF}")
+        print(f"PDF saved to: {output_pdf}")
 
 
 if __name__ == "__main__":
