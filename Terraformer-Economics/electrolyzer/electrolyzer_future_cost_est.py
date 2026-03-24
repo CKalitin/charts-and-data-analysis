@@ -46,6 +46,9 @@ def plot_model(ax, title, capex_fn, eff, ylim_zero=False):
     ax.set_title(title)
     ax.legend()
     ax.grid(True, linestyle='--', alpha=0.4)
+    ax.text(0.99, 0.01,
+            f'Electricity: ${OPEX_PER_KWH}/kWh  |  Capacity factor: {int(HOURS_OPERATING_PER_YEAR/8760*100)}%',
+            transform=ax.transAxes, fontsize=7, color='gray', ha='right', va='bottom')
 
     # Secondary x-axis: capex $/kW
     ax2 = ax.twiny()

@@ -23,7 +23,7 @@ plant_points = [
 stack_estimate_points = [
     (55,   250, 'Versogen', 'Alkaline', 2030, 1),          # Versogen, Stack, prediction
     (48.9, 353, 'US DOE',  'Alkaline', 2025, 0),          # US DOE Est., Stack, prediction
-    (50,   200, 'Verdagy', 'AEM',      2030, 1),          # Verdagy, Stack?, prediction
+    (53,   200, 'Verdagy', 'AEM',      2030, 1),          # Verdagy, Stack?, prediction
     (50,   300, 'EH2',     'PEM',      2026, 1),          # EH2, Stack?, prediction
     (78.89,    20, 'Terraform', 'Alkaline', 2030, 0),        # Long-term estimate
 ]
