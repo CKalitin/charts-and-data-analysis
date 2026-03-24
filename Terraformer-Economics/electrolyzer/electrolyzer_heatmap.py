@@ -174,7 +174,7 @@ def build_chart(overlay_keys):
 
     ax.text(0.5, 0.95, 'Christopher Kalitin 2026', transform=ax.transAxes,
             fontsize=12, color='white', alpha=1.0, ha='center', va='top')
-    ax.text(0.01, 0.01, '* = estimated efficiency', transform=ax.transAxes,
+    ax.text(0.01, 0.01, '* = estimated efficiency, $0.01/kWh, 25% CF, 10 yr amortization', transform=ax.transAxes,
             fontsize=8, color='gray', alpha=1.0, ha='left', va='bottom')
 
     plt.tight_layout()
