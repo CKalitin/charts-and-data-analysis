@@ -56,7 +56,7 @@ ax.set_ylim(0.005, 0.10)
 ax.set_yticks([0.005, 0.01, 0.02, 0.05, 0.10])
 ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda x, _: f'${x:.3g}'))
 ax.set_xlabel('Efficiency (kWh/kgH\u2082)', fontsize=11)
-ax.set_ylabel('Electricity Price ($/kWh)', fontsize=11)
+ax.set_ylabel('Electricity Price ($/kWh)  [log scale]', fontsize=11)
 
 # --- Secondary capex axis (top) ---
 ax2 = ax.twiny()
@@ -69,7 +69,7 @@ ax2.set_xlabel('Capex ($/kW)', fontsize=11)
 # --- Title, legend, footer ---
 ax.set_title(
     'H\u2082 Cost: Capex/Opex Boundary vs Efficiency & Electricity Price\n'
-    '2030 Capex Model  |  25% CF  |  Each line = electricity price where capex share = 50%',
+    '2030 Capex Model  |  25% CF',
     fontsize=11, pad=12
 )
 
@@ -111,7 +111,7 @@ ax3d.yaxis.set_major_formatter(mticker.FuncFormatter(lambda x, _: f'${x:.3g}'))
 
 ax3d.set_title(
     'H\u2082 Cost: Capex Share vs Efficiency & Electricity Price\n'
-    '2030 Capex Model  |  25% CF  |  Bold lines = 50% boundary per amortization period',
+    '2030 Capex Model  |  25% CF',
     fontsize=14
 )
 
