@@ -212,7 +212,8 @@ def build_figure(overlay_keys):
 
     ax.set_xlabel('Efficiency (kWh/kgH\u2082)', labelpad=12)
     ax.set_ylabel('Capex ($/kW)', labelpad=12)
-    ax.set_zlabel('H\u2082 Cost ($/kgH\u2082)', labelpad=122)
+    ax.set_zlabel('H\u2082 Cost ($/kgH\u2082)', labelpad=10)
+    ax.zaxis.set_rotate_label(True)
     ax.set_title('Electrolyzer H\u2082 Cost vs Efficiency & Capex\n'
                  f'($0.01/kWh electricity, {int(capacity_factor*100)}% CF, {lifetime_years}yr lifetime)',
                  fontsize=18)
