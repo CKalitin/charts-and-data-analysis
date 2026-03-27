@@ -1,10 +1,10 @@
 """
-Terraformer Cost Estimation  —  Synthetic CH4 Production Cost
-Sabatier methanation  +  green hydrogen  +  DAC-derived CO2
+Terraformer Cost Estimation  —  Synthetic Methanol Production Cost
+Direct CO2 hydrogenation  +  green hydrogen  +  DAC-derived CO2
 
-Chart: CH4 cost ($/MMBtu, HHV) heatmap over CO2 price and H2 price
+Chart: Methanol cost ($/MT) heatmap over CO2 price and H2 price
        Feedstock costs only — no capex, no auxiliary electricity
-       CO2 range: $0 – $1/kg    H2 range: $0 – $5/kg
+       CO2 range: $0.01 – $1/kg    H2 range: $0.05 – $5/kg
 """
 
 import os
@@ -17,47 +17,44 @@ os.makedirs(RESULTS_DIR, exist_ok=True)
 
 
 # ============================================================
-# PHYSICAL CONSTANTS  —  Sabatier: CO2 + 4 H2 → CH4 + 2 H2O
+# PHYSICAL CONSTANTS  —  CO2 + 3 H2 → CH3OH + H2O
 # ============================================================
-MW_CH4 = 16.0   # g/mol
-MW_CO2 = 44.0   # g/mol
-MW_H2  =  2.0   # g/mol
+MW_CH3OH = 32.0   # g/mol  (12 + 4 + 16)
+MW_CO2   = 44.0   # g/mol
+MW_H2    =  2.0   # g/mol
 
-# Stoichiometric feedstock per kg CH4 produced (from molar ratios)
-H2_STOICH_KG_PER_KG_CH4  = (4 * MW_H2) / MW_CH4   # = 0.500 kg H2  / kg CH4
-CO2_STOICH_KG_PER_KG_CH4 = MW_CO2      / MW_CH4   # = 2.750 kg CO2 / kg CH4
+# Stoichiometric feedstock per kg methanol produced (from molar ratios)
+H2_STOICH_KG_PER_KG_MEOH  = (3 * MW_H2) / MW_CH3OH   # = 0.1875 kg H2  / kg MeOH
+CO2_STOICH_KG_PER_KG_MEOH = MW_CO2      / MW_CH3OH   # = 1.3750 kg CO2 / kg MeOH
 
-# Energy unit conversion: $/kg CH4  →  $/MMBtu
-CH4_HHV_MJ_PER_KG = 55.5                              # Higher Heating Value of CH4 (MJ/kg)
-MMBTU_IN_MJ        = 1055.06                           # 1 MMBtu = 1055.06 MJ
-KG_CH4_PER_MMBTU   = MMBTU_IN_MJ / CH4_HHV_MJ_PER_KG  # = 19.01 kg CH4 / MMBtu
-# Conversion:  $/MMBtu = ($/kg CH4) × KG_CH4_PER_MMBTU
+KG_PER_MT = 1000.0   # 1 metric tonne = 1000 kg
 
 
 # ============================================================
 # PROCESS PARAMETERS
 # ============================================================
-SABATIER_EFFICIENCY = 0.95
-# Fraction of feedstock that converts to CH4.  Unreacted fraction lost.
-# actual feed = stoichiometric / SABATIER_EFFICIENCY  (+5.3% vs perfect stoich.)
+METHANOL_EFFICIENCY = 0.95
+# Fraction of feedstock that converts to methanol.  Unreacted fraction lost.
+# This is the methanol synthesis reactor step only (electrolysis not included).
+# actual feed = stoichiometric / METHANOL_EFFICIENCY  (+5.3% vs perfect stoich.)
 
 
 # ============================================================
-# COST FUNCTION  (feedstock only, $/MMBtu HHV)
+# COST FUNCTION  (feedstock only, $/MT methanol)
 # ============================================================
-def ch4_feedstock_cost_mmbtu(co2_price_kg, h2_price_kg):
+def meoh_feedstock_cost_per_mt(co2_price_kg, h2_price_kg):
     """
-    CH4 production cost from feedstocks only  ($/MMBtu, HHV).
+    Methanol production cost from feedstocks only  ($/MT methanol).
 
-    H2 term:   (H2_STOICH / eff) × h2_price      [$/kg CH4]
-    CO2 term:  (CO2_STOICH / eff) × co2_price     [$/kg CH4]
-    Sum multiplied by KG_CH4_PER_MMBTU to convert to $/MMBtu.
+    H2 term:   (H2_STOICH / eff) × h2_price      [$/kg MeOH]
+    CO2 term:  (CO2_STOICH / eff) × co2_price     [$/kg MeOH]
+    Sum multiplied by KG_PER_MT to convert to $/MT.
 
     No capex, no auxiliary electricity — pure feedstock sensitivity.
     """
-    h2_cost_kg  = h2_price_kg  * (H2_STOICH_KG_PER_KG_CH4  / SABATIER_EFFICIENCY)
-    co2_cost_kg = co2_price_kg * (CO2_STOICH_KG_PER_KG_CH4 / SABATIER_EFFICIENCY)
-    return (h2_cost_kg + co2_cost_kg) * KG_CH4_PER_MMBTU
+    h2_cost_kg  = h2_price_kg  * (H2_STOICH_KG_PER_KG_MEOH  / METHANOL_EFFICIENCY)
+    co2_cost_kg = co2_price_kg * (CO2_STOICH_KG_PER_KG_MEOH / METHANOL_EFFICIENCY)
+    return (h2_cost_kg + co2_cost_kg) * KG_PER_MT
 
 
 # ============================================================
@@ -68,33 +65,20 @@ co2_grid = np.logspace(-2, 0,          400)   # $0.01 – $1/kg CO2
 h2_grid  = np.logspace(np.log10(0.05), np.log10(5), 400)  # $0.05 – $5/kg H2
 
 CO2, H2 = np.meshgrid(co2_grid, h2_grid)
-Z = ch4_feedstock_cost_mmbtu(CO2, H2)
 
 # Terraform reference point
 TERRAFORM_CO2 = 0.1   # $/kg CO2
 TERRAFORM_H2  = 1.0   # $/kg H2
 
-# Contour levels: nat gas benchmarks ($/MMBtu)
-# $5    ≈ Henry Hub / cheap domestic gas
-# $10   ≈ moderate LNG export-parity price
-# $20   ≈ elevated European winter gas
-# $50   ≈ 2022 EU gas crisis peak
-# ($1 line omitted — it falls entirely in the bottom-left corner of the log grid)
-CONTOUR_LEVELS = [3, 5, 10, 20, 50]
-CONTOUR_FMT    = {v: f'${v:g}' for v in CONTOUR_LEVELS}
-
-# Manual label positions (data coords, one per level in the same order).
-# Computed to lie on each contour:  h2 = (Z/KG_CH4_PER_MMBTU - co2*CO2_FACTOR) / H2_FACTOR
-# Placing mid-chart so each line has enough room for the label.
-CONTOUR_LABEL_POS = [(0.028, 0.35), (0.04, 0.78), (0.06, 1.67), (0.20, 3.90)]
-
-
-# Export configurations: (filename, h2_tax_credit $/kg)
-# h2_tax_credit shifts the effective H2 cost downward (floor 0).
-# The y-axis still shows the market H2 price you pay before the credit.
+# Contour levels: methanol market benchmarks ($/MT)
+# $300  ≈ conventional (coal-based, China)
+# $400  ≈ typical international spot price
+# $600  ≈ moderate green methanol premium
+# $1000 ≈ high-cost green methanol
+# $2000 ≈ extreme cost scenario
 exports = [
-    ('ch4_cost_vs_inputs.png',     0.0, [3, 5, 10, 20, 50]),          # no credit
-    ('ch4_cost_vs_inputs_45V.png', 3.0, [-25, -20, -10, 0, 10]),      # IRA 45V
+    ('methanol_cost_vs_inputs.png',     0.0, [200, 400, 600, 1000]),   # no credit
+    ('methanol_cost_vs_inputs_45V.png', 3.0, [-500, -400, -200, 0, 200, 400, 600]),      # IRA 45V
 ]
 
 
@@ -103,7 +87,7 @@ exports = [
 # ============================================================
 def build_chart(h2_credit, filename, contour_levels):
     H2_EFF      = H2 - h2_credit
-    Z           = ch4_feedstock_cost_mmbtu(CO2, H2_EFF)
+    Z           = meoh_feedstock_cost_per_mt(CO2, H2_EFF)
     contour_fmt = {v: f'${v:g}' for v in contour_levels}
 
     fig, ax = plt.subplots(figsize=(10, 6))
@@ -118,7 +102,7 @@ def build_chart(h2_credit, filename, contour_levels):
 
     pcm  = ax.pcolormesh(CO2, H2, Z, cmap='plasma_r', shading='auto', zorder=0)
     cbar = fig.colorbar(pcm, ax=ax, pad=0.02)
-    cbar.set_label('CH₄ Cost  ($/MMBtu,  HHV)', fontsize=9)
+    cbar.set_label('Methanol Cost  ($/MT)', fontsize=9)
 
     # Contour lines — drawn after log scale is set so label placement uses log coords
     cs = ax.contour(CO2, H2, Z, levels=contour_levels,
@@ -126,18 +110,18 @@ def build_chart(h2_credit, filename, contour_levels):
     ax.clabel(cs, fmt=contour_fmt, fontsize=8, inline=True, inline_spacing=2)
 
     # Terraform reference point — cost uses effective H2 price after credit
-    terraform_h2_eff  = TERRAFORM_H2 - h2_credit
-    terraform_cost    = ch4_feedstock_cost_mmbtu(TERRAFORM_CO2, terraform_h2_eff)
+    terraform_h2_eff = TERRAFORM_H2 - h2_credit
+    terraform_cost   = meoh_feedstock_cost_per_mt(TERRAFORM_CO2, terraform_h2_eff)
     ax.scatter(TERRAFORM_CO2, TERRAFORM_H2, color='white', s=55, zorder=6,
                edgecolors='#222222', linewidths=0.8)
-    ax.annotate(f'Terraform  ${terraform_cost:.0f}/MMBtu',
+    ax.annotate(f'Terraform  ${terraform_cost:.0f}/MT',
                 xy=(TERRAFORM_CO2, TERRAFORM_H2), xycoords='data',
                 xytext=(8, 4), textcoords='offset points',
                 fontsize=8, color='white', ha='left')
 
     ax.set_xlabel('CO₂ Price  ($/kg)')
     ax.set_ylabel('H₂ Market Price  ($/kg)')
-    ax.set_title('Synthetic CH₄ Cost vs CO₂ Price & H₂ Price')
+    ax.set_title('Synthetic Methanol Cost vs CO₂ Price & H₂ Price')
     ax.grid(True, which='both', linestyle='--', alpha=0.3, zorder=1)
 
     # Watermark
@@ -146,7 +130,7 @@ def build_chart(h2_credit, filename, contour_levels):
             ha='center', va='top')
 
     # Notes
-    note = f'Feedstock costs only  ·  Sabatier efficiency {SABATIER_EFFICIENCY*100:.0f}%  ·  ~$3/MMBtu required for cost parity'
+    note = (f'Feedstock costs only  ·  Methanol synthesis efficiency {METHANOL_EFFICIENCY*100:.0f}%')
     if h2_credit > 0:
         note += f'\n45V H₂ tax credit applied: ${h2_credit:g}/kg'
     ax.text(0.01, 0.01, note,
