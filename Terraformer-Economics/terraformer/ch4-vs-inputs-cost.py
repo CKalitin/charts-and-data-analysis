@@ -70,6 +70,10 @@ h2_grid  = np.logspace(np.log10(0.05), np.log10(5), 400)  # $0.05 – $5/kg H2
 CO2, H2 = np.meshgrid(co2_grid, h2_grid)
 Z = ch4_feedstock_cost_mmbtu(CO2, H2)
 
+# Terraform reference point
+TERRAFORM_CO2 = 0.1   # $/kg CO2
+TERRAFORM_H2  = 1.0   # $/kg H2
+
 # Contour levels: nat gas benchmarks ($/MMBtu)
 # $5    ≈ Henry Hub / cheap domestic gas
 # $10   ≈ moderate LNG export-parity price
@@ -106,6 +110,17 @@ cbar.set_label('CH₄ Cost  ($/MMBtu,  HHV)', fontsize=9)
 cs = ax.contour(CO2, H2, Z, levels=CONTOUR_LEVELS,
                 colors='#222222', linewidths=0.9, alpha=0.5, zorder=2)
 ax.clabel(cs, fmt=CONTOUR_FMT, fontsize=8, inline=True, inline_spacing=2)
+# Terraform reference point
+terraform_cost = ch4_feedstock_cost_mmbtu(TERRAFORM_CO2, TERRAFORM_H2)
+ax.scatter(TERRAFORM_CO2, TERRAFORM_H2, color='white', s=55, zorder=6,
+           edgecolors='#222222', linewidths=0.8)
+ax.annotate(f'Terraform  ${terraform_cost:.0f}/MMBtu',
+            xy=(TERRAFORM_CO2, TERRAFORM_H2), xycoords='data',
+            xytext=(8, 4), textcoords='offset points',
+            fontsize=8, color='#222222', ha='left',
+            bbox=dict(boxstyle='round,pad=0.25', facecolor='#111111',
+                      alpha=0.0, edgecolor='none'))
+
 ax.set_xlabel('CO₂ Price  ($/kg)')
 ax.set_ylabel('H₂ Price  ($/kg)')
 ax.set_title('Synthetic CH₄ Cost vs CO₂ Price & H₂ Price')
