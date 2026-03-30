@@ -78,8 +78,6 @@ handles.append(mpatches.Patch(
 ax.legend(handles=handles, loc='upper right', fontsize=8.5,
           framealpha=0.9, edgecolor='#cccccc')
 
-fig.text(0.5,  0.01, '"N/A" = Not applicable to Terraform',
-         ha='center', fontsize=8, color='#555555', style='italic')
 fig.text(0.99, 0.01, AUTHOR, ha='right', va='bottom', fontsize=8, color='#888888')
 
 plt.tight_layout(rect=[0, 0.04, 1, 1])

@@ -21,7 +21,7 @@ Well, just set it as 1 to get percent.
 
 
 # Path to the image file to select points from (relative to this script's directory)
-image_file = os.path.join(os.path.dirname(__file__), 'fieldwork.jpg')  # Change as needed
+image_file = os.path.join(os.path.dirname(__file__), 'opex.jpg')  # Change as needed
 
 # Maximum pixel dimensions for normalization (will be set from image)
 max_x = None  # Will be set after loading image
