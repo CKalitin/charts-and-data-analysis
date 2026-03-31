@@ -27,14 +27,17 @@ def crf(discount_rate):
     return 1 / YEARS if discount_rate == 0 else \
            discount_rate / (1 - (1 + discount_rate) ** -YEARS)
 
-def lcoe_parts(array_cost_kw, discount_rate=0.0, opex=True):
+UTILITY_TRACKER_BONUS = 1.20   # single-axis tracking yields +20% energy
+
+def lcoe_parts(array_cost_kw, discount_rate=0.0, opex=True, energy_multiplier=1.0):
     """Return (base_capex, discount_premium, opex) in $/MWh.
     base_capex       = CAPEX at 0% discount
     discount_premium = extra cost from applying the real discount rate
+    energy_multiplier scales annual energy (e.g. 1.2 for tracked arrays)
     """
-    scale        = ARRAY_SIZE_KW / annual_energy * 1e3
-    base_capex   = array_cost_kw * crf(0.0)           * scale
-    total_capex  = array_cost_kw * crf(discount_rate) * scale
+    scale         = ARRAY_SIZE_KW / (annual_energy * energy_multiplier) * 1e3
+    base_capex    = array_cost_kw * crf(0.0)           * scale
+    total_capex   = array_cost_kw * crf(discount_rate) * scale
     discount_prem = total_capex - base_capex
     opex_         = OPEX_PER_KW * scale if opex else 0.0
     return base_capex, discount_prem, opex_
@@ -42,8 +45,9 @@ def lcoe_parts(array_cost_kw, discount_rate=0.0, opex=True):
 # ─── Cases: (label, base_capex, discount_premium, opex, note) ────────────────
 cases = [
     ('Standard Utility\nSolar',
-     *lcoe_parts(ARRAY_COST_UTILITY, DISCOUNT_UTILITY, opex=True),
-     f'${ARRAY_COST_UTILITY}/kW · {DISCOUNT_UTILITY:.0%} discount rate'),
+     *lcoe_parts(ARRAY_COST_UTILITY, DISCOUNT_UTILITY, opex=True,
+                 energy_multiplier=UTILITY_TRACKER_BONUS),
+     f'${ARRAY_COST_UTILITY}/kW · {DISCOUNT_UTILITY:.0%} discount\nsingle-axis tracked +20% energy'),
 
     ('Terraform\nCurrent',
      *lcoe_parts(ARRAY_COST_CURRENT, 0.0, opex=True),
@@ -111,7 +115,7 @@ def draw_lcoe_chart(cases, title, filename, figsize=(10, 6.5)):
     for i, (total, note) in enumerate(zip(totals, notes)):
         ax.text(i, total + 0.22, f'{total:.2f} $/MWh',
                 ha='center', va='bottom', fontsize=9, fontweight='bold', color='#333333')
-        ax.text(i, -1.8, note, ha='center', va='top', fontsize=6.5,
+        ax.text(i, -1, note, ha='center', va='top', fontsize=6.5,
                 color='#666666', style='italic')
 
     ax.set_xticks(list(xs))
