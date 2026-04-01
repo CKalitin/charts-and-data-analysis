@@ -17,7 +17,7 @@ OPEX = [
     ('Land Lease',       12.83, 0.00),
     ('Property Tax',     11.72, 0.33),
     ('Insurance',        17.71, 0.50),
-    ('Asset Management', 10.46, 0.50),
+    ('Asset Management', 10.46, 0.00),
 ]
 
 COLORS = {

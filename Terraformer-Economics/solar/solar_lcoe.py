@@ -10,7 +10,7 @@ AUTHOR = 'Christopher Kalitin 2026'
 YEARS          = 25
 SOLAR_RESOURCE = 2000     # kWh/m²/yr
 ARRAY_SIZE_KW  = 1000     # kW
-OPEX_PER_KW    = 5.89     # $/kW/year
+OPEX_PER_KW    = 5.53     # $/kW/year
 
 # Terraform array costs
 ARRAY_COST_CURRENT  = 654   # $/kW
