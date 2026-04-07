@@ -90,8 +90,8 @@ SUB_COMPONENTS = {
     'Officework': [
         ('Warehousing',        10.18, 1.0),
         ('Logistics',           7.48, 1.0),
-        ('Engineering',        23.44, 0.5),
         ('Permits',             2.94, 1.0),
+        ('Engineering',        23.44, 0.5),
         ('Interconnect',       45.77, 0.0),
         ('Outreach',           10.18, 0.0),
     ],
