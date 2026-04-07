@@ -11,6 +11,7 @@ YEARS          = 25
 SOLAR_RESOURCE = 2000     # kWh/m²/yr
 ARRAY_SIZE_KW  = 1000     # kW
 OPEX_PER_KW    = 5.53     # $/kW/year
+OPEX_UTILITY   = 18.25    # $/kW/year  (standard utility O&M, higher due to labour/insurance)
 
 # Terraform array costs
 ARRAY_COST_CURRENT  = 654   # $/kW
@@ -29,37 +30,39 @@ def crf(discount_rate):
 
 UTILITY_TRACKER_BONUS = 1.20   # single-axis tracking yields +20% energy
 
-def lcoe_parts(array_cost_kw, discount_rate=0.0, opex=True, energy_multiplier=1.0):
+def lcoe_parts(array_cost_kw, discount_rate=0.0, opex=True, energy_multiplier=1.0, opex_per_kw=None):
     """Return (base_capex, discount_premium, opex) in $/MWh.
     base_capex       = CAPEX at 0% discount
     discount_premium = extra cost from applying the real discount rate
     energy_multiplier scales annual energy (e.g. 1.2 for tracked arrays)
+    opex_per_kw      = override OPEX_PER_KW if provided
     """
+    _opex_rate    = opex_per_kw if opex_per_kw is not None else OPEX_PER_KW
     scale         = ARRAY_SIZE_KW / (annual_energy * energy_multiplier) * 1e3
     base_capex    = array_cost_kw * crf(0.0)           * scale
     total_capex   = array_cost_kw * crf(discount_rate) * scale
     discount_prem = total_capex - base_capex
-    opex_         = OPEX_PER_KW * scale if opex else 0.0
+    opex_         = _opex_rate * scale if opex else 0.0
     return base_capex, discount_prem, opex_
 
 # ─── Cases: (label, base_capex, discount_premium, opex, note) ────────────────
 cases = [
     ('Standard Utility\nSolar',
      *lcoe_parts(ARRAY_COST_UTILITY, DISCOUNT_UTILITY, opex=True,
-                 energy_multiplier=UTILITY_TRACKER_BONUS),
-     f'${ARRAY_COST_UTILITY}/kW · {DISCOUNT_UTILITY:.0%} discount\nsingle-axis tracked +20% energy'),
+                 energy_multiplier=UTILITY_TRACKER_BONUS, opex_per_kw=OPEX_UTILITY),
+     f'\${ARRAY_COST_UTILITY}/kW · {DISCOUNT_UTILITY:.0%} discount · OPEX ${OPEX_UTILITY}/kW/yr\nsingle-axis tracked +20% energy'),
 
     ('Terraform\nCurrent',
      *lcoe_parts(ARRAY_COST_CURRENT, 0.0, opex=True),
-     f'${ARRAY_COST_CURRENT}/kW · 0% discount rate'),
+     f'${ARRAY_COST_CURRENT}/kW · 0% discount rate\nOPEX ${OPEX_PER_KW}/kW/yr'),
 
     ('Terraform\nTerminal',
      *lcoe_parts(ARRAY_COST_TERMINAL, 0.0, opex=True),
-     f'${ARRAY_COST_TERMINAL}/kW · 0% discount rate'),
+     f'${ARRAY_COST_TERMINAL}/kW · 0% discount rate\nOPEX ${OPEX_PER_KW}/kW/yr'),
 
     ('Terraform\nTerminal (No OPEX)',
      *lcoe_parts(ARRAY_COST_TERMINAL, 0.0, opex=False),
-     f'${ARRAY_COST_TERMINAL}/kW · 0% discount rate · no OPEX'),
+     f'${ARRAY_COST_TERMINAL}/kW · 0% discount rate\nno OPEX'),
 ]
 
 labels        = [c[0] for c in cases]
