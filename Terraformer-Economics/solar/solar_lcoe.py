@@ -50,7 +50,7 @@ cases = [
     ('Standard Utility\nSolar',
      *lcoe_parts(ARRAY_COST_UTILITY, DISCOUNT_UTILITY, opex=True,
                  energy_multiplier=UTILITY_TRACKER_BONUS, opex_per_kw=OPEX_UTILITY),
-     f'\${ARRAY_COST_UTILITY}/kW · {DISCOUNT_UTILITY:.0%} discount · OPEX ${OPEX_UTILITY}/kW/yr\nsingle-axis tracked +20% energy'),
+     f'\${ARRAY_COST_UTILITY}/kW · {DISCOUNT_UTILITY:.0%} discount\nOPEX ${OPEX_UTILITY}/kW/yr\nsingle-axis tracked +20% energy'),
 
     ('Terraform\nCurrent',
      *lcoe_parts(ARRAY_COST_CURRENT, 0.0, opex=True),
@@ -118,7 +118,7 @@ def draw_lcoe_chart(cases, title, filename, figsize=(10, 6.5)):
     for i, (total, note) in enumerate(zip(totals, notes)):
         ax.text(i, total + 0.22, f'{total:.2f} $/MWh',
                 ha='center', va='bottom', fontsize=9, fontweight='bold', color='#333333')
-        ax.text(i, -1, note, ha='center', va='top', fontsize=6.5,
+        ax.text(i, -1.75, note, ha='center', va='center', fontsize=6.5,
                 color='#666666', style='italic')
 
     ax.set_xticks(list(xs))
