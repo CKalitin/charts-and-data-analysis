@@ -304,16 +304,19 @@ def load_capex_sweep(
 class LoadPlane:
     """Optimal utilization and profit over the (income × load capex) plane."""
     income_per_kwh: np.ndarray      # (nI,) y-axis
-    load_cost_ann: np.ndarray       # (nCl,) x-axis, $/kW·yr annualized
-    utilization: np.ndarray         # (nI, nCl)
+    load_cost_ann: np.ndarray       # (nCl,) x-axis, $/kW·yr annualized  ← primary axis
+    utilization: np.ndarray         # (nI, nCl) profit-optimal utilization
     profit_per_yr: np.ndarray       # (nI, nCl)
+    lcoe_utilization: np.ndarray    # (nI, nCl) LCOE-optimal utilization (income-independent)
+    lcoe_min: np.ndarray            # (nCl,) minimum achievable LCOE at each load_capex level
+    lvoe: np.ndarray                # (nI, nCl) Levelized Value of Energy = income - min_LCOE [$/kWh]
     solar_cost_ann: float
     batt_cost_ann: float
     load_amortization_years: float
 
     @property
     def load_capex_raw(self) -> np.ndarray:
-        """Raw load capex x-axis ($/kW) = annualized × amortization years."""
+        """Raw load capex ($/kW) = annualized × amortization years — used for the secondary axis."""
         return self.load_cost_ann * self.load_amortization_years
 
 
@@ -342,11 +345,27 @@ def load_plane(
     util = np.where(profit >= 0, base_util[:, None], 0.0)
     profit = np.maximum(profit, 0.0)
 
+    # LCOE-optimal utilization and minimum LCOE at each load_capex.
+    # Income doesn't enter LCOE, so the argmin (S,B) is income-independent.
+    lcoe_sw = load_capex_sweep_lcoe(grid, load_cost_ann_sweep,
+                                     solar_cost_ann, batt_cost_ann, load_amortization_years)
+    lcoe_util = np.tile(lcoe_sw.utilization, (income_values.size, 1))  # (nI, nCl)
+    lcoe_min = lcoe_sw.lcoe                                             # (nCl,)
+
+    # Levelized Value of Energy = income - min_LCOE(load_capex)  [$/kWh]
+    # Positive = profitable; negative = don't build.
+    # income enters directly (y-axis) and min_LCOE varies with load_capex (x-axis),
+    # so this metric genuinely uses both axes of the plane.
+    lvoe = income_values[:, None] - lcoe_min[None, :]                  # (nI, nCl)
+
     return LoadPlane(
         income_per_kwh=income_values,
         load_cost_ann=load_cost_ann_sweep,
         utilization=util,
         profit_per_yr=profit,
+        lcoe_utilization=lcoe_util,
+        lcoe_min=lcoe_min,
+        lvoe=lvoe,
         solar_cost_ann=solar_cost_ann,
         batt_cost_ann=batt_cost_ann,
         load_amortization_years=load_amortization_years,

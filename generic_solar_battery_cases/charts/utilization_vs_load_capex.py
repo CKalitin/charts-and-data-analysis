@@ -25,6 +25,12 @@ The two curves show the fundamental difference between the two frameworks on the
 
 from __future__ import annotations
 
+import sys
+from pathlib import Path
+
+if not __package__:  # running as a script — add project root to path
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 import matplotlib.ticker as mticker
 import numpy as np
 
@@ -32,7 +38,10 @@ import config as cfg
 import derived
 from labels import axis_label
 
-from . import common
+try:
+    from . import common
+except ImportError:
+    import common  # type: ignore[no-redef]
 
 
 def _params_profit(sweep: derived.LoadCapexSweep, grid) -> dict[str, str]:
@@ -162,3 +171,22 @@ def figures(profit_sweep: derived.LoadCapexSweep, lcoe_sweep: derived.LoadCapexS
         ("util_vs_load_capex/lcoe_min", lcoe_fig),
         ("util_vs_load_capex/comparison", comparison_fig),
     ]
+
+
+if __name__ == "__main__":
+    import time
+
+    import config as cfg
+    import derived
+    from viz import render
+
+    t0 = time.time()
+    grid = derived.load_served_grid()
+    lcsw = derived.load_capex_sweep(grid)
+    lcsw_lcoe = derived.load_capex_sweep_lcoe(grid)
+    plan = figures(lcsw, lcsw_lcoe, grid)
+    for name, build in plan:
+        fig, path = build()
+        render.save_fig(fig, path)
+        print(f"  wrote {path.relative_to(cfg.PROJECT_DIR)}")
+    print(f"\nwrote {len(plan)} charts in {time.time() - t0:.1f}s")

@@ -21,12 +21,21 @@ cost regardless of the income signal. A horizontal line at Terraform's income
 
 from __future__ import annotations
 
+import sys
+from pathlib import Path
+
+if not __package__:  # running as a script — add project root to path
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 import numpy as np
 
 import config as cfg
 import model
 
-from . import common
+try:
+    from . import common
+except ImportError:
+    import common  # type: ignore[no-redef]
 
 # ── Terraform Electrolyzer parameters (mirrors cfg.LOAD_CASES) ──────────────
 _TF_INCOME       = 0.0125   # $/kWh
@@ -148,3 +157,22 @@ def figures(data: model.NsrdbData, grid: model.ServedGrid):
         return fig, out_path
 
     return [("terraform/lcoe_vs_solar", make_fig)]
+
+
+if __name__ == "__main__":
+    import time
+
+    import config as cfg
+    import derived
+    import model
+    from viz import render
+
+    t0 = time.time()
+    grid = derived.load_served_grid()
+    data = model.load_nsrdb(cfg.DATA_FILE, resample=None)
+    plan = figures(data, grid)
+    for name, build in plan:
+        fig, path = build()
+        render.save_fig(fig, path)
+        print(f"  wrote {path.relative_to(cfg.PROJECT_DIR)}")
+    print(f"\nwrote {len(plan)} charts in {time.time() - t0:.1f}s")

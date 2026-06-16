@@ -21,6 +21,8 @@ import config as cfg
 import derived
 import model
 from charts import (build_plane, common, cost_plane, daily_timeseries as daily_timeseries_chart,
+                    income_profiles as income_profiles_chart,
+                    load_capex_profiles as load_capex_profiles_chart,
                     load_plane as load_plane_chart, solar_fraction as solar_fraction_chart,
                     terraform_lcoe as terraform_lcoe_chart,
                     timeseries, utilization_vs_income, utilization_vs_load_capex)
@@ -122,6 +124,8 @@ def main() -> None:
         *daily_timeseries_chart.figures_daily(data, grid),
         *utilization_vs_load_capex.figures(lcsw, lcsw_lcoe, grid),
         *load_plane_chart.figures(lplane, grid),
+        *income_profiles_chart.figures(lplane, grid),
+        *load_capex_profiles_chart.figures(lplane, grid),
         *solar_fraction_chart.figures(sf_sweeps, grid),
         *terraform_lcoe_chart.figures(data, grid),
     ]

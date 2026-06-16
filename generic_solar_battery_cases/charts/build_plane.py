@@ -10,6 +10,12 @@ profit across every candidate build, with the profit-maximizing point marked.
 
 from __future__ import annotations
 
+import sys
+from pathlib import Path
+
+if not __package__:  # running as a script — add project root to path
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 import numpy as np
 
 import config as cfg
@@ -17,7 +23,10 @@ import derived
 import model
 from labels import axis_label
 
-from . import common
+try:
+    from . import common
+except ImportError:
+    import common  # type: ignore[no-redef]
 
 
 def _params(grid: model.ServedGrid) -> dict[str, str]:
@@ -323,3 +332,20 @@ def figures(grid: model.ServedGrid):
         return fig, cfg.OUT_BUILD_PLANE / f"profit_{suffix}.png"
 
     return [("build_plane/utilization", util_fig), ("build_plane/profit", profit_fig)]
+
+
+if __name__ == "__main__":
+    import time
+
+    import config as cfg
+    import derived
+    from viz import render
+
+    t0 = time.time()
+    grid = derived.load_served_grid()
+    plan = [*figures(grid), *figures_lcoe(grid), *figures_lcoe_frontiers(grid)]
+    for name, build in plan:
+        fig, path = build()
+        render.save_fig(fig, path)
+        print(f"  wrote {path.relative_to(cfg.PROJECT_DIR)}")
+    print(f"\nwrote {len(plan)} charts in {time.time() - t0:.1f}s")

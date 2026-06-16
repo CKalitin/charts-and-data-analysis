@@ -25,6 +25,12 @@ battery-heavy even when components cost the same per unit.
 
 from __future__ import annotations
 
+import sys
+from pathlib import Path
+
+if not __package__:  # running as a script — add project root to path
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 import matplotlib.ticker as mticker
 import numpy as np
 
@@ -32,7 +38,10 @@ import config as cfg
 import derived
 from labels import axis_label
 
-from . import common
+try:
+    from . import common
+except ImportError:
+    import common  # type: ignore[no-redef]
 
 # Colour cycle for the T-curves (ordered: small → large total resource).
 _COLOURS = ["#4393c3", "#2ca25f", "#e07b00", "#c51b7d"]
@@ -200,3 +209,21 @@ def figures(sweeps: list[derived.SolarFractionSweep], grid):
         return fig, cfg.OUT_SOLAR_FRACTION / f"util_vs_fraction_{suffix}.png"
 
     return [("solar_fraction/lcoe_vs_fraction", fig_fn), ("solar_fraction/util_vs_fraction", fig_util_only)]
+
+
+if __name__ == "__main__":
+    import time
+
+    import config as cfg
+    import derived
+    from viz import render
+
+    t0 = time.time()
+    grid = derived.load_served_grid()
+    sf_sweeps = [derived.solar_fraction_sweep(grid, T) for T in cfg.SOLAR_FRACTION_TOTAL_UNITS]
+    plan = figures(sf_sweeps, grid)
+    for name, build in plan:
+        fig, path = build()
+        render.save_fig(fig, path)
+        print(f"  wrote {path.relative_to(cfg.PROJECT_DIR)}")
+    print(f"\nwrote {len(plan)} charts in {time.time() - t0:.1f}s")

@@ -301,7 +301,7 @@ def draw_heatmap(
 
     if contour_levels is not None:
         levels = np.asarray([lv for lv in contour_levels
-                             if z.min() < lv < z.max()], dtype=float)
+                             if np.nanmin(z) < lv < np.nanmax(z)], dtype=float)
         if filter_stubs and levels.size:
             levels = _prefilter_stub_levels(ax, x, y, z, levels)
         if levels.size:
@@ -340,6 +340,26 @@ def nice_levels(z: np.ndarray, target_count: int = 6) -> np.ndarray:
     step = next(m * mag for m in (1.0, 2.0, 2.5, 5.0, 10.0) if raw <= m * mag)
     first = math.ceil(vmin / step) * step
     return np.arange(first, vmax + 0.5 * step, step)
+
+
+def log_nice_levels(z: np.ndarray) -> np.ndarray:
+    """1/2/5 × 10^n contour levels spanning positive z values (log-scale heatmaps)."""
+    import math
+    vals = z[np.isfinite(z) & (z > 0)]
+    if vals.size == 0:
+        return np.array([])
+    vmin, vmax = float(vals.min()), float(vals.max())
+    if vmax <= vmin:
+        return np.array([])
+    lo = math.floor(math.log10(vmin))
+    hi = math.ceil(math.log10(vmax))
+    levels = []
+    for e in range(lo, hi + 1):
+        for m in (1.0, 2.0, 5.0):
+            v = m * 10.0 ** e
+            if vmin < v < vmax:
+                levels.append(v)
+    return np.array(levels, dtype=float)
 
 
 # Contour level sets reused across charts.

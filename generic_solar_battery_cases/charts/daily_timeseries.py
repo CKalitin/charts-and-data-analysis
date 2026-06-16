@@ -20,6 +20,12 @@ No-battery builds get a 2-panel layout (solar + load); battery builds get 3-pane
 
 from __future__ import annotations
 
+import sys
+from pathlib import Path
+
+if not __package__:  # running as a script — add project root to path
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 from datetime import date, timedelta
 
 import matplotlib.dates as mdates
@@ -28,7 +34,10 @@ import numpy as np
 import config as cfg
 import model
 
-from . import common
+try:
+    from . import common
+except ImportError:
+    import common  # type: ignore[no-redef]
 
 
 _COLOR = {
@@ -245,6 +254,25 @@ def figures(data: model.NsrdbData, grid: model.ServedGrid):
             result.append((f"weekly_timeseries/{date_slug}/{build_slug}", make_fig))
 
     return result
+
+
+if __name__ == "__main__":
+    import time
+
+    import config as cfg
+    import derived
+    import model
+    from viz import render
+
+    t0 = time.time()
+    grid = derived.load_served_grid()
+    data = model.load_nsrdb(cfg.DATA_FILE, resample=None)
+    plan = [*figures(data, grid), *figures_daily(data, grid)]
+    for name, build in plan:
+        fig, path = build()
+        render.save_fig(fig, path)
+        print(f"  wrote {path.relative_to(cfg.PROJECT_DIR)}")
+    print(f"\nwrote {len(plan)} charts in {time.time() - t0:.1f}s")
 
 
 def figures_daily(data: model.NsrdbData, grid: model.ServedGrid):

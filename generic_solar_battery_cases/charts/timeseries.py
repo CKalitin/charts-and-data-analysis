@@ -11,6 +11,12 @@ sweep) aggregated to daily values for a clean year-at-a-glance:
 
 from __future__ import annotations
 
+import sys
+from pathlib import Path
+
+if not __package__:  # running as a script — add project root to path
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 import matplotlib.dates as mdates
 import numpy as np
 import pandas as pd
@@ -18,7 +24,10 @@ import pandas as pd
 import config as cfg
 import model
 
-from . import common
+try:
+    from . import common
+except ImportError:
+    import common  # type: ignore[no-redef]
 
 _COLOR = {
     "ghi": "#f5a623", "used": "#4a90d9", "curtailed": "#e8a000",
@@ -117,3 +126,22 @@ def figures(data: model.NsrdbData, grid: model.ServedGrid):
         return fig, cfg.OUT_TIMESERIES / f"dispatch_{suffix}.png"
 
     return [("timeseries", combined)]
+
+
+if __name__ == "__main__":
+    import time
+
+    import config as cfg
+    import derived
+    import model
+    from viz import render
+
+    t0 = time.time()
+    grid = derived.load_served_grid()
+    data = model.load_nsrdb(cfg.DATA_FILE, resample=None)
+    plan = figures(data, grid)
+    for name, build in plan:
+        fig, path = build()
+        render.save_fig(fig, path)
+        print(f"  wrote {path.relative_to(cfg.PROJECT_DIR)}")
+    print(f"\nwrote {len(plan)} charts in {time.time() - t0:.1f}s")

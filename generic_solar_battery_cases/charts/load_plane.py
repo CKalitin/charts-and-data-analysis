@@ -12,6 +12,15 @@ reference points.
 
 from __future__ import annotations
 
+import sys
+from pathlib import Path
+
+if not __package__:  # running as a script — add project root to path
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+import matplotlib
+import matplotlib.colors as mcolors
+import matplotlib.patheffects as pe
 import matplotlib.ticker as mticker
 import numpy as np
 
@@ -19,7 +28,10 @@ import config as cfg
 import derived
 from labels import axis_label
 
-from . import common
+try:
+    from . import common
+except ImportError:
+    import common  # type: ignore[no-redef]
 
 # Scatter style for the named load cases.
 _CASE_COLORS = ["#e63946", "#2a9d8f", "#f4a261"]
@@ -40,34 +52,61 @@ def _scene_params(plane: derived.LoadPlane, grid) -> dict[str, str]:
     }
 
 
-def _add_case_markers(ax, plane: derived.LoadPlane) -> None:
-    """Scatter ★ for each named load case; label in the legend."""
-    for (name, (income, capex_raw, _)), color in zip(
+def _add_case_markers(
+    ax, plane: derived.LoadPlane,
+    value_data: np.ndarray | None = None,
+    value_fmt=None,
+) -> None:
+    """Scatter ★ for each named load case; optional heatmap-value label near each star.
+
+    value_data: (nI, nCl) array matching the plotted heatmap (NaN = no-build).
+    value_fmt:  callable float -> str, e.g. lambda v: f"{v:.0f}%"
+    """
+    amort = plane.load_amortization_years
+    _outline = [pe.withStroke(linewidth=2, foreground="black")]
+    for (name, (income, capex_raw, case_amort)), color in zip(
         cfg.LOAD_CASES.items(), _CASE_COLORS
     ):
+        capex_ann = capex_raw / amort
         ax.scatter(
-            [capex_raw], [income],
+            [capex_ann], [income],
             s=_CASE_SIZE, marker=_CASE_MARKER, color=color,
             edgecolors="black", linewidths=0.7, zorder=6,
-            label=f"{name}  (${income:.4g}/kWh, ${capex_raw:,.0f}/kW)",
+            label=f"{name}  (${income:.4g}/kWh, ${capex_ann:.0f}/kW·yr)",
         )
+        if value_data is not None and value_fmt is not None:
+            i = int(np.argmin(np.abs(plane.income_per_kwh - income)))
+            j = int(np.argmin(np.abs(plane.load_cost_ann - capex_ann)))
+            val = float(value_data[i, j])
+            if np.isfinite(val):
+                ax.annotate(
+                    value_fmt(val),
+                    xy=(capex_ann, income),
+                    xytext=(6, 6), textcoords="offset points",
+                    fontsize=8, fontweight="bold", color="white",
+                    zorder=8, path_effects=_outline,
+                )
     ax.legend(loc="lower right", fontsize=8, framealpha=0.82)
 
 
 def _axis_setup(ax, plane: derived.LoadPlane) -> None:
-    """Log scales + dollar formatters on both axes + annualized twin on top."""
+    """Log scales + dollar formatters on both axes.
+
+    Primary (bottom) x-axis: annualized load capex $/kW·yr — the quantity that
+    enters every calculation. Secondary (top): raw capex $/kW for intuition.
+    """
     common.dollar_log_axis(ax, "x")
     common.dollar_log_axis(ax, "y")
-    ax.set_xlabel(axis_label("load_capex"))
+    ax.set_xlabel(axis_label("load_cost_ann"))   # $/kW·yr on bottom
     ax.set_ylabel(axis_label("income_per_kwh"))
-    ax.set_xlim(plane.load_capex_raw.min(), plane.load_capex_raw.max())
+    ax.set_xlim(plane.load_cost_ann.min(), plane.load_cost_ann.max())
     ax.set_ylim(plane.income_per_kwh.min(), plane.income_per_kwh.max())
 
     amort = plane.load_amortization_years
     sec = ax.secondary_xaxis(
-        "top", functions=(lambda v: v / amort, lambda v: v * amort)
+        "top", functions=(lambda v: v * amort, lambda v: v / amort)
     )
-    sec.set_xlabel(f"Load capex  ($/kW·yr, {amort:g}-yr amortization)")
+    sec.set_xlabel(f"Load capex  ($/kW, {amort:g}-yr amortization)")
     sec.xaxis.set_major_formatter(mticker.FuncFormatter(lambda v, _: common._dollar_fmt(v)))
 
 
@@ -80,33 +119,181 @@ def draw_utilization(ax, plane: derived.LoadPlane, *, contours: bool = True) -> 
     # in the bottom-left corner. The contours DO fan out and separate along the
     # diagonal no-build frontier, which is exactly where inline clabel places them.
     mesh = common.draw_heatmap(
-        ax, plane.load_capex_raw, plane.income_per_kwh, plane.utilization * 100.0,
+        ax, plane.load_cost_ann, plane.income_per_kwh, plane.utilization * 100.0,
         xlabel=axis_label("load_capex"), ylabel=axis_label("income_per_kwh"),
-        title="Optimal utilization vs load economics",
+        title="Profit-optimal utilization vs load economics",
         vmin=0, vmax=100,
         contour_levels=[v * 100 for v in common.UTIL_CONTOURS] if contours else None,
         contour_fmt=lambda v: f"{v:.3g}%" if contours else None,
         label_side="inline",
     )
     _axis_setup(ax, plane)
-    _add_case_markers(ax, plane)
+    _add_case_markers(ax, plane, plane.utilization * 100.0, lambda v: f"{v:.0f}%")
     return mesh
 
 
-def draw_profit(ax, plane: derived.LoadPlane) -> object:
-    # filter_stubs=True: the highest profit levels exist only in a small high-income /
-    # low-capex corner, producing short stub lines that look like truncated fragments.
+def draw_utilization_lcoe(ax, plane: derived.LoadPlane, *, contours: bool = True) -> object:
+    """Utilization at the LCOE-minimizing (S, B) build over the (income × load capex) plane.
+
+    LCOE = (load_cost × L + solar_cost × S + batt_cost × B) / served_kwh does not
+    include income, so the optimal (S, B) depends only on load capex — not on income.
+    This produces vertical stripes: each column (load capex value) has one utilization
+    that repeats across all income levels.
+    """
     mesh = common.draw_heatmap(
-        ax, plane.load_capex_raw, plane.income_per_kwh, plane.profit_per_yr,
+        ax, plane.load_cost_ann, plane.income_per_kwh, plane.lcoe_utilization * 100.0,
         xlabel=axis_label("load_capex"), ylabel=axis_label("income_per_kwh"),
-        title="Optimal net value vs load economics",
-        contour_levels=common.nice_levels(plane.profit_per_yr),
+        title="LCOE-optimal utilization vs load economics",
+        vmin=0, vmax=100,
+        contour_levels=[v * 100 for v in common.UTIL_CONTOURS] if contours else None,
+        contour_fmt=(lambda v: f"{v:.3g}%") if contours else None,
+        label_side="inline",
+    )
+    _axis_setup(ax, plane)
+    _add_case_markers(ax, plane, plane.lcoe_utilization * 100.0, lambda v: f"{v:.0f}%")
+    return mesh
+
+
+def draw_utilization_lvoe(
+    ax, plane: derived.LoadPlane, *, contours: bool = True, mask_nobuild: bool = False
+) -> object:
+    """Utilization at the LVOE-maximizing (S, B) build over the (income × load capex) plane.
+
+    LVOE = income − LCOE.  For a fixed (income, load_capex) cell, income is a constant,
+    so argmax(LVOE) ≡ argmin(LCOE) — the same build chosen by LCOE minimization.
+    Utilization therefore shows vertical stripes (income-independent), identical to the
+    LCOE-optimal utilization chart, but framed in LVOE terms for consistency with the
+    LVOE value chart.
+
+    mask_nobuild: if True, cells where LVOE ≤ 0 are masked gray (matching the LVOE
+    value heatmap's dark zone), so only economically viable cells show utilization.
+    """
+    util = plane.lcoe_utilization * 100.0
+    if mask_nobuild:
+        util = np.where(plane.lvoe > 0, util, np.nan)
+
+    cmap_obj = None
+    if mask_nobuild:
+        cmap_obj = matplotlib.colormaps["plasma"].copy()
+        cmap_obj.set_bad("#2A2A2A", alpha=1.0)
+
+    mesh = common.draw_heatmap(
+        ax, plane.load_cost_ann, plane.income_per_kwh, util,
+        xlabel=axis_label("load_cost_ann"), ylabel=axis_label("income_per_kwh"),
+        title="LVOE-optimal utilization vs load economics",
+        vmin=0, vmax=100,
+        cmap=cmap_obj,
+        contour_levels=[v * 100 for v in common.UTIL_CONTOURS] if contours else None,
+        contour_fmt=(lambda v: f"{v:.3g}%") if contours else None,
+        label_side="inline",
+    )
+    _axis_setup(ax, plane)
+    _add_case_markers(ax, plane, util, lambda v: f"{v:.0f}%")
+    return mesh
+
+
+def draw_lvoe(ax, plane: derived.LoadPlane, *, contours: bool = True) -> object:
+    """Levelized Value of Energy (LVOE) = income − min_LCOE(load_capex)  [$/kWh].
+
+    Net value per kWh delivered — the energy-normalized counterpart to LCOE.
+    LCOE asks "what does each kWh cost?"; LVOE answers "what is each kWh worth
+    after paying for it?" Both axes of the plane contribute:
+      - income (y): the revenue per kWh
+      - min_LCOE (function of x): the minimum achievable cost per kWh
+
+    LVOE > 0 → profitable; diagonal boundary is where income = min_LCOE.
+    The no-build zone (LVOE ≤ 0) is masked gray.
+    """
+    lvoe = plane.lvoe.copy()
+    lvoe_plot = np.where(lvoe > 0, lvoe, np.nan)
+
+    pos = lvoe_plot[np.isfinite(lvoe_plot)]
+    norm = (mcolors.LogNorm(vmin=float(pos.min()), vmax=float(pos.max()))
+            if pos.size else None)
+
+    cmap_obj = matplotlib.colormaps[common.HEAT_CMAP].copy()
+    cmap_obj.set_bad("#2A2A2A", alpha=1.0)
+
+    mesh = common.draw_heatmap(
+        ax, plane.load_cost_ann, plane.income_per_kwh, lvoe_plot,
+        xlabel=axis_label("load_cost_ann"), ylabel=axis_label("income_per_kwh"),
+        title="Levelized Value of Energy  (income − min LCOE)",
+        cmap=cmap_obj,
+        norm=norm,
+        contour_levels=common.log_nice_levels(lvoe_plot) if contours else None,
         contour_color="white",
-        contour_fmt=common._dollar_fmt,
+        contour_fmt=(lambda v: common._dollar_fmt(v) + "/kWh") if contours else None,
         filter_stubs=True,
     )
     _axis_setup(ax, plane)
-    _add_case_markers(ax, plane)
+    lvoe_plot_data = np.where(plane.lvoe > 0, plane.lvoe, np.nan)
+    _add_case_markers(ax, plane, lvoe_plot_data,
+                      lambda v: common._dollar_fmt(v) + "/kWh")
+    return mesh
+
+
+def draw_profit_margin(ax, plane: derived.LoadPlane, *, contours: bool = True) -> object:
+    """Profit margin = profit / revenue = (revenue − cost) / revenue  [%].
+
+    Revenue = income_per_kwh × served_kwh; cost = load + solar + battery annualized.
+    Uses the profit-optimal (S, B) build at each cell (same as draw_profit).
+    No-build zone (margin ≤ 0) is masked gray.
+    """
+    served_kwh = plane.utilization * cfg.LOAD_KW * 8760.0  # (nI, nCl)
+    revenue = plane.income_per_kwh[:, None] * served_kwh   # (nI, nCl)
+    margin = np.where(revenue > 0, plane.profit_per_yr / revenue * 100.0, np.nan)
+    margin = np.where(margin > 0, margin, np.nan)
+
+    cmap_obj = matplotlib.colormaps[common.HEAT_CMAP].copy()
+    cmap_obj.set_bad("#2A2A2A", alpha=1.0)
+
+    mesh = common.draw_heatmap(
+        ax, plane.load_cost_ann, plane.income_per_kwh, margin,
+        xlabel=axis_label("load_cost_ann"), ylabel=axis_label("income_per_kwh"),
+        title="Profit margin vs load economics",
+        vmin=0, vmax=100,
+        cmap=cmap_obj,
+        contour_levels=[10, 20, 30, 40, 50, 60, 70, 80, 90] if contours else None,
+        contour_color="white",
+        contour_fmt=(lambda v: f"{v:.0f}%") if contours else None,
+        filter_stubs=True,
+    )
+    _axis_setup(ax, plane)
+    _add_case_markers(ax, plane, margin, lambda v: f"{v:.0f}%")
+    ax.text(0.02, 0.02, cfg.WATERMARK_TEXT, transform=ax.transAxes,
+            ha="left", va="bottom", fontsize=12.0, color="#cccccc", alpha=0.9)
+    return mesh
+
+
+def draw_profit(ax, plane: derived.LoadPlane, *, contours: bool = True) -> object:
+    """Profit heatmap with log color scale.
+
+    The no-build zone (profit = 0) is masked and rendered gray; the log norm
+    makes the large dynamic range across the build zone legible. Contour levels
+    are at 1/2/5 × 10^n so they align with the log color scale.
+    """
+    profit_plot = np.where(plane.profit_per_yr > 0, plane.profit_per_yr, np.nan)
+
+    pos = profit_plot[np.isfinite(profit_plot)]
+    norm = (mcolors.LogNorm(vmin=float(pos.min()), vmax=float(pos.max()))
+            if pos.size else None)
+
+    cmap_obj = matplotlib.colormaps[common.HEAT_CMAP].copy()
+    cmap_obj.set_bad("#2A2A2A", alpha=1.0)  # gray for no-build zone
+
+    mesh = common.draw_heatmap(
+        ax, plane.load_cost_ann, plane.income_per_kwh, profit_plot,
+        xlabel=axis_label("load_capex"), ylabel=axis_label("income_per_kwh"),
+        title="Profit-optimal net value vs load economics",
+        cmap=cmap_obj,
+        norm=norm,
+        contour_levels=common.log_nice_levels(profit_plot) if contours else None,
+        contour_color="white",
+        contour_fmt=common._dollar_fmt if contours else None,
+        filter_stubs=True,
+    )
+    _axis_setup(ax, plane)
+    _add_case_markers(ax, plane, profit_plot, common._dollar_fmt)
     return mesh
 
 
@@ -125,7 +312,8 @@ def figures(plane: derived.LoadPlane, grid):
         mesh = draw_utilization(ax, plane)
         fig.colorbar(mesh, ax=ax, pad=0.12).set_label(axis_label("utilization_pct"))
         common.info(ax, fig, params, mode="on")
-        common.watermark(ax, fig)
+        ax.text(0.02, 0.02, cfg.WATERMARK_TEXT, transform=ax.transAxes,
+                ha="left", va="bottom", fontsize=12.0, color="#cccccc", alpha=0.9)
         return fig, cfg.OUT_LOAD_PLANE / f"utilization_{suffix}.png"
 
     def util_no_contours_fig():
@@ -133,21 +321,166 @@ def figures(plane: derived.LoadPlane, grid):
         mesh = draw_utilization(ax, plane, contours=False)
         fig.colorbar(mesh, ax=ax, pad=0.12).set_label(axis_label("utilization_pct"))
         common.info(ax, fig, params, mode="on")
-        common.watermark(ax, fig)
+        ax.text(0.02, 0.02, cfg.WATERMARK_TEXT, transform=ax.transAxes,
+                ha="left", va="bottom", fontsize=12.0, color="#cccccc", alpha=0.9)
         return fig, cfg.OUT_LOAD_PLANE / f"utilization_{suffix}_nocontours.png"
+
+    def profit_margin_fig():
+        fig, ax = render.new_figure(figsize=(9, 7))
+        mesh = draw_profit_margin(ax, plane)
+        fig.colorbar(mesh, ax=ax, pad=0.12).set_label("Profit margin  (%)")
+        common.info(ax, fig, params, mode="on")
+        return fig, cfg.OUT_LOAD_PLANE / f"profit_margin_{suffix}.png"
+
+    def profit_margin_no_contours_fig():
+        fig, ax = render.new_figure(figsize=(9, 7))
+        mesh = draw_profit_margin(ax, plane, contours=False)
+        fig.colorbar(mesh, ax=ax, pad=0.12).set_label("Profit margin  (%)")
+        common.info(ax, fig, params, mode="on")
+        return fig, cfg.OUT_LOAD_PLANE / f"profit_margin_{suffix}_nocontours.png"
 
     def profit_fig():
         fig, ax = render.new_figure(figsize=(9, 7))
         mesh = draw_profit(ax, plane)
         cbar = fig.colorbar(mesh, ax=ax, pad=0.12)
         cbar.set_label(axis_label("profit_per_yr"))
-        common.dollar_colorbar(cbar)
+        # FuncFormatter overrides LogNorm's default tick labels (which would render
+        # as "$\mathdefault{10^2}$" even with text.parse_math=False).
+        cbar.ax.yaxis.set_major_formatter(
+            mticker.FuncFormatter(lambda v, _: common._dollar_fmt(v))
+        )
         common.info(ax, fig, params, mode="on")
-        common.watermark(ax, fig)
+        ax.text(0.02, 0.02, cfg.WATERMARK_TEXT, transform=ax.transAxes,
+                ha="left", va="bottom", fontsize=12.0, color="#cccccc", alpha=0.9)
         return fig, cfg.OUT_LOAD_PLANE / f"profit_{suffix}.png"
 
+    def profit_no_contours_fig():
+        fig, ax = render.new_figure(figsize=(9, 7))
+        mesh = draw_profit(ax, plane, contours=False)
+        cbar = fig.colorbar(mesh, ax=ax, pad=0.12)
+        cbar.set_label(axis_label("profit_per_yr"))
+        cbar.ax.yaxis.set_major_formatter(
+            mticker.FuncFormatter(lambda v, _: common._dollar_fmt(v))
+        )
+        common.info(ax, fig, params, mode="on")
+        ax.text(0.02, 0.02, cfg.WATERMARK_TEXT, transform=ax.transAxes,
+                ha="left", va="bottom", fontsize=12.0, color="#cccccc", alpha=0.9)
+        return fig, cfg.OUT_LOAD_PLANE / f"profit_{suffix}_nocontours.png"
+
+    def util_lcoe_fig():
+        fig, ax = render.new_figure(figsize=(9, 7))
+        mesh = draw_utilization_lcoe(ax, plane)
+        fig.colorbar(mesh, ax=ax, pad=0.12).set_label(axis_label("utilization_pct"))
+        lcoe_params = {**params, "Objective": "LCOE minimization"}
+        common.info(ax, fig, lcoe_params, mode="on")
+        ax.text(0.02, 0.02, cfg.WATERMARK_TEXT, transform=ax.transAxes,
+                ha="left", va="bottom", fontsize=12.0, color="#cccccc", alpha=0.9)
+        return fig, cfg.OUT_LOAD_PLANE / f"utilization_lcoe_{suffix}.png"
+
+    def util_lcoe_no_contours_fig():
+        fig, ax = render.new_figure(figsize=(9, 7))
+        mesh = draw_utilization_lcoe(ax, plane, contours=False)
+        fig.colorbar(mesh, ax=ax, pad=0.12).set_label(axis_label("utilization_pct"))
+        lcoe_params = {**params, "Objective": "LCOE minimization"}
+        common.info(ax, fig, lcoe_params, mode="on")
+        ax.text(0.02, 0.02, cfg.WATERMARK_TEXT, transform=ax.transAxes,
+                ha="left", va="bottom", fontsize=12.0, color="#cccccc", alpha=0.9)
+        return fig, cfg.OUT_LOAD_PLANE / f"utilization_lcoe_{suffix}_nocontours.png"
+
+    def util_lvoe_fig():
+        fig, ax = render.new_figure(figsize=(9, 7))
+        mesh = draw_utilization_lvoe(ax, plane)
+        fig.colorbar(mesh, ax=ax, pad=0.12).set_label(axis_label("utilization_pct"))
+        lvoe_params = {**params, "Objective": "LVOE maximization (≡ LCOE minimization)"}
+        common.info(ax, fig, lvoe_params, mode="on")
+        ax.text(0.02, 0.02, cfg.WATERMARK_TEXT, transform=ax.transAxes,
+                ha="left", va="bottom", fontsize=12.0, color="#cccccc", alpha=0.9)
+        return fig, cfg.OUT_LOAD_PLANE / f"utilization_lvoe_{suffix}.png"
+
+    def util_lvoe_no_contours_fig():
+        fig, ax = render.new_figure(figsize=(9, 7))
+        mesh = draw_utilization_lvoe(ax, plane, contours=False)
+        fig.colorbar(mesh, ax=ax, pad=0.12).set_label(axis_label("utilization_pct"))
+        lvoe_params = {**params, "Objective": "LVOE maximization (≡ LCOE minimization)"}
+        common.info(ax, fig, lvoe_params, mode="on")
+        ax.text(0.02, 0.02, cfg.WATERMARK_TEXT, transform=ax.transAxes,
+                ha="left", va="bottom", fontsize=12.0, color="#cccccc", alpha=0.9)
+        return fig, cfg.OUT_LOAD_PLANE / f"utilization_lvoe_{suffix}_nocontours.png"
+
+    def util_lvoe_masked_fig():
+        fig, ax = render.new_figure(figsize=(9, 7))
+        mesh = draw_utilization_lvoe(ax, plane, mask_nobuild=True)
+        fig.colorbar(mesh, ax=ax, pad=0.12).set_label(axis_label("utilization_pct"))
+        lvoe_params = {**params, "Objective": "LVOE maximization (≡ LCOE minimization)"}
+        common.info(ax, fig, lvoe_params, mode="on")
+        ax.text(0.02, 0.02, cfg.WATERMARK_TEXT, transform=ax.transAxes,
+                ha="left", va="bottom", fontsize=12.0, color="#cccccc", alpha=0.9)
+        return fig, cfg.OUT_LOAD_PLANE / f"utilization_lvoe_{suffix}_masked.png"
+
+    def util_lvoe_masked_no_contours_fig():
+        fig, ax = render.new_figure(figsize=(9, 7))
+        mesh = draw_utilization_lvoe(ax, plane, mask_nobuild=True, contours=False)
+        fig.colorbar(mesh, ax=ax, pad=0.12).set_label(axis_label("utilization_pct"))
+        lvoe_params = {**params, "Objective": "LVOE maximization (≡ LCOE minimization)"}
+        common.info(ax, fig, lvoe_params, mode="on")
+        ax.text(0.02, 0.02, cfg.WATERMARK_TEXT, transform=ax.transAxes,
+                ha="left", va="bottom", fontsize=12.0, color="#cccccc", alpha=0.9)
+        return fig, cfg.OUT_LOAD_PLANE / f"utilization_lvoe_{suffix}_masked_nocontours.png"
+
+    def lvoe_fig():
+        fig, ax = render.new_figure(figsize=(9, 7))
+        mesh = draw_lvoe(ax, plane)
+        cbar = fig.colorbar(mesh, ax=ax, pad=0.12)
+        cbar.set_label("Levelized Value of Energy  ($/kWh)")
+        cbar.ax.yaxis.set_major_formatter(
+            mticker.FuncFormatter(lambda v, _: common._dollar_fmt(v))
+        )
+        common.info(ax, fig, params, mode="on")
+        ax.text(0.02, 0.02, cfg.WATERMARK_TEXT, transform=ax.transAxes,
+                ha="left", va="bottom", fontsize=12.0, color="#cccccc", alpha=0.9)
+        return fig, cfg.OUT_LOAD_PLANE / f"lvoe_{suffix}.png"
+
+    def lvoe_no_contours_fig():
+        fig, ax = render.new_figure(figsize=(9, 7))
+        mesh = draw_lvoe(ax, plane, contours=False)
+        cbar = fig.colorbar(mesh, ax=ax, pad=0.12)
+        cbar.set_label("Levelized Value of Energy  ($/kWh)")
+        cbar.ax.yaxis.set_major_formatter(
+            mticker.FuncFormatter(lambda v, _: common._dollar_fmt(v))
+        )
+        common.info(ax, fig, params, mode="on")
+        ax.text(0.02, 0.02, cfg.WATERMARK_TEXT, transform=ax.transAxes,
+                ha="left", va="bottom", fontsize=12.0, color="#cccccc", alpha=0.9)
+        return fig, cfg.OUT_LOAD_PLANE / f"lvoe_{suffix}_nocontours.png"
+
     return [
+        ("load_plane/profit_margin", profit_margin_fig),
+        ("load_plane/profit_margin_nocontours", profit_margin_no_contours_fig),
         ("load_plane/utilization", util_fig),
         ("load_plane/utilization_nocontours", util_no_contours_fig),
         ("load_plane/profit", profit_fig),
+        ("load_plane/profit_nocontours", profit_no_contours_fig),
+        ("load_plane/utilization_lcoe", util_lcoe_fig),
+        ("load_plane/utilization_lcoe_nocontours", util_lcoe_no_contours_fig),
+        ("load_plane/lvoe", lvoe_fig),
+        ("load_plane/lvoe_nocontours", lvoe_no_contours_fig),
+        ("load_plane/utilization_lvoe", util_lvoe_fig),
+        ("load_plane/utilization_lvoe_nocontours", util_lvoe_no_contours_fig),
+        ("load_plane/utilization_lvoe_masked", util_lvoe_masked_fig),
+        ("load_plane/utilization_lvoe_masked_nocontours", util_lvoe_masked_no_contours_fig),
     ]
+
+
+if __name__ == "__main__":
+    import time
+    from viz import render
+
+    t0 = time.time()
+    grid = derived.load_served_grid()
+    lplane = derived.load_plane(grid)
+    plan = figures(lplane, grid)
+    for name, build in plan:
+        fig, path = build()
+        render.save_fig(fig, path)
+        print(f"  wrote {path.relative_to(cfg.PROJECT_DIR)}")
+    print(f"\nwrote {len(plan)} charts in {time.time() - t0:.1f}s")

@@ -95,8 +95,8 @@ LOAD_COST_ANN = float(annualize_load(LOAD_CAPEX_PER_KW))   # $/(kW·yr), default
 # Marked as reference points on the load-plane chart.
 LOAD_CASES: dict[str, tuple[float, float, int]] = {
     "Terraform Electrolyzer": (0.0125,    50.0, 5),
-    "Colossus 1 Data Center":   (5.0,   28_000.0, 5),
     "NaOH Electrolyzer":      (0.16,     400.0, 5),
+    "Colossus 1 Data Center":   (5.0,   28_000.0, 5),
 }
 
 # --------------------------------------------------------------------------- #
@@ -109,7 +109,7 @@ KWH_BATTERY_GRID = np.round(np.arange(0.0, 50.0 + 1e-9, 0.05), 6)   # 0–50 kWh
 
 # NOTE CHRIS!!
 # I've precomputed 50x50 grid at 0.5 resolution and at 0.05 resolution.
-# They take 22.2 and 135.2 seconds respectively.
+# They take ~100 seconds and 190.7 seconds respectively.
 # Took 50 minutes for the 0.05 grid with 10-min data! On my Victus R5 7535HS Laptop.
 
 # --------------------------------------------------------------------------- #
@@ -131,8 +131,8 @@ LOAD_COST_ANN_SWEEP = np.logspace(-1, 4, 200)   # $0.1 – $10,000 /(kW·yr)
 
 # Chart D — load plane: income (y) × load capex (x), both log-scale.
 # Covers Terraform ($50/kW, $0.0125/kWh) through Colossus ($28 k/kW, $5/kWh).
-LOAD_CAPEX_RAW_SWEEP = np.logspace(0, 5, 100)       # $1 – $100,000 /kW raw capex
-LOAD_PLANE_INCOME_SWEEP = np.logspace(-3, 1, 100)   # $0.001 – $10 /kWh
+LOAD_CAPEX_RAW_SWEEP = np.logspace(0, 5, 500)       # $1 – $100,000 /kW raw capex
+LOAD_PLANE_INCOME_SWEEP = np.logspace(-3, 1, 500)   # $0.001 – $10 /kWh
 
 # Chart E — LCOE and utilization vs solar fraction.
 # Holds total hardware (kW solar + kWh battery) constant at each T value;
@@ -145,6 +145,8 @@ SOLAR_FRACTION_TOTAL_UNITS = [4.0, 8.0, 16.0, 24.0]  # kW+kWh total resource
 OUT_SOLAR_FRACTION = OUTPUT_ROOT / "solar_fraction"
 OUT_WEEKLY_TIMESERIES = OUTPUT_ROOT / "weekly_timeseries"
 OUT_DAILY_TIMESERIES  = OUTPUT_ROOT / "daily_timeseries"
+OUT_INCOME_PROFILES      = OUTPUT_ROOT / "income_profiles"
+OUT_LOAD_CAPEX_PROFILES  = OUTPUT_ROOT / "load_capex_profiles"
 
 # --------------------------------------------------------------------------- #
 # Time-series chart — one representative build to visualize dispatch.

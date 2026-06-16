@@ -11,13 +11,22 @@ independent variable. Solar and battery costs are held fixed (info box).
 
 from __future__ import annotations
 
+import sys
+from pathlib import Path
+
+if not __package__:  # running as a script — add project root to path
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 import numpy as np
 
 import config as cfg
 import derived
 from labels import axis_label
 
-from . import common
+try:
+    from . import common
+except ImportError:
+    import common  # type: ignore[no-redef]
 
 
 def _params(sweep: derived.IncomeSweep, grid) -> dict[str, str]:
@@ -66,3 +75,21 @@ def figures(sweep: derived.IncomeSweep, grid):
         return fig, cfg.OUT_UTIL_VS_INCOME / f"util_vs_income_{suffix}.png"
 
     return [("utilization_vs_income", fig_fn)]
+
+
+if __name__ == "__main__":
+    import time
+
+    import config as cfg
+    import derived
+    from viz import render
+
+    t0 = time.time()
+    grid = derived.load_served_grid()
+    isw = derived.income_sweep(grid)
+    plan = figures(isw, grid)
+    for name, build in plan:
+        fig, path = build()
+        render.save_fig(fig, path)
+        print(f"  wrote {path.relative_to(cfg.PROJECT_DIR)}")
+    print(f"\nwrote {len(plan)} charts in {time.time() - t0:.1f}s")
