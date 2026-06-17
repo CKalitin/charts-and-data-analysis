@@ -147,6 +147,8 @@ OUT_WEEKLY_TIMESERIES = OUTPUT_ROOT / "weekly_timeseries"
 OUT_DAILY_TIMESERIES  = OUTPUT_ROOT / "daily_timeseries"
 OUT_INCOME_PROFILES      = OUTPUT_ROOT / "income_profiles"
 OUT_LOAD_CAPEX_PROFILES  = OUTPUT_ROOT / "load_capex_profiles"
+OUT_UTIL_PLANE           = OUTPUT_ROOT / "util_plane"
+OUT_UTIL_LINES           = OUTPUT_ROOT / "util_lines"
 
 # --------------------------------------------------------------------------- #
 # Time-series chart — one representative build to visualize dispatch.

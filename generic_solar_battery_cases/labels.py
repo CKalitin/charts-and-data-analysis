@@ -10,7 +10,7 @@ from __future__ import annotations
 # name -> human-readable axis label (with units).
 _LABELS: dict[str, str] = {
     # Economic drivers (the independent variables of the analysis)
-    "income_per_kwh":   "Load income  ($/kWh delivered)",
+    "income_per_kwh":   "Load income  ($/kWh)",
     "solar_cost_ann":   "Solar cost  ($/kW·yr)",
     "batt_cost_ann":    "Battery cost  ($/kWh·yr)",
     "solar_capex":      "Solar capex  ($/kW)",

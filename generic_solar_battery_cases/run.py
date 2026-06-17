@@ -25,7 +25,9 @@ from charts import (build_plane, common, cost_plane, daily_timeseries as daily_t
                     load_capex_profiles as load_capex_profiles_chart,
                     load_plane as load_plane_chart, solar_fraction as solar_fraction_chart,
                     terraform_lcoe as terraform_lcoe_chart,
-                    timeseries, utilization_vs_income, utilization_vs_load_capex)
+                    timeseries, utilization_vs_income, utilization_vs_load_capex,
+                    util_plane as util_plane_chart,
+                    util_lines as util_lines_chart)
 from viz import render
 
 
@@ -128,6 +130,8 @@ def main() -> None:
         *load_capex_profiles_chart.figures(lplane, grid),
         *solar_fraction_chart.figures(sf_sweeps, grid),
         *terraform_lcoe_chart.figures(data, grid),
+        *util_plane_chart.figures(grid, grid),
+        *util_lines_chart.figures(grid),
     ]
 
     if args.count:
