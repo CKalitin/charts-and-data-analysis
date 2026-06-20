@@ -45,7 +45,7 @@ def draw(ax, fig, gcl, bon) -> None:
         xlabel=cfg.axis_label("hour"), ylabel=cfg.axis_label("power_mw"),
         title=f"Storage dam peaks, run-of-river runs flat — annual avg ({cfg.USACE_YEAR})",
     )
-    ax.set_xticks(range(0, 24, 3))
+    common.set_hour_ticks(ax)
     ax.set_xlim(0, 23)
     ax.set_ylim(bottom=0)
 
@@ -59,26 +59,26 @@ def draw(ax, fig, gcl, bon) -> None:
                 xytext=(0, -14), textcoords="offset points", ha="center",
                 fontsize=8, color=GCL_COLOR)
 
+    common.add_source(ax, cfg.SOURCE_USACE)
+    common.add_watermark(ax)
     common.add_box(ax, fig, [
         f"Grand Coulee swing: {g_ratio:.2f}x",
         f"Bonneville swing:  {b_ratio:.2f}x",
         f"Year: {cfg.USACE_YEAR}",
     ])
-    common.add_source(ax, cfg.SOURCE_USACE)
-    common.add_watermark(ax)
 
 
 def figures(gcl, bon):
     def build():
         fig, ax = render.new_figure()
         draw(ax, fig, gcl, bon)
-        return fig, cfg.OUTPUT_DIR / "storage_vs_runofriver_diurnal_2023.png"
+        return fig, cfg.GCL.output_dir / f"storage_vs_runofriver_diurnal_{cfg.USACE_YEAR}.png"
     return [("storage_vs_runofriver", build)]
 
 
 if __name__ == "__main__":
-    gcl = derived.load_dam(cfg.GCL_CSV)
-    bon = derived.load_dam(cfg.BON_CSV)
-    for name, build in figures(gcl, bon):
+    gcl = derived.load_dam(cfg.GCL.csv_path)
+    bon = derived.load_dam(cfg.BON.csv_path)
+    for _, build in figures(gcl, bon):
         fig, path = build()
         print("wrote", render.save_fig(fig, path))

@@ -55,24 +55,25 @@ def _gen_cols() -> list[str]:
 
 # --- Panel draw helpers (draw onto a provided Axes) -----------------------------------
 def _draw_stacked_area(ax, day_df: pd.DataFrame, day_label: str) -> None:
-    stacks, labels, colors = [], [], []
+    hours = np.arange(24)
+    bottom = np.zeros(24)
     for col, label, color in cfg.GEN_TYPES:
-        hours, vals = _resample_hourly(day_df, col)
-        stacks.append(np.nan_to_num(vals, nan=0.0))
-        labels.append(label)
-        colors.append(color)
-    ax.stackplot(hours, *stacks, labels=labels, colors=colors, alpha=0.85)
-    ax.set_xlim(0, 23)
+        _, vals = _resample_hourly(day_df, col)
+        vals = np.nan_to_num(vals, nan=0.0)
+        ax.bar(hours, vals, bottom=bottom, width=1.0, label=label,
+               color=color, alpha=0.85, linewidth=0)
+        bottom += vals
+    ax.set_xlim(-0.5, 23.5)
     ax.set_ylim(bottom=0)
-    ax.set_xlabel("Hour of day")
+    common.set_hour_ticks(ax)
+    ax.set_xlabel("Hour of day (Pacific)")
     ax.set_ylabel("Generation (MW)")
     ax.set_title(f"{day_label} — generation by type", fontsize=9)
     ax.legend(loc="upper left", fontsize=7)
 
 
-def _draw_demand(ax, day_df: pd.DataFrame, day_label: str) -> None:
-    color = cfg.QUARTER_DAY_COLOR.get(day_label, "#333333")
-    # Demand = load + net interchange
+def _draw_demand(ax, day_df: pd.DataFrame, day_label: str, color: str | None = None) -> None:
+    color = color or cfg.QUARTER_DAY_COLOR.get(day_label, "#333333")
     day2 = day_df.copy()
     day2["demand_mw"] = derived.demand(day_df).values
     hours, demand_vals = _resample_hourly(day2, "demand_mw")
@@ -80,9 +81,10 @@ def _draw_demand(ax, day_df: pd.DataFrame, day_label: str) -> None:
     ax.plot(hours, demand_vals, color=color, linewidth=2.2, label="Load + net exports")
     ax.plot(hours_l, load_vals, color="#aaaaaa", linewidth=1.2, linestyle="--",
             label="Load only")
-    ax.set_xlim(0, 23)
+    ax.set_xlim(-0.5, 23.5)
     ax.set_ylim(bottom=0)
-    ax.set_xlabel("Hour of day")
+    common.set_hour_ticks(ax)
+    ax.set_xlabel("Hour of day (Pacific)")
     ax.set_ylabel("MW")
     ax.set_title(f"{day_label} — load + net exports", fontsize=9)
     ax.legend(fontsize=7, loc="upper left")
@@ -113,7 +115,7 @@ def figures_quarterly_panels(bpa: pd.DataFrame):
         if len(all_axes) >= 2:
             common.add_source(all_axes[-2], cfg.SOURCE_BPA)
             common.add_watermark(all_axes[-1])
-        path = cfg.OUTPUT_DIR / "bpa_gen_by_type_and_load_quarterly_snapshot_2024.png"
+        path = cfg.BPA_OUTPUT_DIR / "bpa_gen_by_type_and_load_quarterly_snapshot_2024.png"
         return fig, path
 
     return [("bpa_quarterly_panels_combined", build)]
@@ -139,7 +141,7 @@ def figures_quarterly_individual(bpa: pd.DataFrame):
             )
             common.add_source(ax_l, cfg.SOURCE_BPA)
             common.add_watermark(ax_r)
-            path = cfg.OUTPUT_DIR / f"bpa_gen_and_demand_{sl}_2024.png"
+            path = cfg.BPA_OUTPUT_DIR / f"bpa_gen_and_demand_{sl}_2024.png"
             return fig, path
 
         plans.append((f"bpa_individual_{slug}", build))
@@ -176,9 +178,10 @@ def figures_overlay(bpa: pd.DataFrame):
             (ax_gen, "Net generation (MW)"),
             (ax_dem, "Demand — load + net exports (MW)"),
         ]:
-            ax.set_xlim(0, 23)
+            ax.set_xlim(-0.5, 23.5)
             ax.set_ylim(bottom=0)
-            ax.set_xlabel("Hour of day")
+            common.set_hour_ticks(ax)
+            ax.set_xlabel("Hour of day (Pacific)")
             ax.set_ylabel("MW")
             ax.set_title(title, fontsize=10)
             ax.legend(fontsize=9, loc="best")
@@ -189,19 +192,50 @@ def figures_overlay(bpa: pd.DataFrame):
         )
         common.add_source(ax_gen, cfg.SOURCE_BPA)
         common.add_watermark(ax_dem)
-        path = cfg.OUTPUT_DIR / "bpa_net_gen_vs_demand_quarterly_overlay_2024.png"
+        path = cfg.BPA_OUTPUT_DIR / "bpa_net_gen_vs_demand_quarterly_overlay_2024.png"
         return fig, path
 
     return [("bpa_overlay", build)]
 
 
+# --- BPA day profile: individual day snapshots (configured in config.py) --------------
+def figures_day_profile(bpa: pd.DataFrame):
+    """One 1×2 chart per day in cfg.BPA_DAY_PROFILE_DAYS: gen by type | demand."""
+    out_dir = cfg.BPA_OUTPUT_DIR / "day_profiles"
+    plans = []
+    for day_str in cfg.BPA_DAY_PROFILE_DAYS:
+        def build(ds=day_str):
+            day_df = derived.bpa_day(bpa, ds)
+            if day_df.empty:
+                print(f"  WARNING: no BPA data for {ds}")
+                return None, None
+            fig = Figure(figsize=(14, 4.5), dpi=render.DPI)
+            FigureCanvasAgg(fig)
+            fig.set_constrained_layout(True)
+            ax_l = fig.add_subplot(1, 2, 1)
+            ax_r = fig.add_subplot(1, 2, 2)
+            _draw_stacked_area(ax_l, day_df, ds)
+            _draw_demand(ax_r, day_df, ds, color="#1f77b4")
+            fig.suptitle(f"BPA grid — {ds}", fontsize=11)
+            common.add_source(ax_l, cfg.SOURCE_BPA)
+            common.add_watermark(ax_r)
+            slug = ds.replace("-", "")
+            return fig, out_dir / f"bpa_day_profile_{slug}.png"
+        plans.append((f"bpa_day_profile_{day_str}", build))
+    return plans
+
+
 if __name__ == "__main__":
     bpa = derived.load_bpa()
+    (cfg.BPA_OUTPUT_DIR / "day_profiles").mkdir(parents=True, exist_ok=True)
     all_plans = [
         *figures_quarterly_panels(bpa),
         *figures_quarterly_individual(bpa),
         *figures_overlay(bpa),
+        *figures_day_profile(bpa),
     ]
     for name, build in all_plans:
-        fig, path = build()
-        print("wrote", render.save_fig(fig, path))
+        result = build()
+        if result[0] is not None:
+            fig, path = result
+            print("wrote", render.save_fig(fig, path))
