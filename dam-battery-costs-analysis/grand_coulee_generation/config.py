@@ -26,7 +26,7 @@ SOURCE_BPA = "Source: Bonneville Power Administration, 2024"
 
 
 # --- Dam registry — add new dams here, nowhere else ------------------------------------
-_LEGACY_CODES: frozenset[str] = frozenset({"gcl", "bon"})
+_LEGACY_CODES: frozenset[str] = frozenset()
 
 
 @dataclass
