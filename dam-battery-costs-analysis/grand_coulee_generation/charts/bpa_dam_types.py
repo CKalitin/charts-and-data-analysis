@@ -698,6 +698,49 @@ def figures_load_factor_bar(dfs: dict):
     return [("bpa_dams_load_factor_bar", build)]
 
 
+def figures_cf_and_load_factor(dfs: dict):
+    """Capacity factor (top) and load factor (bottom) stacked on one image."""
+    def build():
+        cf_df = (_cf_df(dfs)
+                 .sort_values("capacity_factor_pct", ascending=False)
+                 .reset_index(drop=True))
+        lf_df = (_cf_df(dfs)
+                 .sort_values("load_factor_pct", ascending=False)
+                 .reset_index(drop=True))
+
+        fig = Figure(figsize=(14, 10), dpi=render.DPI)
+        FigureCanvasAgg(fig)
+        fig.set_constrained_layout(True)
+        ax_cf, ax_lf = fig.subplots(2, 1)
+
+        for ax, df, col, title, ylabel in [
+            (ax_cf, cf_df, "capacity_factor_pct",
+             "BPA federal dams — annual capacity factor (2023)",
+             "Capacity factor (%)"),
+            (ax_lf, lf_df, "load_factor_pct",
+             "BPA federal dams — load factor: avg / peak output (2023)",
+             "Load factor (%)"),
+        ]:
+            colors = [STORAGE_COLOR if t == "storage" else ROR_COLOR for t in df["dam_type"]]
+            x = np.arange(len(df))
+            ax.bar(x, df[col], color=colors, width=0.75, alpha=0.88, linewidth=0)
+            ax.set_xticks(x)
+            ax.set_xticklabels(df["name"], rotation=45, ha="right", fontsize=8)
+            ax.set_ylabel(ylabel)
+            ax.set_title(title)
+            ax.set_ylim(0, 100)
+            ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda v, _: f"{v:.0f}%"))
+            ax.legend(handles=[
+                Patch(facecolor=STORAGE_COLOR, alpha=0.88, label="Storage"),
+                Patch(facecolor=ROR_COLOR,     alpha=0.88, label="Run-of-River"),
+            ], loc="upper right", fontsize=9)
+
+        common.add_source(ax_lf, cfg.SOURCE_USACE)
+        common.add_watermark(ax_lf)
+        return fig, cfg.BPA_OUTPUT_DIR / "bpa_dams_cf_and_load_factor.png"
+    return [("bpa_dams_cf_and_load_factor", build)]
+
+
 def figures_scatter_flow_vs_active_storage(dfs: dict):
     """Log-log scatter: avg daily flow vs *active* reservoir storage (usable storage only).
 

@@ -51,7 +51,13 @@ def main() -> None:
         print(f"  Done in {time.time() - t1:.1f}s  "
               f"| SLF range {results['slf'].min():.2%}–{results['slf'].max():.2%}")
 
-        op = [(2100, 2000), (1000, 0)] if dam.code == "chj" else None
+        op = [
+            # (nameplate MW, battery MWh, x-offset, y-offset)
+            (2300, 0,    17,   13),   # nameplate/no-battery: right, same height
+            (2100, 1000, 40,  5),   # 2100 MW / 1 GWh: right and above
+            (1800, 1000, 50,  0),   # 1800 MW / 1 GWh: far right (avoids 2100 label)
+            (1000, 0,    20, -50),   # 1 GW / no-battery: right and below
+        ] if dam.code == "chj" else None
         plan += figures_heatmaps(results, dam, operating_points=op)
         extra = [(1000, 0), (2100, 2000)] if dam.code == "chj" else None
         plan += figures_dispatch_profiles(df, dam, extra_abs_combos=extra)

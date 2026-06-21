@@ -7,7 +7,7 @@ Sweep axes:
 from __future__ import annotations
 
 # Dams included in the model sweep (USACE codes)
-MODEL_DAMS: list[str] = ["gcl", "chj", "jda", "dwr"]
+MODEL_DAMS: list[str] = ["chj", "gcl", "jda", "dwr"]
 
 # ── Capital costs ──────────────────────────────────────────────────────────────
 DAM_TURBINE_COST_PER_MW:  float = 3_000_000   # $/MW installed
@@ -29,7 +29,7 @@ N_GRID: int = 100   # points on each axis → N_GRID² simulations per dam
 
 # ── Battery axis max ─────────────────────────────────────────────────────────────
 # Max battery size = nameplate_mw × MWH_PER_MW
-MWH_PER_MW: int = 5
+MWH_PER_MW: int = 3
 
 # ── Monthly breakdown combinations ──────────────────────────────────────────────
 # (mw_fraction, mwh_fraction)
