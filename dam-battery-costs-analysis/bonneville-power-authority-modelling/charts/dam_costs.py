@@ -12,6 +12,7 @@ import pandas as pd
 import config as cfg
 from charts import common
 from viz import render
+from viz.label_overlay import LabelPoint, place_labels_2d
 
 SOURCE = "Source: Wikipedia / public records; CPI-adjusted to 2025 USD"
 
@@ -124,7 +125,72 @@ def figure_cost_per_mw() -> tuple:
     return fig, out
 
 
+def _short(name: str) -> str:
+    """Short display name with any embedded newline flattened to a space."""
+    return _SHORT.get(name, name).replace("\n", " ")
+
+
+def figure_cost_per_mw_vs_capacity() -> tuple:
+    """Scatter: cost per MW (2025 USD, log) vs installed capacity (MW, log).
+    Each point labelled 'Name, year' with automatic de-collision."""
+    data_path = cfg.PROJECT_DIR / "data" / "dam_costs.csv"
+    df = pd.read_csv(data_path)
+    df = df[df["has_cost_data"].astype(str).str.lower() == "true"].copy()
+    df = df.sort_values("capacity_mw")
+
+    fig, ax = render.new_figure(figsize=(15, 8))
+
+    for region in _REGION_ORDER:
+        sub = df[df["region_group"] == region]
+        if sub.empty:
+            continue
+        ax.scatter(sub["capacity_mw"], sub["usd_per_mw_2025"],
+                   color=_REGION_COLORS[region], marker="o", s=60,
+                   zorder=4, label=region)
+
+    ax.set_xscale("log")
+    ax.set_yscale("log")
+    ax.xaxis.set_major_formatter(mticker.FuncFormatter(lambda v, _: f"{v:,.0f}"))
+    ax.yaxis.set_major_formatter(
+        mticker.FuncFormatter(
+            lambda v, _: f"${v/1e6:.1f}M" if v >= 1e6
+                         else f"${v/1e3:.0f}k" if v >= 1e3
+                         else f"${v:.0f}"
+        )
+    )
+    ax.set_xlabel("Installed capacity (MW)")
+    ax.set_ylabel("Cost per MW (2025 USD)")
+    ax.set_title("Hydroelectric dam cost per MW vs installed capacity — 2025 USD")
+    ax.legend(fontsize=8, loc="upper right")
+    ax.grid(True, which="major", alpha=0.3, linewidth=0.5)
+    ax.grid(True, which="minor", alpha=0.15, linewidth=0.4)
+
+    common.add_source(ax, SOURCE)
+    common.add_watermark(ax)
+
+    # Labels: 'Name, year', coloured by region, auto-de-collided with leader lines.
+    points = [
+        LabelPoint(x=row["capacity_mw"], y=row["usd_per_mw_2025"],
+                   text=f"{_short(row['name'])}, {int(row['year_complete'])}",
+                   text_color=_REGION_COLORS.get(row["region_group"], "grey"))
+        for _, row in df.iterrows()
+    ]
+    # High-capacity dams sit near the right edge → start their labels to the left.
+    initial_offsets = {
+        "Three":    (-0.07, 0.0),   # Three Gorges
+        "Baihetan": (-0.06, 0.0),
+        "Itaipu":   (-0.05, 0.0),
+        "Xiluodu":  (-0.06, 0.0),
+        "Wudongde": (-0.06, 0.0),
+    }
+    place_labels_2d(fig, ax, points, fontsize=6.5, initial_offsets=initial_offsets)
+
+    out = cfg.OUTPUT_DIR / "dam_cost_per_mw_vs_capacity.png"
+    return fig, out
+
+
 if __name__ == "__main__":
-    fig, path = figure_cost_per_mw()
-    render.save_fig(fig, path)
-    print(f"wrote {path}")
+    for build in (figure_cost_per_mw, figure_cost_per_mw_vs_capacity):
+        fig, path = build()
+        render.save_fig(fig, path)
+        print(f"wrote {path}")
