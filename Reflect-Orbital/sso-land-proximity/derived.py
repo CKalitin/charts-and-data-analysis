@@ -128,9 +128,13 @@ def load_land_assets() -> LandAssets:
     def _extract(geom):
         if geom.geom_type == "Polygon":
             pts.extend(geom.exterior.coords)
+            for interior in geom.interiors:   # holes = inland seas / large lakes
+                pts.extend(interior.coords)
         elif geom.geom_type == "MultiPolygon":
             for poly in geom.geoms:
                 pts.extend(poly.exterior.coords)
+                for interior in poly.interiors:
+                    pts.extend(interior.coords)
     _extract(land_geom)
 
     land_arr = np.asarray(pts)                       # (M, 2): lon, lat

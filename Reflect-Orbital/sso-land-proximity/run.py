@@ -19,7 +19,7 @@ from charts.solar_proximity import figures as solar_figures
 from charts.transmission_proximity import figures as transmission_figures
 
 # The transmission chart is produced only for this one case.
-_TRANSMISSION_CASE = (100.0, frozenset({"China", "Russia"}))
+_TRANSMISSION_CASE = (100.0, frozenset({"China"}))
 from viz import render
 
 

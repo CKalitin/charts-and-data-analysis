@@ -32,7 +32,7 @@ SOLAR_STATUS      = {"operating"}
 SOLAR_CASES: list[tuple[float, frozenset]] = [
     (0.0,   frozenset()),
     (100.0, frozenset()),
-    (100.0, frozenset({"China", "Russia"})),
+    (100.0, frozenset({"China"})),
 ]
 
 WATERMARK = "Christopher Kalitin 2026"
@@ -40,7 +40,7 @@ WATERMARK = "Christopher Kalitin 2026"
 # --- Orbital parameters -----------------------------------------------------------------
 ALT_KM      = 550        # satellite altitude
 INC_DEG     = 97.6       # SSO inclination (~97.6 deg for a 550 km sun-synchronous orbit)
-N_ORBITS    = 16         # full sidereal day ~= 15.04 orbits; 16 covers one day + margin
+N_ORBITS    = 15         # full sidereal day ~= 15.04 orbits
 N_PER_ORBIT = 3000       # ground-track time steps per orbit (resolution vs speed)
 
 # --- Analysis threshold -----------------------------------------------------------------
