@@ -25,6 +25,11 @@ values = [row[1] for row in OPEX]
 colors = [row[2] for row in OPEX]
 
 # ─── Figure ───────────────────────────────────────────────────────────────────
+# ─── OPEX totals (from solar/solar_lcoe.py) ──────────────────────────────────
+OPEX_UTILITY_PER_KW  = 18.25   # $/kW/yr — standard utility rate
+SOLAR_RESOURCE       = 2000    # kWh/kW/yr specific yield
+opex_per_kwh         = OPEX_UTILITY_PER_KW / SOLAR_RESOURCE   # $/kWh
+
 fig, ax = plt.subplots(figsize=(7.5, 7.0), dpi=150)
 
 wedges, _ = ax.pie(
@@ -32,8 +37,16 @@ wedges, _ = ax.pie(
     colors=colors,
     startangle=90,
     counterclock=False,
-    wedgeprops=dict(edgecolor='white', linewidth=1.5),
+    wedgeprops=dict(width=0.52, edgecolor='white', linewidth=1.5),  # donut
 )
+
+# ─── Centre text ──────────────────────────────────────────────────────────────
+ax.text(0,  0.12, 'Annual opex', ha='center', va='center',
+        fontsize=10, color='#222222', fontweight='bold')
+ax.text(0, 0, f'${OPEX_UTILITY_PER_KW:.2f} / kW / yr', ha='center', va='center',
+        fontsize=10, color='#222222')
+ax.text(0, -0.1, f'${opex_per_kwh:.4f} / kWh', ha='center', va='center',
+        fontsize=10, color='#222222')
 
 # ─── Slice labels (no legend) ─────────────────────────────────────────────────
 # For tiny slices (<4%) use a leader line and push further out so they
@@ -43,7 +56,7 @@ for wedge, label, val in zip(wedges, labels, values):
     cos_a   = np.cos(np.radians(angle))
     sin_a   = np.sin(np.radians(angle))
     is_tiny = val < 4.0
-    r_label = 1.45 if is_tiny else 1.20
+    r_label = 1.48 if is_tiny else 1.22
     ha      = 'left' if cos_a >= 0 else 'right'
     txt     = f'{label}\n{val:.1f}%'
     kw      = dict(ha=ha, va='center', fontsize=8.5, color='#333333')
@@ -59,9 +72,9 @@ for wedge, label, val in zip(wedges, labels, values):
     else:
         ax.text(r_label * cos_a, r_label * sin_a, txt, **kw)
 
-# Tight limits: labels reach at most ~±1.3 vertically and ~±1.5 horizontally
-ax.set_xlim(-1.58, 1.58)
-ax.set_ylim(-1.38, 1.38)
+# Tight limits: labels reach at most ~±1.35 vertically and ~±1.55 horizontally
+ax.set_xlim(-1.5, 1.5)
+ax.set_ylim(-1.3, 1.3)
 
 # ─── Title & footnotes ────────────────────────────────────────────────────────
 ax.set_title('Solar Array OPEX Breakdown', fontsize=12, fontweight='bold', pad=6)

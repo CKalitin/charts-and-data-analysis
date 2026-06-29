@@ -85,6 +85,14 @@ T_OVERCAST = 0.2    # one-way transmission through overcast skies
 
 ERA5_NC    = DATA_DIR / "era5_tcc.nc"   # ERA5 total cloud cover (download once)
 
+# --- 3D SSO visualization ------------------------------------------------------------
+# Angle between the orbit-plane normal and the Sun direction (the dawn-dusk offset).
+# At 0 the orbit lies exactly in the terminator plane: every point sits on the day/night
+# line, the Sun is perpendicular to the nadir everywhere, so the satellite can reflect
+# sunlight straight down at exactly 90 deg from ANY latitude (not just the polar nodes a
+# nonzero offset would force). This is the idealized dawn-dusk geometry the figure shows.
+SUN_ORBIT_OFFSET_DEG = 0.0
+
 # Grid cell size for aggregating solar arrays before plotting.
 # At 0.5 deg, one dot per cell; matches ERA5 native resolution.
 SOLAR_GRID_CELL_DEG = 0.5
