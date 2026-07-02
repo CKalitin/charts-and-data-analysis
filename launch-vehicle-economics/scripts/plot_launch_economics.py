@@ -74,8 +74,9 @@ REGION_COLORS = {
     "India":          "#ff7f0e",
     "China":          "#9467bd",
     "Europe":         "#17becf",
+    "Canada":         "#8c564b",
 }
-REGION_ORDER = ["USA", "Russia/USSR", "Japan", "India", "China", "Europe"]
+REGION_ORDER = ["USA", "Russia/USSR", "Japan", "India", "China", "Europe", "Canada"]
 
 REGION_OF_COUNTRY = {
     "USA": "USA",
@@ -86,6 +87,7 @@ REGION_OF_COUNTRY = {
     "India": "India",
     "China": "China",
     "Germany": "Europe", "UK": "Europe", "Spain": "Europe", "France": "Europe", "Italy": "Europe",
+    "Canada": "Canada",
 }
 
 # Marker shape encodes which cost CONCEPT the opex figure represents -- picked in this
@@ -127,7 +129,7 @@ _LABEL_OFFSETS = {
     "Saturn V":                          (-8, 6, "right", "bottom"),
     "Titan IV":                          (6, 16, "left", "bottom"),
     "Titan II GLV":                      (-8, -8, "right", "top"),
-    "Original Atlas":                    (6, 6, "left", "bottom"),
+    "Atlas D":                           (6, 6, "left", "bottom"),
     "Atlas V":                           (6, -8, "left", "top"),
     "Delta IV Heavy":                    (-8, -14, "right", "top"),
     "Neutron (predicted)":               (10, -14, "left", "top"),
@@ -164,7 +166,7 @@ _LABEL_OFFSETS = {
 _SHORT = {
     "Starship (expendable, pre-IFT-1 scope)": "Starship (expendable)",
     "Titan II GLV (Gemini Launch Vehicle)": "Titan II GLV",
-    "Original Atlas (SM-65 / Atlas D, Mercury-Atlas era)": "Original Atlas",
+    "Atlas D (SM-65D Atlas / Atlas LV-3B)": "Atlas D",
     "Delta IV (Medium & Heavy)": "Delta IV Heavy",
     "Neutron (Rocket Lab, PRE-FIRST-FLIGHT / predicted)": "Neutron (predicted)",
     "New Glenn": "New Glenn",

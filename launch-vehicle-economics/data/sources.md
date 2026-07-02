@@ -250,7 +250,14 @@ config rather than the specifically man-rated GLV variant; caution flagged.
 
 ---
 
-## Original Atlas (SM-65 / Atlas D, Mercury-Atlas era)
+## Atlas D (SM-65D Atlas / Atlas LV-3B)
+
+Real designation, since "Original Atlas" was a placeholder label: the missile family is
+SM-65 Atlas; the D-model (redesignated CGM-16D in 1962) is "Atlas D"; the specific orbital
+configuration flown for Mercury (with the Mercury capsule replacing the reentry vehicle) was
+called **Atlas LV-3B**. The capex figure below covers the WHOLE SM-65 program (all A–F
+variants), while the opex/payload figures are specific to the D-model/LV-3B configuration —
+a real mismatch in scope, flagged here and in the CSV notes, not something the rename fixes.
 
 **Capex.** Full Atlas ICBM crash-program cost: ~$8B (1959$) — missile R&D, production of
 ~350 missiles, and construction of 129 launch complexes; ~$2B (roughly a quarter) went to

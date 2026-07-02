@@ -3,7 +3,7 @@
 A cross-program scatter analysis of launch vehicle economics: capital cost (development/
 program capex), operating cost (cost per launch and cost per kg to LEO), and payload
 capacity, plotted pairwise against each other. The underlying dataset
-(`data/launch_vehicles.csv`) records 54 vehicles from the 1957 Atlas ICBM through the current
+(`data/launch_vehicles.csv`) records 55 vehicles from the 1957 Atlas ICBM through the current
 global wave of new-space launch startups, 45 of which have flown at least once. **The charts
 themselves are stricter: only vehicles with real values on BOTH of a given chart's two axes
 are plotted** (21–42 vehicles per chart, depending which two metrics) — see "Why two capex
@@ -97,7 +97,7 @@ so treat the resulting positions as roughly comparable, not as a precise "real c
 
 **Established/historical (22):** Falcon 9 v1.0, Falcon 9 (reusable, Block 5), Falcon Heavy,
 Starship (expendable, scoped to IFT-1), Antares, Space Shuttle, SLS, Saturn V, Titan IV,
-Titan II GLV (Gemini), Original Atlas (SM-65/Atlas D), Atlas V, Delta IV (Medium & Heavy),
+Titan II GLV (Gemini), Atlas D (SM-65D Atlas / Atlas LV-3B), Atlas V, Delta IV (Medium & Heavy),
 Neutron (Rocket Lab, pre-first-flight predictions), New Glenn, Soyuz, Proton, H-II/H-IIA, H3,
 PSLV, GSLV Mk II, and — as a bonus, since it's far better documented than plain GSLV — GSLV
 Mk III / LVM3.
@@ -124,6 +124,15 @@ Most are pre-first-flight or have only flown sub-scale demonstrators — their c
 are company funding-raised totals (a looser proxy than a disclosed R&D budget) and their
 opex figures, where they exist at all, are unproven target prices. See `data/sources.md` for
 full per-vehicle caveats.
+
+**Also added on request (1):** Tundra (NordSpace, Canada) — a pre-first-flight small launcher
+targeting 2028 IOC, in the same "predicted, not yet real" category as the startups above.
+Capex is a CA$8.33M Canadian government grant specifically for Tundra (NordSpace separately
+holds a much larger CA$715M Canadian Space Agency award, but that's for broader propulsion-
+manufacturing capability, not Tundra-specific R&D, and isn't included here); opex is
+back-calculated from the company's stated ~$10,000/kg LEO cost target, not a disclosed flat
+price. Canada is its own region/color on the charts (previously grouped countries only
+covered USA, Russia/USSR, Japan, India, China, and Europe).
 
 ## A note on data quality (read this before trusting any single point)
 
