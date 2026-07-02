@@ -1,16 +1,17 @@
 # Launch vehicle economics: capex vs. opex
 
 A cross-program scatter analysis of launch vehicle capital cost (development/program capex)
-against operating cost (cost per launch and cost per kg to LEO), covering 54 vehicles from
-the 1957 Atlas ICBM through the current global wave of new-space launch startups. **45 of the
-54 have flown at least once and are shown with solid/filled markers** — including decades of
-real Arianespace, CGWIC/Long March, Sea Launch, and NSSL/ESA contract pricing, plus Rocket
-Lab's SEC-disclosed unit economics for Electron. Only **9 have never flown at all** (Neutron,
-Terran R, Nova, Eclipse/MLV, RFA ONE, Miura 5, Orbex Prime, MaiaSpace, Tianlong-3) and are
-shown with hollow markers, explicitly flagged as pre-flight predictions. See "A note on data
-quality" below for the more important distinction: flown vs. unflown is not the same as
-real-cost vs. estimated-cost — several flown vehicles still only have a funding-raised proxy
-for capex rather than a disclosed R&D budget.
+against operating cost (cost per launch and cost per kg to LEO). The underlying dataset
+(`data/launch_vehicles.csv`) records 54 vehicles from the 1957 Atlas ICBM through the current
+global wave of new-space launch startups, 45 of which have flown at least once. **The charts
+themselves are stricter: only vehicles with BOTH a real capex figure and a real opex figure
+for that chart's specific basis are plotted** (21–30 vehicles per chart) — see "Why two capex
+charts and two opex bases" below for why that cuts the count so much, and "Data gaps" for
+exactly which vehicles that excludes and why. Real, flight-proven pricing dominates what
+remains: decades of Arianespace, CGWIC/Long March, Sea Launch, and NSSL/ESA contract history,
+plus Rocket Lab's SEC-disclosed unit economics for Electron. A handful of pre-flight
+predictions (Neutron, hollow markers) are still shown, clearly flagged, where they have both
+coordinates.
 
 ## Why two capex charts and two opex bases
 
@@ -26,17 +27,20 @@ distinguish them, in separate CSV columns, and plotted as **separate charts**:
 - `results/capex_program_vs_opex_per_kg.png`
 - `results/capex_first_launch_vs_opex_per_kg.png`
 
-**Every vehicle in the dataset appears on every chart it has any data for.** A vehicle is
-never dropped just because one of its two coordinates is undocumented — e.g. Soyuz and
-Proton have well-documented commercial launch prices but no public capex figure under either
-basis (Soviet-era ruble accounting under a non-convertible currency makes any dollar figure
-for their original development cost methodologically unreliable). Instead of silently
-omitting them, a vehicle missing one coordinate is placed in a shaded, clearly-labeled "not
-publicly disclosed" lane along that axis, at its real value on the other axis, separated from
-the real log-scale data by a dashed boundary line. A vehicle is only absent from a chart if
-**both** of its coordinates for that specific chart are undocumented — the script prints
-exactly which vehicles (if any) that applies to, chart by chart, so nothing goes missing
-silently. See "Data gaps" below.
+**A vehicle is only plotted on a chart if it has BOTH a real capex value (for that chart's
+basis) and a real opex value.** Earlier drafts of this analysis placed vehicles missing one
+coordinate into a shaded "not disclosed" sidebar so nothing was ever dropped — with 54
+vehicles that added enough visual clutter (half the canvas given over to non-coordinate
+placeholder positions) that it undermined the point of a scatter plot, which is to show a
+trend in genuine paired data. Each chart now only shows vehicles with a real, comparable
+(x, y) pair, so every point is a genuine data pair, not a partial record padded to a
+placeholder position. This means: (a) the four charts have different, smaller vehicle counts
+(21–30 vehicles per chart, down from all 54), and (b) some vehicles with real, well-sourced
+data on ONE axis — e.g. Soyuz and Proton's real commercial launch prices, which have no
+public capex figure under either basis — don't appear on any of the four charts at all. That
+data isn't lost: it's still fully recorded in `data/launch_vehicles.csv` and cited in
+`data/sources.md`, just not plotted. The script prints exactly which vehicles were excluded
+from each chart, and why, every time it runs. See "Data gaps" below for the full list.
 
 The opex side has the same apples/oranges problem: a **marginal/incremental cost** (what it
 actually costs the operator to fly one more mission), a **fully-loaded average cost**
@@ -129,49 +133,39 @@ Flown-vs-unflown (the marker fill) is a coarse proxy; the more important distinc
   money raised is not the same as money spent on R&D for one specific vehicle, especially for
   multi-program companies. These are flagged in both the CSV `notes` column and `sources.md`.
 
-The `opex_used_basis` marker shape (circle/square/triangle/diamond) tells you the *economic
-concept* (marginal cost vs. fully-loaded vs. price vs. no figure at all) but does NOT by
-itself tell you the *evidentiary strength* above — check `sources.md` for that per vehicle.
+The `opex_used_basis` marker shape (circle/square/triangle) tells you the *economic concept*
+(marginal cost vs. fully-loaded vs. price) but does NOT by itself tell you the *evidentiary
+strength* above — check `sources.md` for that per vehicle.
 
-## Data gaps (recorded and shown, never guessed or dropped)
+## Data gaps (recorded in the CSV, but excluded from the charts)
 
-Several vehicles have **no public total-program capex figure** at all (shown in the "capex
-not publicly disclosed" lane on both capex-program charts, at their real $/launch or $/kg):
-Soyuz, Proton, H3, PSLV, GSLV Mk II. For Soyuz and Proton this is a structural gap —
-Soviet-era ruble accounting under a non-convertible currency makes any dollar figure for
-their original 1950s–60s R&D methodologically suspect, so none is reported. For PSLV and
-GSLV Mk II, extensive searching (including ISRO's own site and Lok Sabha replies) turned up
-only production/operations-batch budgets, not original R&D capex — those budget figures are
-recorded in `sources.md` but deliberately kept out of the capex columns since they aren't the
-same quantity.
+A large fraction of the dataset never appears in any of the four charts, because a real
+capex figure and a real opex figure for the SAME vehicle rarely both exist. This is not a
+plotting bug — it's the honest shape of public launch-cost disclosure. The most notable
+exclusions:
 
-**Cost-through-first-launch** is even sparser (most historical programs' public accounting
-only reports a whole-program total, not a first-launch cutoff): missing for Falcon 9 v1.0,
-Starship, Saturn V, Titan IV, Original Atlas, Atlas V, Delta IV, New Glenn, plus the four
-above — all likewise shown in the "capex not publicly disclosed" lane rather than omitted.
+- **Soyuz, Proton** — real, well-documented commercial launch prices (Glavkosmos/ILS), but
+  no public capex figure under either basis. Soviet-era ruble accounting under a
+  non-convertible currency makes any dollar figure for their original development cost
+  methodologically unreliable, so none is reported — these vehicles are absent from all four
+  charts despite having genuinely strong opex data.
+- **PSLV, GSLV Mk II, H3** — real opex data, but development capex was never disclosed (for
+  PSLV/GSLV Mk II, only production/operations-batch budgets exist, which aren't the same
+  quantity as R&D capex and were deliberately not substituted in).
+- **Most new-space startups** (Terran R, Nova, Eclipse/MLV, RS1, Spectrum, Miura 5, Orbex
+  Prime, MaiaSpace, Agnibaan, Vikram-1, Zhuque-2, Ceres-1, Hyperbola-1, Tianlong-3) — have a
+  funding-raised capex proxy but no disclosed price, so they don't appear on the $/launch or
+  $/kg charts. A few (Vulcan Centaur, Long March 3B/5/2D, Kuaizhou-1A) have the opposite gap:
+  real opex data but no disclosed capex.
+- **Titan II GLV** — has real capex (a 1962 NASA program-office estimate) but no vehicle-only
+  opex figure exists (the only per-flight economics found bundles booster + spacecraft
+  together, a different quantity, so it wasn't substituted in).
 
-**Titan II GLV** has no chart-usable opex figure at all: the only per-flight economics found
-is a whole-Gemini-program figure (booster + spacecraft bundled), which is a different
-quantity than a launch-vehicle-only cost and was deliberately not substituted in — it's shown
-in the "opex not publicly disclosed" lane at its real capex value instead.
-
-**H3** and **GSLV Mk II** are missing $/kg: for H3, the only price we have (~$34-51M) applies
-to the H3-30 config (~4,000 kg to SSO) while the only LEO payload figure we have (16,000 kg)
-is for the different H3-24 config — blending them would be a bad ratio, so it's shown in the
-$/kg N/A lane instead of a fabricated number.
-
-The one case where a vehicle can still be absent from a specific chart: if **both** of its
-coordinates for that chart are undocumented, there's genuinely nothing to plot (e.g. H3 has
-no total-program capex *and* no valid $/kg, so it can't appear on the total-program-vs-$/kg
-chart specifically — it does appear on the other three). `plot_launch_economics.py` prints
-this list explicitly every time it runs; check that output rather than assuming.
-
-Several figures are explicitly **estimates or pre-flight predictions**, flagged as such
-throughout: Neutron (all figures are Rocket Lab's own pre-flight projections, since the
-vehicle has not launched as of this analysis), Starship's capex/opex (SpaceX doesn't publish
-true costs; the numbers used are third-party analyst estimates), and parts of New Glenn's
-capex (Blue Origin's only official figure, $2.5B from 2017, is contested by third-party
-estimates 4–6x higher).
+Several of the figures that DO make it onto the charts are still explicitly **estimates or
+pre-flight predictions** rather than realized costs, flagged as such throughout: Neutron (all
+figures are Rocket Lab's own pre-flight projections), Starship's capex/opex (SpaceX doesn't
+publish true costs; third-party analyst estimates), and China's Long March 5 price (a
+secondary analyst estimate, not a disclosed contract, since CZ-5 has no commercial customer).
 
 ## Regenerating the charts
 
@@ -180,5 +174,5 @@ cd launch-vehicle-economics/scripts
 python3 plot_launch_economics.py
 ```
 
-Prints the four output paths plus a report of which vehicles were excluded from which chart
-and why (mirrors the "Data gaps" section above, computed live from the CSV).
+Prints, per chart: how many vehicles were plotted, and the full list of vehicles excluded
+because they're missing capex, opex, or both for that chart's specific basis.

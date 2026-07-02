@@ -14,16 +14,14 @@ first launch" are NOT the same quantity (a NASA/GAO/DDT&E-style figure vs. a who
 figure that can include decades of production and infrastructure spend) -- mixing them on
 one axis would be comparing apples to oranges.
 
-EVERY vehicle that has at least one of the two coordinates for a given chart is plotted on
-that chart -- a vehicle is never dropped just because one axis is undocumented (e.g. Soyuz
-and Proton have well-documented commercial launch prices but no public capex figure at all,
-for either basis: Soviet-era ruble accounting under a non-convertible currency makes any
-dollar figure for their original development cost methodologically unreliable). Vehicles
-missing one coordinate are placed in a shaded "not publicly disclosed" lane along the
-relevant axis, clearly separated from the real log-scale data by a dashed boundary and an
-axis-label callout, rather than being silently omitted. A vehicle is only absent from a
-chart if BOTH of its coordinates for that chart are undocumented (nothing to plot) -- see
-the console gap report / README for exactly which vehicles that applies to, chart by chart.
+A vehicle is only plotted on a given chart if it has BOTH a real capex value (for that
+chart's basis) and a real opex value -- vehicles missing either coordinate are excluded from
+that chart entirely, so every point shown is a genuine (capex, opex) pair, not a partial
+record padded out with a placeholder position. This means the four charts have different,
+smaller vehicle counts than the 54-row CSV; the full record (including vehicles with only
+one side documented, e.g. Soyuz/Proton's real commercial prices with no public capex figure)
+still lives in data/launch_vehicles.csv and data/sources.md. The script prints exactly which
+vehicles were excluded from each chart and why (missing capex, missing opex, or both).
 
 All dollar figures are converted to 2026 USD via the BLS CPI-U annual-average index
 (cpi.py) SOLELY so that a 1959 Atlas program and a 2026 Neutron estimate sit on a
@@ -45,7 +43,6 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
-import numpy as np
 import pandas as pd
 
 from cpi import to_2026_usd
@@ -59,8 +56,8 @@ SOURCE_NOTE = (
     "(SpaceNews, Ars Technica, Payload Research, The Planetary Society, Spaceflight Now) -- "
     "full citation per data point in data/sources.md. Dollar figures inflated to 2026 USD via "
     "BLS CPI-U (a blunt macro deflator, not a launch-cost-specific index). Hollow markers = "
-    "pre-flight / predicted figures. Shaded lanes = that axis is not publicly documented for "
-    "this vehicle; the vehicle is still shown at its real value on the other axis."
+    "pre-flight / predicted figures. Only vehicles with BOTH a real capex and a real opex "
+    "value for this chart's basis are shown -- see console output / README for exclusions."
 )
 
 # Fixed categorical color order (colorblind-checked qualitative set, Tableau10-derived),
@@ -284,16 +281,6 @@ def _new_fig():
     return fig, ax
 
 
-def _bounded_dollar_formatter(threshold):
-    """A $-formatter that blanks any tick below `threshold` -- used so the shaded
-    'not publicly disclosed' lane never shows a real-looking dollar gridline."""
-    def fmt(v, pos=None):
-        if v < threshold * 0.999:
-            return ""
-        return _dollar_fmt(v, pos)
-    return fmt
-
-
 def _plot_group(ax, sub, x, y, hollow: bool):
     for region in REGION_ORDER:
         for basis in BASIS_ORDER:
@@ -306,124 +293,40 @@ def _plot_group(ax, sub, x, y, hollow: bool):
                 facecolor=("none" if hollow else color),
                 edgecolor=color, linewidth=(1.6 if hollow else 0.6),
             )
-        # Rows sitting in the "opex not publicly disclosed" lane have NO cost-basis label
-        # at all (that's the whole point) -- they'd otherwise never match a BASIS_ORDER
-        # filter above and silently get no marker. Give them a plain diamond instead of
-        # dropping them.
-        no_basis = sub[(sub["region"] == region) & (sub["opex_used_basis"].isna())]
-        if not no_basis.empty:
-            color = REGION_COLORS[region]
-            ax.scatter(
-                no_basis[x], no_basis[y], marker="D", s=70, zorder=4,
-                facecolor=("none" if hollow else color),
-                edgecolor=color, linewidth=(1.6 if hollow else 0.6),
-            )
 
 
-def _scatter_with_na_lanes(ax, df: pd.DataFrame, xcol: str, ycol: str, xlabel_short: str, ylabel_short: str):
-    """Plot every vehicle with at least one real coordinate. Vehicles missing xcol (but
-    with a real ycol) go in a shaded vertical lane left of the real data; vehicles missing
-    ycol (but with a real xcol) go in a shaded horizontal lane below the real data. Returns
-    the combined frame (with resolved plot_x/plot_y columns) used for label placement, plus
-    the list of vehicles that had neither coordinate (and so could not be shown at all)."""
-    both = df.dropna(subset=[xcol, ycol]).copy()
-    x_missing = df[df[xcol].isna() & df[ycol].notna()].copy()
-    y_missing = df[df[ycol].isna() & df[xcol].notna()].copy()
-    neither = df[df[xcol].isna() & df[ycol].isna()]["vehicle"].tolist()
+def _expand_log_limits(ax, factor=1.35):
+    """Pad autoscaled log-log limits so edge points aren't clipped by the axes border and
+    their labels have room to render inside the figure."""
+    x0, x1 = ax.get_xlim()
+    y0, y1 = ax.get_ylim()
+    ax.set_xlim(x0 / factor, x1 * factor)
+    ax.set_ylim(y0 / factor, y1 * factor)
 
-    xmin, xmax = both[xcol].min(), both[xcol].max()
-    ymin, ymax = both[ycol].min(), both[ycol].max()
-    if not x_missing.empty:
-        ymin = min(ymin, x_missing[ycol].min())
-        ymax = max(ymax, x_missing[ycol].max())
-    if not y_missing.empty:
-        xmin = min(xmin, y_missing[xcol].min())
-        xmax = max(xmax, y_missing[xcol].max())
 
-    x_lane = xmin / 14.0
-    y_lane = ymin / 14.0
-    x_boundary = xmin / 2.6
-    y_boundary = ymin / 2.6
-    x_lo = x_lane / 2.0
-    y_lo = y_lane / 2.0
-    x_hi = xmax * 1.55
-    y_hi = ymax * 1.55
+def _scatter(ax, df: pd.DataFrame, xcol: str, ycol: str):
+    """Plot only vehicles with BOTH a real xcol and a real ycol value -- anything missing
+    either coordinate is excluded from this chart (see figure_* callers for the exclusion
+    report). Returns (plotted_df, excluded_vehicle_names)."""
+    plotted = df.dropna(subset=[xcol, ycol]).copy()
+    excluded = df.loc[df[xcol].isna() | df[ycol].isna(), "vehicle"].tolist()
 
-    both["plot_x"], both["plot_y"] = both[xcol], both[ycol]
+    _plot_group(ax, plotted[~plotted["is_preflight"]], xcol, ycol, hollow=False)
+    _plot_group(ax, plotted[plotted["is_preflight"]], xcol, ycol, hollow=True)
 
-    # Vehicles sharing a lane would otherwise all land on exactly the same x (or y) and
-    # stack directly on top of each other -- stagger them across sub-columns (log-spaced
-    # within the lane band), cycling by rank on the OTHER coordinate so points close
-    # together on that axis end up visually separated. Lane size scales with how many
-    # vehicles actually land in it, since a handful of pre-flight startups sharing similar
-    # funding-raised totals can otherwise still bunch up within just 3-4 sub-lanes.
-    n_x_stagger = max(4, min(10, len(x_missing)))
-    n_y_stagger = max(4, min(10, len(y_missing)))
-    x_cols = np.geomspace(x_lo * 1.5, x_boundary / 1.3, n_x_stagger)
-    y_rows = np.geomspace(y_lo * 1.5, y_boundary / 1.3, n_y_stagger)
-
-    x_missing = x_missing.sort_values(ycol, ascending=False).reset_index(drop=True)
-    x_missing["plot_x"] = [x_cols[i % n_x_stagger] for i in range(len(x_missing))]
-    x_missing["plot_y"] = x_missing[ycol]
-    x_missing["_stagger_rank"] = range(len(x_missing))
-
-    y_missing = y_missing.sort_values(xcol, ascending=False).reset_index(drop=True)
-    y_missing["plot_y"] = [y_rows[i % n_y_stagger] for i in range(len(y_missing))]
-    y_missing["plot_x"] = y_missing[xcol]
-    y_missing["_stagger_rank"] = range(len(y_missing))
-
-    ax.set_xlim(x_lo, x_hi)
-    ax.set_ylim(y_lo, y_hi)
-
-    # Shaded "not publicly disclosed" lanes + boundary lines, drawn before the data points.
-    ax.axvspan(x_lo, x_boundary, color="0.90", zorder=0)
-    ax.axhspan(y_lo, y_boundary, color="0.90", zorder=0)
-    ax.axvline(x_boundary, color="0.6", linestyle="--", linewidth=0.8, zorder=1)
-    ax.axhline(y_boundary, color="0.6", linestyle="--", linewidth=0.8, zorder=1)
-    x_band_center = (x_lo * x_boundary) ** 0.5
-    y_band_center = (y_lo * y_boundary) ** 0.5
-    ax.text(x_band_center, y_hi / 1.15, f"{xlabel_short}\nnot publicly\ndisclosed", fontsize=6.5,
-            color="0.4", ha="center", va="top", style="italic", zorder=2)
-    ax.text(x_hi / 1.12, y_band_center, f"{ylabel_short} not publicly disclosed", fontsize=6.5,
-            color="0.4", ha="right", va="center", style="italic", zorder=2, rotation=0)
-
-    for sub in (both, x_missing, y_missing):
-        _plot_group(ax, sub[~sub["is_preflight"]], "plot_x", "plot_y", hollow=False)
-        _plot_group(ax, sub[sub["is_preflight"]], "plot_x", "plot_y", hollow=True)
-
-    combined = pd.concat([both, x_missing, y_missing], ignore_index=True)
-    x_missing_names = set(x_missing["vehicle"])
-    y_missing_names = set(y_missing["vehicle"])
-    for _, row in combined.iterrows():
+    for _, row in plotted.iterrows():
         label = _short(row["vehicle"])
-        suffix = ""
-        if row["vehicle"] in x_missing_names:
-            suffix = " (capex n/a)"
-        elif row["vehicle"] in y_missing_names:
-            suffix = " (opex n/a)"
-        if label in _LABEL_OFFSETS:
-            dx, dy, ha, va = _LABEL_OFFSETS[label]
-        elif row["vehicle"] in y_missing_names:
-            # Many pre-flight startups share this lane with similar funding-raised totals
-            # (close x) -- alternate the label above/below by stagger rank so consecutive
-            # rows don't write directly over each other.
-            rank = int(row["_stagger_rank"]) if pd.notna(row.get("_stagger_rank")) else 0
-            dx, dy, ha, va = (8, 8, "left", "bottom") if rank % 2 == 0 else (8, -8, "left", "top")
-        elif row["vehicle"] in x_missing_names:
-            rank = int(row["_stagger_rank"]) if pd.notna(row.get("_stagger_rank")) else 0
-            dx, dy, ha, va = (8, 6, "left", "bottom") if rank % 2 == 0 else (-8, 6, "right", "bottom")
-        else:
-            dx, dy, ha, va = _DEFAULT_OFFSET
+        dx, dy, ha, va = _LABEL_OFFSETS.get(label, _DEFAULT_OFFSET)
         ax.annotate(
-            label + suffix, xy=(row["plot_x"], row["plot_y"]), xytext=(dx, dy),
+            label, xy=(row[xcol], row[ycol]), xytext=(dx, dy),
             textcoords="offset points", fontsize=7,
             color=REGION_COLORS.get(row["region"], "grey"), ha=ha, va=va,
         )
 
-    ax.xaxis.set_major_formatter(mticker.FuncFormatter(_bounded_dollar_formatter(xmin)))
-    ax.yaxis.set_major_formatter(mticker.FuncFormatter(_bounded_dollar_formatter(ymin)))
+    ax.xaxis.set_major_formatter(mticker.FuncFormatter(_dollar_fmt))
+    ax.yaxis.set_major_formatter(mticker.FuncFormatter(_dollar_fmt))
 
-    return combined, neither
+    return plotted, excluded
 
 
 def _legend(ax):
@@ -434,9 +337,6 @@ def _legend(ax):
     ] + [
         Line2D([0], [0], marker=BASIS_MARKERS[b], linestyle="", color="0.35", markersize=8, label=b)
         for b in BASIS_ORDER
-    ] + [
-        Line2D([0], [0], marker="D", linestyle="", color="0.35", markersize=7,
-               label="no opex figure at all\n(position only)"),
     ] + [
         Line2D([0], [0], marker="o", linestyle="", markerfacecolor="0.35", markeredgecolor="0.35",
                markersize=8, label="has flown"),
@@ -453,6 +353,7 @@ def _legend(ax):
 def _finish(fig, ax, xlabel, ylabel, title, out_name):
     ax.set_xscale("log")
     ax.set_yscale("log")
+    _expand_log_limits(ax)
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
     ax.set_title(title)
@@ -476,54 +377,50 @@ def _finish(fig, ax, xlabel, ylabel, title, out_name):
 
 def figure_capex_program_vs_opex_per_launch(df):
     fig, ax = _new_fig()
-    _, neither = _scatter_with_na_lanes(ax, df, "capex_program_2026usd", "opex_used_2026usd",
-                                         "total program capex", "cost per launch")
+    plotted, excluded = _scatter(ax, df, "capex_program_2026usd", "opex_used_2026usd")
     _finish(
         fig, ax,
         "Total program capex (2026 USD, log)", "Cost per launch (2026 USD, log)",
         "Launch vehicle economics: total program cost vs. cost per launch",
         "capex_program_vs_opex_per_launch.png",
     )
-    return neither
+    return len(plotted), excluded
 
 
 def figure_capex_first_launch_vs_opex_per_launch(df):
     fig, ax = _new_fig()
-    _, neither = _scatter_with_na_lanes(ax, df, "capex_first_launch_2026usd", "opex_used_2026usd",
-                                         "capex through first launch", "cost per launch")
+    plotted, excluded = _scatter(ax, df, "capex_first_launch_2026usd", "opex_used_2026usd")
     _finish(
         fig, ax,
         "Capex through first launch (2026 USD, log)", "Cost per launch (2026 USD, log)",
         "Launch vehicle economics: development cost through first launch vs. cost per launch",
         "capex_first_launch_vs_opex_per_launch.png",
     )
-    return neither
+    return len(plotted), excluded
 
 
 def figure_capex_program_vs_opex_per_kg(df):
     fig, ax = _new_fig()
-    _, neither = _scatter_with_na_lanes(ax, df, "capex_program_2026usd", "opex_per_kg_2026usd",
-                                         "total program capex", "cost per kg to LEO")
+    plotted, excluded = _scatter(ax, df, "capex_program_2026usd", "opex_per_kg_2026usd")
     _finish(
         fig, ax,
         "Total program capex (2026 USD, log)", "Cost per kg to LEO (2026 USD, log)",
         "Launch vehicle economics: total program cost vs. $/kg to LEO",
         "capex_program_vs_opex_per_kg.png",
     )
-    return neither
+    return len(plotted), excluded
 
 
 def figure_capex_first_launch_vs_opex_per_kg(df):
     fig, ax = _new_fig()
-    _, neither = _scatter_with_na_lanes(ax, df, "capex_first_launch_2026usd", "opex_per_kg_2026usd",
-                                         "capex through first launch", "cost per kg to LEO")
+    plotted, excluded = _scatter(ax, df, "capex_first_launch_2026usd", "opex_per_kg_2026usd")
     _finish(
         fig, ax,
         "Capex through first launch (2026 USD, log)", "Cost per kg to LEO (2026 USD, log)",
         "Launch vehicle economics: development cost through first launch vs. $/kg to LEO",
         "capex_first_launch_vs_opex_per_kg.png",
     )
-    return neither
+    return len(plotted), excluded
 
 
 if __name__ == "__main__":
@@ -536,10 +433,7 @@ if __name__ == "__main__":
         "capex_program_vs_opex_per_kg.png": figure_capex_program_vs_opex_per_kg(data),
         "capex_first_launch_vs_opex_per_kg.png": figure_capex_first_launch_vs_opex_per_kg(data),
     }
-    for name, neither in results.items():
-        if neither:
-            print(f"\n{name}: vehicles absent (BOTH coordinates undocumented, nothing to plot):")
-            for v in neither:
-                print(f"  - {v}")
-        else:
-            print(f"\n{name}: every vehicle in the dataset is shown (real point or N/A lane).")
+    for name, (n_plotted, excluded) in results.items():
+        print(f"\n{name}: {n_plotted} vehicles plotted; {len(excluded)} excluded (missing capex and/or opex):")
+        for v in excluded:
+            print(f"  - {v}")
