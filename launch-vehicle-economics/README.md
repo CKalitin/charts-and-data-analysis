@@ -1,9 +1,16 @@
 # Launch vehicle economics: capex vs. opex
 
 A cross-program scatter analysis of launch vehicle capital cost (development/program capex)
-against operating cost (cost per launch and cost per kg to LEO), covering 40 vehicles from
-the 1957 Atlas ICBM through the current global wave of new-space launch startups (Terran R,
-Nova, Spectrum, Zhuque-3, and more — most still pre-first-flight as of this research).
+against operating cost (cost per launch and cost per kg to LEO), covering 54 vehicles from
+the 1957 Atlas ICBM through the current global wave of new-space launch startups. **45 of the
+54 have flown at least once and are shown with solid/filled markers** — including decades of
+real Arianespace, CGWIC/Long March, Sea Launch, and NSSL/ESA contract pricing, plus Rocket
+Lab's SEC-disclosed unit economics for Electron. Only **9 have never flown at all** (Neutron,
+Terran R, Nova, Eclipse/MLV, RFA ONE, Miura 5, Orbex Prime, MaiaSpace, Tianlong-3) and are
+shown with hollow markers, explicitly flagged as pre-flight predictions. See "A note on data
+quality" below for the more important distinction: flown vs. unflown is not the same as
+real-cost vs. estimated-cost — several flown vehicles still only have a funding-raised proxy
+for capex rather than a disclosed R&D budget.
 
 ## Why two capex charts and two opex bases
 
@@ -78,6 +85,17 @@ Neutron (Rocket Lab, pre-first-flight predictions), New Glenn, Soyuz, Proton, H-
 PSLV, GSLV Mk II, and — as a bonus, since it's far better documented than plain GSLV — GSLV
 Mk III / LVM3.
 
+**Mature/flight-proven, added in a third pass to strengthen the real-data trend (14):**
+Ariane 5, Ariane 6, Vega, Vega-C (ESA/Europe), Vulcan Centaur, Electron (USA), Long March 3B,
+Long March 5, Long March 2D, Kuaizhou-1A (China), Angara A5, Zenit-3SL/Sea Launch (Russia/
+Ukraine), Epsilon (Japan), SSLV (India). These were added specifically because the first
+new-space-startup pass (below) skewed the dataset toward unprovable pre-flight predictions —
+this batch is decades of real commercial/institutional launch history instead: the 1990s
+CGWIC "dumping" dispute pricing for Long March (real $25–70M contract figures tied to actual
+US-China trade filings), Arianespace's decades of disclosed Ariane 5 GTO pricing, ESA's own
+itemized Ariane 6/Vega-C launch-service contract values, the 1995 Sea Launch/Hughes $100M×10
+commercial contract, and Rocket Lab's SEC-filed (10-Q) Electron unit economics.
+
 **New-space startups (18, added in a second pass):** Terran R (Relativity Space, USA), Nova
 (Stoke Space, USA), Firefly Alpha (USA), Eclipse/MLV (Firefly + Northrop Grumman, USA), RS1
 (ABL Space Systems, USA — program terminated 2024), Spectrum (Isar Aerospace, Germany), RFA
@@ -85,10 +103,35 @@ ONE (Rocket Factory Augsburg, Germany), Miura 5 (PLD Space, Spain), Prime (Orbex
 (MaiaSpace, France), Agnibaan (Agnikul Cosmos, India), Vikram-1 (Skyroot Aerospace, India),
 Kairos (Space One, Japan), Zhuque-2 (LandSpace, China), Zhuque-3 (LandSpace, China), Ceres-1
 (Galactic Energy, China), Hyperbola-1 (i-Space, China), Tianlong-3 (Space Pioneer, China).
-Almost all of these are pre-first-flight or have only flown sub-scale demonstrators — their
-capex figures are company funding-raised totals (a looser proxy than a disclosed R&D budget)
-and their opex figures, where they exist at all, are unproven target prices. See
-`data/sources.md` for the "New-space startups" section with full caveats per vehicle.
+Most are pre-first-flight or have only flown sub-scale demonstrators — their capex figures
+are company funding-raised totals (a looser proxy than a disclosed R&D budget) and their
+opex figures, where they exist at all, are unproven target prices. See `data/sources.md` for
+full per-vehicle caveats.
+
+## A note on data quality (read this before trusting any single point)
+
+Flown-vs-unflown (the marker fill) is a coarse proxy; the more important distinction is
+**where the number actually comes from**, and it varies a lot even among "real" vehicles:
+
+- **Best tier — a real, itemized, arm's-length contract or SEC filing.** Rocket Lab's Electron
+  marginal cost ($5.68M, from an actual 10-Q segment breakdown), ESA's disclosed Ariane 6/
+  Vega-C launch-service contract values (Sentinel-1C/1D), the 1995 Sea Launch/Hughes contract,
+  and the 1990s CGWIC Long March pricing (tied to real US-China trade disputes) all belong here.
+- **Good tier — a real government/institutional cost disclosure, but not a market price.**
+  NASA/GAO/OIG figures (Shuttle, SLS, Titan IV), JAXA's Epsilon cost figures, India's Lok Sabha
+  replies (PSLV/GSLV/SSLV), Angara's Roscosmos-adjacent cost estimates. These are genuine, but
+  a state institution's internal cost isn't the same thing as a price a customer paid.
+  China's Long March 5 price is explicitly flagged the other way — a secondary analyst
+  estimate, NOT a disclosed contract, because CZ-5 has no commercial customer.
+- **Weakest tier — a company's total funding raised, used as a capex proxy.** Almost every
+  new-space startup in this dataset (both the pre-flight ones and several that have flown
+  small demonstrators, e.g. Firefly Alpha, Zhuque-2/3, Ceres-1, Hyperbola-1) falls here: total
+  money raised is not the same as money spent on R&D for one specific vehicle, especially for
+  multi-program companies. These are flagged in both the CSV `notes` column and `sources.md`.
+
+The `opex_used_basis` marker shape (circle/square/triangle/diamond) tells you the *economic
+concept* (marginal cost vs. fully-loaded vs. price vs. no figure at all) but does NOT by
+itself tell you the *evidentiary strength* above — check `sources.md` for that per vehicle.
 
 ## Data gaps (recorded and shown, never guessed or dropped)
 

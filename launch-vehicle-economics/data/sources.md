@@ -763,6 +763,210 @@ achieved a successful orbital flight as of this research.
 
 ---
 
+# Mature, flight-proven vehicles (added in a third research pass)
+
+This section was added after feedback that the new-space-startup section above skewed the
+dataset toward unprovable pre-flight predictions, muddling the real trend the underlying
+(mostly historical/established) data shows. These 14 vehicles were specifically chosen for
+having decades of REAL flight and pricing history — several are the strongest data points in
+the entire dataset (actual SEC filings, actual ESA/USAF contract disclosures, actual 1990s
+trade-dispute pricing records), not proxies or predictions.
+
+## Ariane 5 (ESA/ArianeGroup, France — retired)
+
+Development cost: ~$7B (nominal, 1987 program approval through 1996 first flight) is the
+widely-repeated secondary-source consensus figure
+([Design News](https://www.designnews.com/aerospace/ariane-5-europe-s-heavy-lifter)); not a
+single official ESA line-item total, but corroborated indirectly by [ESA Bulletin
+93](https://www.esa.int/esapub/bulletin/bullet93/b93carr.htm) (ground facilities alone were
+~1B ECU = 20% of total development cost, implying ~5B ECU total in period currency). REAL
+commercial pricing across the vehicle's life, all sourced to [Wikipedia: Ariane
+5](https://en.wikipedia.org/wiki/Ariane_5) (itself citing contemporary reporting): ~€90M
+(2013, heavy satellite/upper position), ~€50M (2014, midsize/lower position), ~€150M total
+dual-launch (Jan 2015, used in the CSV), ~€150–200M (2016), rising toward ~€200M in the
+vehicle's final years. Payload: 21,000 kg LEO (ES variant, real ATV cargo missions) / 10,865–
+11,115 kg GTO (ECA variant, the actual commercial-market configuration — nearly all pricing
+applies here, not to the LEO figure). 117 launches, 112 full successes (95.7%), retired July
+2023 after an 82-mission consecutive-success streak (2003–2017).
+
+## Ariane 6 (ESA/ArianeGroup, France — active)
+
+Development cost: ~€4B (~$4.3–4.5B) as of the July 2024 first flight, risen in stages from an
+initial €2.4B 2014 industrial contract ([Al Jazeera](https://www.aljazeera.com/news/2024/7/9/europes-ariane-6-ready-to-blast-off-from-spaceport-in-kourou);
+[Wikipedia: Ariane 6](https://en.wikipedia.org/wiki/Ariane_6)). **REAL, itemized institutional
+contract:** ESA disclosed it paid €82,070,773 (~$96M) to Arianespace to launch the Sentinel-1D
+satellite on an Ariane 62 in Nov 2025 — ESA is unusual among launch customers in publishing
+itemized launch-service procurement values
+([European Spaceflight](https://europeanspaceflight.com/esa-spent-e82-million-to-launch-sentinel-1d-satellite-on-ariane-6/),
+corroborated by [Behind The Black](https://behindtheblack.com/behind-the-black/points-of-information/esa-paid-arianespace-about-96-million-for-an-ariane-6-launch/),
+which notes SpaceX charged ESA ~$90M for a comparable Sentinel launch). The Amazon Kuiper deal
+(18 launches) was never officially priced; Quilty Space's ESTIMATE of $2.5–3B total (~$139–
+167M/launch) is explicitly not used as the primary figure. ESA member states additionally
+subsidize ArianeGroup operations directly at up to €340M/year (through ~2031) to bridge real
+cost and competitive pricing. Payload: 21,650 kg LEO / 11,500 kg GTO (A64). 8 flights, 7
+successes, 1 partial failure (upper-stage deorbit-burn anomaly, July 2024).
+
+## Vega (ESA/Avio, Italy — retired)
+
+Development cost: €710M (~$910M), per [SpaceNews via Wikipedia: Vega
+(rocket)](https://en.wikipedia.org/wiki/Vega_(rocket)); a separate €400M ESA VERTA
+contribution sponsored 5 post-qualification proving flights (2012–2014) and is excluded
+(subsidized early ops, not pure R&D). Price: $37M official infobox figure (a real reported
+average market price, not one named contract); more granular 2012 SpaceNews reporting gave
+~€32M including Arianespace markup, ~€25M for the rocket alone at 2 flights/year. Payload:
+~1,450 kg to 400km SSO. 22 launches, 20 successes, 2 failures (2019, 2020); retired Sept 2024.
+
+## Vega-C (ESA/Avio, Italy — active)
+
+Development cost: €395M (~$430M) ESA/ELV contract (2015); program officials separately
+reported actual spend of only ~$300M, under the original budget — both figures reported
+([Via Satellite](https://www.satellitetoday.com/finance/2015/08/12/esa-signs-contracts-for-ariane-6-vega-c-launchers/)).
+**REAL, itemized institutional contract:** ESA's Sentinel-1C launch contract was €48.62M
+(awarded Apr 2022), rising to a final €51.65M (~$54M) for the Dec 2024 return-to-flight
+mission — the actual satellite (~2,284 kg) was close to full rated capacity, making this an
+unusually clean real $/kg data point
+([European Spaceflight](https://europeanspaceflight.com/esa-paid-e51-65-million-to-launch-sentinel-1c-on-vega-c-return-to-flight/)).
+Payload: 2,300 kg to 700km SSO. 7 flights, 6 successes, 1 failure (Dec 2022, Zefiro-40 nozzle
+erosion, grounded the vehicle for 2 years).
+
+## Vulcan Centaur (United Launch Alliance, USA — active, paused)
+
+No total program cost has ever been disclosed by ULA/Boeing/Lockheed — a genuine gap despite
+searching (left blank rather than assembling Bruno's various public order-of-magnitude quotes
+into a fabricated precise total). **REAL, disclosed figure used for cost-to-first-launch:** a
+$967M USAF Other Transaction Agreement (Launch Service Agreement), Oct 2018
+([official DoD contract announcement](https://www.war.gov/News/Contracts/Contract/Article/1658771/)) —
+government cost-share only; Bruno stated Vulcan was "75% privately funded" as of March 2018,
+implying the true total was materially higher. **REAL, disclosed opex:** derived from a $337M
+FY2022 NSSL Phase 2 task order for 2 missions (Aug 2020 award,
+[Spaceflight Now](https://spaceflightnow.com/2020/08/07/ula-spacex-win-landmark-launch-agreements-with-pentagon/)) —
+a blended Atlas V/Vulcan-era task order, not a confirmed single-mission Vulcan-only price, but
+a real government contract figure nonetheless. NSSL Phase 3 Lane 2 (Apr 2025) separately gave
+ULA a ~$5.3B ceiling for 19 missions (~$279M/mission average, but a ceiling, not a firm price).
+Payload: 27,200 kg to LEO (VC6). 4 flights since Jan 2024; paused for NSSL missions since a
+Feb 2026 SRB nozzle anomaly on USSF-87 (the second such SRB issue after Cert-2 in Oct 2024).
+
+## Electron (Rocket Lab, USA — active)
+
+**The strongest real-data point in the new-space cohort.** Development cost: Peter Beck's
+on-the-record 2020 statement, "it took us $100m to get to orbit" (Payload Research compiles
+this as $100M nominal/$123M inflation-adjusted — the same source already used elsewhere in
+this dataset). **REAL, SEC-filed marginal cost:** Rocket Lab's Form 10-Q for Q1 2025 breaks
+out the Launch Services segment as $35.592M revenue / $28.375M cost of revenue across 5
+confirmed Electron missions that quarter — average marginal cost of $5.68M/launch, an actual
+disclosed operating-cost figure, not an estimate
+([SEC EDGAR](https://www.sec.gov/Archives/edgar/data/0001819994/000162828025023857/rklb-20250331.htm)).
+Price: $8.5M current backlog ASP (Q1 2026 earnings call), up from $5–6M at 2018 market entry
+and $7.5M for years prior to 2023. Payload: 300 kg to LEO. 91 orbital launches (87 success/4
+failure, ~95.6%) as of late June 2026 — the most-flown new-space small launcher in history;
+publicly traded (NASDAQ: RKLB).
+
+## Long March 3B (CASC, China — active)
+
+**The best-documented historical commercial-pricing case in this entire dataset.** No
+official development-cost figure exists (genuine gap after searching Cox Report chapters, CRS
+reports, Chinese state media). But real 1990s prices, tied to actual US-China trade disputes,
+are well documented: $25M offered for Arabsat (1990, triggered Arianespace/US government
+pushback over "dumping," per [CRS Report
+98-575](https://www.everycrsreport.com/reports/98-575.html)); ~$30M for AsiaSat 1 (1990,
+China's first commercial launch for a foreign customer); $56M for Intelsat 708 (1992 contract;
+the Feb 1996 launch failure destroyed the satellite and killed people on the ground at
+Xichang). A 1995 US-China bilateral agreement required Chinese prices to stay within 15% of
+Western prices or trigger a US pricing review; in 1997 USTR found China had violated this on
+the Agila-2/Loral launch. CGWIC's standing commercial rate was reaffirmed at **$70M in 2012–
+2013**, explicitly backed by a "96% success record over 181 flights"
+([SpaceNews](https://spacenews.com/37366china-great-wall-reaffirms-commitment-to-70-million-long-march-launches/)) —
+a genuine disclosed rate card, used in the CSV — and reportedly cut to $50M by 2019 amid
+SpaceX competition. Payload: 5,100–5,500 kg GTO (real commercial market) / 11,500 kg LEO
+(rarely flown). ~116 flights, ~96.5% success.
+
+## Long March 5 (CASC, China — active)
+
+No development-cost figure disclosed (only adjacent, non-equivalent launch-site/manufacturing
+capex exists — not used). Unlike 3B/2D, CZ-5 has **no confirmed real commercial contract
+price** — it's overwhelmingly a state-mission vehicle (space station, lunar sample return,
+Mars). The ~$160M figure used is a secondary analyst estimate ([Wikipedia: Long March
+5](https://en.wikipedia.org/wiki/Long_March_5)), explicitly flagged as NOT a real contract
+price, unlike the other Long March entries. Payload: 25,000 kg LEO (CZ-5B variant). 18
+flights, 17 successes (94.4%), including a 2017 failure that caused a 28-month hiatus.
+
+## Long March 2D (CASC, China — active)
+
+No development-cost figure disclosed. **REAL, disclosed modern commercial price:** repeat
+customer Changguang Satellite Technology (Jilin-1 constellation) procured CZ-2D launches at
+112.9–113 million yuan (~$15.7–16M) per mission for 2022-era contracts
+([china-in-space.com](https://www.china-in-space.com/p/what-is-the-cost-of-a-long-march)) — a
+genuine repeat-customer procurement price, distinct from a higher $30M nominal dedicated-
+mission price also cited. Payload: 3,500 kg LEO. China's most-flown active workhorse (100th
+mission passed 2025), ~99% success over 105 flights.
+
+## Kuaizhou-1A (CASIC/ExPace, China — active)
+
+No development-cost figure disclosed. **REAL, operator-disclosed pricing:** ExPace publicly
+advertised $10,000–$20,000/kg (goal of $5,000/kg) starting ~2016
+([Space.com](https://www.space.com/34840-chinese-expace-commercial-launch-company.html));
+individual missions commonly listed at $5.8M per complete launch service
+([RocketLaunch.org](https://rocketlaunch.org/launch-providers/expace/kuaizhou-1a)). Payload:
+~300 kg LEO (varies by source/orbit, 200–400 kg range). 16 dedicated KZ-1A flights through Dec
+2024 (14 successes, 2 failures, ~87.5%); an upgraded KZ-1A-Pro variant added further flights
+through 2025 (4 Kuaizhou-series missions that year, 3 successes).
+
+## Angara A5 (Roscosmos/Khrunichev, Russia — operational)
+
+Development cost: $5.33B cumulative through 2012, per then-Roscosmos chief Vladimir
+Popovkin's public estimate — the textbook case of Russian launcher cost/schedule overruns
+(development began 1995, targeted 2005, didn't fly until Dec 2014)
+([Pravda](https://english.pravda.ru/news/science/145395-angara/)). Opex: Salyut Design Bureau
+chief designer Sergey Kuznetsov stated in 2021 costs run "between $50 million and $100
+million," closer to the upper bound during low-rate production
+([TASS](https://tass.com/defense/1239497)) — a real government/designer cost disclosure, NOT
+a market-tested price (Angara has no Western commercial customers). Unit production cost
+separately reported at 7 billion rubles (2019) vs. Proton-M's ~2.3B rubles. Payload: 24,500 kg
+LEO. 5 flights through June 2025, 4 successes, 1 partial failure (Dec 2021).
+
+## Zenit-3SL / Sea Launch (international consortium: Boeing/USA, Energia/Russia,
+Yuzhnoye-Yuzhmash/Ukraine, Aker/Norway — indefinitely suspended)
+
+**One of the strongest real-market-pricing cases in the entire dataset for a Russian/
+Ukrainian-heritage vehicle.** Total consortium investment: ~$950M (platform + program through
+the 1999 debut, [RussianSpaceWeb](https://www.russianspaceweb.com/sealaunch.html)), up from an
+initial $583M 1996 budget. **REAL, arm's-length commercial contract:** Hughes Space and
+Communications' Dec 1995 deal for 10 firm launches at $1 billion total ($100M/launch) — the
+deal that made Sea Launch "a real business" per its general manager at the time
+([Spokesman-Review, Dec 19 1995](https://www.spokesman.com/stories/1995/dec/19/boeing-launch-platform-gets-first-customer-hughes/)).
+Prices later rose toward $110–120M/launch by the early 2010s. Payload: 6,000–6,160 kg GTO
+(real operational missions); 7,000 kg LEO is a nominal, never-operationally-used figure.
+36 launches 1999–2014 (32 successes, 3 failures, 1 partial). Filed Chapter 11 bankruptcy 2009
+(~$2B in creditor claims); S7 Group (Russian airline) bought the assets in 2016, relocated to
+Vladivostok; dormant since Russia's 2022 invasion of Ukraine severed the Russia-Ukraine
+cooperation the Ukrainian-built Zenit depends on.
+
+## Epsilon (JAXA/IHI Aerospace, Japan — active, transitioning)
+
+Development cost: ~$325M combined (Phase 1 ~$200M through the 2013 debut + Phase 2 ~$100–150M
+through the 2016 upgrade), per JAXA figures reported by
+[SpaceNews](https://spacenews.com/japan-take-incremental-approach-new-epsilon-launcher/).
+Opex: first (2013) launch cost ~3.8 billion yen (~$38–44.5M), explicitly targeted at roughly
+half the ~$70M cost of the retired M-V solid rocket it replaced — a real JAXA institutional
+cost figure, not a commercial market price (Epsilon primarily launches Japanese government/
+JAXA science payloads). Payload: 1,200 kg to a 250×500km orbit. 6 flights: successes in 2013,
+2016, 2018, 2019, 2021; failure Oct 2022 (attitude-control fault).
+
+## SSLV (ISRO, India — development complete, transitioning to HAL/NSIL)
+
+Development cost: ₹169.07 crore (~$20.4M) total sanctioned cost covering development,
+qualification, and all 3 developmental flights, per a genuine primary source — Indian
+Parliament (Rajya Sabha) written reply, Minister of State Dr. Jitendra Singh, 16 Dec 2021
+([devdiscourse](https://www.devdiscourse.com/article/technology/1849929-sslv-to-provide-payload-capability-of-500-kg-to-a-500-km-planar-orbit-dr-jitendra-singh)).
+Opex: ₹30–35 crore (~$3.6–4.2M) government/NSIL manufacturing-cost target — not yet a fully
+disclosed real commercial contract, though NSIL has signed BlackSky Global as a commercial
+customer (contract price undisclosed; market reporting cites $5–7M/launch as the 2025
+commercial rate). Payload: 500 kg to a 500km planar orbit. 3 flights: SSLV-D1 (Aug 2022)
+failed (software fault), SSLV-D2 and D3 both succeeded. In Sept 2025, HAL signed a ₹511 crore
+(~$59M) tech-transfer deal to become SSLV's commercial manufacturer/operator.
+
+---
+
 ## General methodology notes
 
 - **Research conducted:** July 2026, via live web search across NASA, GAO/CBO, NASA OIG,

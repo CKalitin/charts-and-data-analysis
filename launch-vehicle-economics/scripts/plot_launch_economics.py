@@ -85,7 +85,7 @@ REGION_OF_COUNTRY = {
     "Japan": "Japan",
     "India": "India",
     "China": "China",
-    "Germany": "Europe", "UK": "Europe", "Spain": "Europe", "France": "Europe",
+    "Germany": "Europe", "UK": "Europe", "Spain": "Europe", "France": "Europe", "Italy": "Europe",
 }
 
 # Marker shape encodes which cost CONCEPT the opex figure represents -- picked in this
@@ -140,6 +140,24 @@ _LABEL_OFFSETS = {
     "GSLV Mk II":                        (6, -24, "left", "top"),
     "GSLV Mk III / LVM3":                (-10, -18, "right", "top"),
     "Falcon 9 v1.0":                     (8, -14, "left", "top"),
+    "Electron":                          (-10, 10, "right", "bottom"),
+    "Firefly Alpha":                     (10, -12, "left", "top"),
+    "Vulcan Centaur":                    (8, -16, "left", "top"),
+    "Long March 5":                      (8, 10, "left", "bottom"),
+    "Long March 3B":                     (8, -16, "left", "top"),
+    "Long March 2D":                     (-10, -10, "right", "top"),
+    "Kuaizhou-1A":                       (10, 14, "left", "bottom"),
+    "Ceres-1":                           (-10, -10, "right", "top"),
+    "Hyperbola-1 (i-Space)":             (-10, 12, "right", "bottom"),
+    "Ariane 5":                          (8, 10, "left", "bottom"),
+    "Ariane 6":                          (8, -14, "left", "top"),
+    "Vega":                              (8, 10, "left", "bottom"),
+    "Vega-C":                            (-10, -12, "right", "top"),
+    "Zenit-3SL (Sea Launch)":            (8, 8, "left", "bottom"),
+    "Angara A5":                         (8, -14, "left", "top"),
+    "Epsilon":                           (-10, 10, "right", "bottom"),
+    "SSLV":                              (10, 10, "left", "bottom"),
+    "Kairos":                            (10, 10, "left", "bottom"),
 }
 
 _SHORT = {
