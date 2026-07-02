@@ -18,9 +18,17 @@ distinguish them, in separate CSV columns, and plotted as **separate charts**:
 - `results/capex_program_vs_opex_per_kg.png`
 - `results/capex_first_launch_vs_opex_per_kg.png`
 
-A vehicle only appears in a chart if the corresponding capex figure was found; it is **not**
-backfilled from the other basis. See "Data gaps" below for which vehicles are missing from
-which chart, and why.
+**Every vehicle in the dataset appears on every chart it has any data for.** A vehicle is
+never dropped just because one of its two coordinates is undocumented — e.g. Soyuz and
+Proton have well-documented commercial launch prices but no public capex figure under either
+basis (Soviet-era ruble accounting under a non-convertible currency makes any dollar figure
+for their original development cost methodologically unreliable). Instead of silently
+omitting them, a vehicle missing one coordinate is placed in a shaded, clearly-labeled "not
+publicly disclosed" lane along that axis, at its real value on the other axis, separated from
+the real log-scale data by a dashed boundary line. A vehicle is only absent from a chart if
+**both** of its coordinates for that specific chart are undocumented — the script prints
+exactly which vehicles (if any) that applies to, chart by chart, so nothing goes missing
+silently. See "Data gaps" below.
 
 The opex side has the same apples/oranges problem: a **marginal/incremental cost** (what it
 actually costs the operator to fly one more mission), a **fully-loaded average cost**
@@ -31,7 +39,13 @@ overhead) are three different economic concepts. All three are kept as separate 
 available** figure per vehicle using the priority **marginal → fully-loaded → price** (cost
 concepts are preferred over price when available), and encode *which* concept was used via
 marker shape (circle / square / triangle) so the mixing is visible rather than hidden.
-Marker color encodes country/program origin (USA, Russia/USSR, Japan, India).
+
+Marker **color** encodes region of origin (USA, Russia/USSR, Japan, India, China, Europe —
+individual European countries are grouped into one "Europe" swatch to keep the legend
+readable; see `REGION_OF_COUNTRY` in the script for the country-level mapping). Marker
+**fill** encodes flight status: solid = has flown at least once, hollow/open = pre-flight or
+a predicted figure for a vehicle that hasn't launched yet (e.g. Neutron) — those numbers are
+forward-looking by definition and are visually flagged as such everywhere they appear.
 
 All dollar figures are converted to 2026 USD using the BLS CPI-U annual-average index
 (`scripts/cpi.py`) purely so a 1959 Atlas program and a 2026 Neutron estimate sit on a
@@ -62,29 +76,38 @@ Atlas (SM-65/Atlas D), Atlas V, Delta IV (Medium & Heavy), Neutron (Rocket Lab,
 pre-first-flight predictions), New Glenn, Soyuz, Proton, H-II/H-IIA, H3, PSLV, GSLV Mk II,
 and — as a bonus, since it's far better documented than plain GSLV — GSLV Mk III / LVM3.
 
-## Data gaps (recorded, not guessed)
+## Data gaps (recorded and shown, never guessed or dropped)
 
-Several vehicles have **no public total-program capex figure** at all (excluded from both
-capex-program charts): Soyuz, Proton, H3, PSLV, GSLV Mk II. For Soyuz and Proton this is a
-structural gap — Soviet-era ruble accounting under a non-convertible currency makes any
-dollar figure for the original 1950s–60s R&D methodologically suspect, so none is reported.
-For PSLV and GSLV Mk II, extensive searching (including ISRO's own site and Lok Sabha
-replies) turned up only production/operations-batch budgets, not original R&D capex — those
-budget figures are recorded in `sources.md` but deliberately **excluded** from the capex
-columns since they aren't the same quantity.
+Several vehicles have **no public total-program capex figure** at all (shown in the "capex
+not publicly disclosed" lane on both capex-program charts, at their real $/launch or $/kg):
+Soyuz, Proton, H3, PSLV, GSLV Mk II. For Soyuz and Proton this is a structural gap —
+Soviet-era ruble accounting under a non-convertible currency makes any dollar figure for
+their original 1950s–60s R&D methodologically suspect, so none is reported. For PSLV and
+GSLV Mk II, extensive searching (including ISRO's own site and Lok Sabha replies) turned up
+only production/operations-batch budgets, not original R&D capex — those budget figures are
+recorded in `sources.md` but deliberately kept out of the capex columns since they aren't the
+same quantity.
 
 **Cost-through-first-launch** is even sparser (most historical programs' public accounting
 only reports a whole-program total, not a first-launch cutoff): missing for Falcon 9 v1.0,
 Starship, Saturn V, Titan IV, Original Atlas, Atlas V, Delta IV, New Glenn, plus the four
-above.
+above — all likewise shown in the "capex not publicly disclosed" lane rather than omitted.
 
 **Titan II GLV** has no chart-usable opex figure at all: the only per-flight economics found
 is a whole-Gemini-program figure (booster + spacecraft bundled), which is a different
-quantity than a launch-vehicle-only cost and was deliberately not substituted in.
+quantity than a launch-vehicle-only cost and was deliberately not substituted in — it's shown
+in the "opex not publicly disclosed" lane at its real capex value instead.
 
 **H3** and **GSLV Mk II** are missing $/kg: for H3, the only price we have (~$34-51M) applies
 to the H3-30 config (~4,000 kg to SSO) while the only LEO payload figure we have (16,000 kg)
-is for the different H3-24 config — blending them would be a bad ratio, so it's left blank.
+is for the different H3-24 config — blending them would be a bad ratio, so it's shown in the
+$/kg N/A lane instead of a fabricated number.
+
+The one case where a vehicle can still be absent from a specific chart: if **both** of its
+coordinates for that chart are undocumented, there's genuinely nothing to plot (e.g. H3 has
+no total-program capex *and* no valid $/kg, so it can't appear on the total-program-vs-$/kg
+chart specifically — it does appear on the other three). `plot_launch_economics.py` prints
+this list explicitly every time it runs; check that output rather than assuming.
 
 Several figures are explicitly **estimates or pre-flight predictions**, flagged as such
 throughout: Neutron (all figures are Rocket Lab's own pre-flight projections, since the
