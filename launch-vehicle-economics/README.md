@@ -1,17 +1,34 @@
 # Launch vehicle economics: capex vs. opex
 
-A cross-program scatter analysis of launch vehicle capital cost (development/program capex)
-against operating cost (cost per launch and cost per kg to LEO). The underlying dataset
+A cross-program scatter analysis of launch vehicle economics: capital cost (development/
+program capex), operating cost (cost per launch and cost per kg to LEO), and payload
+capacity, plotted pairwise against each other. The underlying dataset
 (`data/launch_vehicles.csv`) records 54 vehicles from the 1957 Atlas ICBM through the current
 global wave of new-space launch startups, 45 of which have flown at least once. **The charts
-themselves are stricter: only vehicles with BOTH a real capex figure and a real opex figure
-for that chart's specific basis are plotted** (21–30 vehicles per chart) — see "Why two capex
-charts and two opex bases" below for why that cuts the count so much, and "Data gaps" for
-exactly which vehicles that excludes and why. Real, flight-proven pricing dominates what
-remains: decades of Arianespace, CGWIC/Long March, Sea Launch, and NSSL/ESA contract history,
-plus Rocket Lab's SEC-disclosed unit economics for Electron. A handful of pre-flight
-predictions (Neutron, hollow markers) are still shown, clearly flagged, where they have both
-coordinates.
+themselves are stricter: only vehicles with real values on BOTH of a given chart's two axes
+are plotted** (21–42 vehicles per chart, depending which two metrics) — see "Why two capex
+charts and two opex bases" below for why capex in particular is split, and "Data gaps" for
+exactly which vehicles get excluded from which chart and why. Real, flight-proven pricing
+dominates what remains: decades of Arianespace, CGWIC/Long March, Sea Launch, and NSSL/ESA
+contract history, plus Rocket Lab's SEC-disclosed unit economics for Electron. A handful of
+pre-flight predictions (Neutron, hollow markers) are still shown, clearly flagged, where they
+have both coordinates for a given chart.
+
+## The seven charts
+
+- `results/capex_program_vs_opex_per_launch.png` — total program cost vs. cost per launch
+- `results/capex_first_launch_vs_opex_per_launch.png` — cost through first launch vs. cost per launch
+- `results/capex_program_vs_opex_per_kg.png` — total program cost vs. $/kg to LEO
+- `results/capex_first_launch_vs_opex_per_kg.png` — cost through first launch vs. $/kg to LEO
+- `results/payload_vs_opex_per_kg.png` — payload capacity to LEO vs. $/kg to LEO
+- `results/payload_vs_capex_program.png` — payload capacity to LEO vs. total program cost
+- `results/payload_vs_capex_first_launch.png` — payload capacity to LEO vs. cost through first launch
+
+The payload-capacity charts are the best-populated of the seven (42 and 41 vehicles,
+respectively, vs. 21–30 for the capex-vs-opex charts) simply because payload capacity is
+publicly disclosed for nearly every vehicle ever built, while capex and opex are each
+independently spotty — so pairing payload with either one loses fewer vehicles than pairing
+capex with opex.
 
 ## Why two capex charts and two opex bases
 
@@ -20,12 +37,8 @@ first launch"** are apples and oranges — a NASA/GAO DDT&E-style figure coverin
 through IOC is not the same quantity as a whole-program figure that can include decades of
 production, launch-pad infrastructure, and (for military/NASA vehicles) procurement of dozens
 of rounds. Rather than force one number per vehicle, both are recorded wherever the sources
-distinguish them, in separate CSV columns, and plotted as **separate charts**:
-
-- `results/capex_program_vs_opex_per_launch.png`
-- `results/capex_first_launch_vs_opex_per_launch.png`
-- `results/capex_program_vs_opex_per_kg.png`
-- `results/capex_first_launch_vs_opex_per_kg.png`
+distinguish them, in separate CSV columns, and plotted as **separate charts** — this is why
+both the capex-vs-opex pair and the payload-vs-capex pair each come in two versions.
 
 **A vehicle is only plotted on a chart if it has BOTH a real capex value (for that chart's
 basis) and a real opex value.** Earlier drafts of this analysis placed vehicles missing one
@@ -78,7 +91,7 @@ so treat the resulting positions as roughly comparable, not as a precise "real c
 - `scripts/plot_launch_economics.py` — loads the CSV, applies the marginal→fully-loaded→
   price selection logic and CPI adjustment, and renders the four figures into `results/`.
   Run with `python3 scripts/plot_launch_economics.py` (needs `pandas` + `matplotlib`).
-- `results/*.png` — the four scatter charts.
+- `results/*.png` — the seven scatter charts (see "The seven charts" above).
 
 ## Vehicles covered
 

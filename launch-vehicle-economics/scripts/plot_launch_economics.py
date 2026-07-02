@@ -2,26 +2,29 @@
 
 Reads data/launch_vehicles.csv (one row per vehicle, every sourced dollar figure kept in
 its original nominal/quoted-year form -- see data/sources.md for full citations) and
-produces four log-log scatter figures into results/:
+produces seven log-log scatter figures into results/:
 
-  1. capex_program_vs_opex_per_launch.png   -- total program cost        vs $/launch
+  1. capex_program_vs_opex_per_launch.png      -- total program cost        vs $/launch
   2. capex_first_launch_vs_opex_per_launch.png -- cost through first launch vs $/launch
-  3. capex_program_vs_opex_per_kg.png       -- total program cost        vs $/kg to LEO
-  4. capex_first_launch_vs_opex_per_kg.png  -- cost through first launch vs $/kg to LEO
+  3. capex_program_vs_opex_per_kg.png          -- total program cost        vs $/kg to LEO
+  4. capex_first_launch_vs_opex_per_kg.png     -- cost through first launch vs $/kg to LEO
+  5. payload_vs_opex_per_kg.png                -- payload capacity to LEO   vs $/kg to LEO
+  6. payload_vs_capex_program.png              -- payload capacity to LEO  vs total program cost
+  7. payload_vs_capex_first_launch.png         -- payload capacity to LEO  vs cost through first launch
 
-Two capex figures exist per opex metric because "total program cost" and "cost through
-first launch" are NOT the same quantity (a NASA/GAO/DDT&E-style figure vs. a whole-program
-figure that can include decades of production and infrastructure spend) -- mixing them on
-one axis would be comparing apples to oranges.
+Two capex figures exist per opex/payload metric because "total program cost" and "cost
+through first launch" are NOT the same quantity (a NASA/GAO/DDT&E-style figure vs. a
+whole-program figure that can include decades of production and infrastructure spend) --
+mixing them on one axis would be comparing apples to oranges.
 
-A vehicle is only plotted on a given chart if it has BOTH a real capex value (for that
-chart's basis) and a real opex value -- vehicles missing either coordinate are excluded from
-that chart entirely, so every point shown is a genuine (capex, opex) pair, not a partial
-record padded out with a placeholder position. This means the four charts have different,
-smaller vehicle counts than the 54-row CSV; the full record (including vehicles with only
-one side documented, e.g. Soyuz/Proton's real commercial prices with no public capex figure)
-still lives in data/launch_vehicles.csv and data/sources.md. The script prints exactly which
-vehicles were excluded from each chart and why (missing capex, missing opex, or both).
+A vehicle is only plotted on a given chart if it has BOTH real values for that chart's two
+axes -- vehicles missing either coordinate are excluded from that chart entirely, so every
+point shown is a genuine paired data point, not a partial record padded out with a
+placeholder position. This means the seven charts have different, smaller vehicle counts
+than the 54-row CSV; the full record (including vehicles with only one side documented,
+e.g. Soyuz/Proton's real commercial prices with no public capex figure) still lives in
+data/launch_vehicles.csv and data/sources.md. The script prints exactly which vehicles were
+excluded from each chart and why.
 
 All dollar figures are converted to 2026 USD via the BLS CPI-U annual-average index
 (cpi.py) SOLELY so that a 1959 Atlas program and a 2026 Neutron estimate sit on a
@@ -56,8 +59,8 @@ SOURCE_NOTE = (
     "(SpaceNews, Ars Technica, Payload Research, The Planetary Society, Spaceflight Now) -- "
     "full citation per data point in data/sources.md. Dollar figures inflated to 2026 USD via "
     "BLS CPI-U (a blunt macro deflator, not a launch-cost-specific index). Hollow markers = "
-    "pre-flight / predicted figures. Only vehicles with BOTH a real capex and a real opex "
-    "value for this chart's basis are shown -- see console output / README for exclusions."
+    "pre-flight / predicted figures. Only vehicles with real values on BOTH this chart's "
+    "axes are shown -- see console output / README for exclusions."
 )
 
 # Fixed categorical color order (colorblind-checked qualitative set, Tableau10-derived),
@@ -155,6 +158,7 @@ _LABEL_OFFSETS = {
     "Epsilon":                           (-10, 10, "right", "bottom"),
     "SSLV":                              (10, 10, "left", "bottom"),
     "Kairos":                            (10, 10, "left", "bottom"),
+    "Orbex Prime":                       (8, -14, "left", "top"),
 }
 
 _SHORT = {
@@ -423,6 +427,42 @@ def figure_capex_first_launch_vs_opex_per_kg(df):
     return len(plotted), excluded
 
 
+def figure_payload_vs_opex_per_kg(df):
+    fig, ax = _new_fig()
+    plotted, excluded = _scatter(ax, df, "payload_leo_kg", "opex_per_kg_2026usd")
+    _finish(
+        fig, ax,
+        "Payload capacity to LEO (kg, log)", "Cost per kg to LEO (2026 USD, log)",
+        "Launch vehicle economics: payload capacity vs. $/kg to LEO",
+        "payload_vs_opex_per_kg.png",
+    )
+    return len(plotted), excluded
+
+
+def figure_payload_vs_capex_program(df):
+    fig, ax = _new_fig()
+    plotted, excluded = _scatter(ax, df, "payload_leo_kg", "capex_program_2026usd")
+    _finish(
+        fig, ax,
+        "Payload capacity to LEO (kg, log)", "Total program capex (2026 USD, log)",
+        "Launch vehicle economics: payload capacity vs. total program cost",
+        "payload_vs_capex_program.png",
+    )
+    return len(plotted), excluded
+
+
+def figure_payload_vs_capex_first_launch(df):
+    fig, ax = _new_fig()
+    plotted, excluded = _scatter(ax, df, "payload_leo_kg", "capex_first_launch_2026usd")
+    _finish(
+        fig, ax,
+        "Payload capacity to LEO (kg, log)", "Capex through first launch (2026 USD, log)",
+        "Launch vehicle economics: payload capacity vs. development cost through first launch",
+        "payload_vs_capex_first_launch.png",
+    )
+    return len(plotted), excluded
+
+
 if __name__ == "__main__":
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     data = load_data()
@@ -432,8 +472,11 @@ if __name__ == "__main__":
         "capex_first_launch_vs_opex_per_launch.png": figure_capex_first_launch_vs_opex_per_launch(data),
         "capex_program_vs_opex_per_kg.png": figure_capex_program_vs_opex_per_kg(data),
         "capex_first_launch_vs_opex_per_kg.png": figure_capex_first_launch_vs_opex_per_kg(data),
+        "payload_vs_opex_per_kg.png": figure_payload_vs_opex_per_kg(data),
+        "payload_vs_capex_program.png": figure_payload_vs_capex_program(data),
+        "payload_vs_capex_first_launch.png": figure_payload_vs_capex_first_launch(data),
     }
     for name, (n_plotted, excluded) in results.items():
-        print(f"\n{name}: {n_plotted} vehicles plotted; {len(excluded)} excluded (missing capex and/or opex):")
+        print(f"\n{name}: {n_plotted} vehicles plotted; {len(excluded)} excluded (missing one or both axes):")
         for v in excluded:
             print(f"  - {v}")
