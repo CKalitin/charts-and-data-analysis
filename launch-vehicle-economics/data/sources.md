@@ -525,6 +525,244 @@ $60M ÷ 8,000 kg ≈ $7,500/kg.
 
 ---
 
+# New-space startups (added in a second research pass)
+
+The vehicles below were added to answer a follow-up request to cover the current wave of
+new-space launch startups globally. **Almost every figure in this section is a company
+funding-raised total used as a capex PROXY, not a disclosed vehicle-specific development
+cost** — none of these companies publish an audited R&D figure the way NASA/GAO do, and
+several are also multi-program companies (e.g. Firefly also builds lunar landers; Relativity
+previously built and retired Terran 1) so their total raised capital is a looser proxy than
+for a single-vehicle company. Where a company hasn't reached orbit yet, both capex fields
+necessarily hold the same "total raised to date" number, since there's no way yet to isolate
+spending "through first launch" from ongoing spending. All commercial/target prices for
+pre-flight vehicles are explicitly predictions, not realized revenue.
+
+## Terran R (Relativity Space, USA)
+
+Relativity has raised $1.34B total across 8 rounds (largest: $650M Series E, June 2021) —
+[Tracxn](https://tracxn.com/d/companies/relativity-space/__h5W7c_vzbvwpDtWeLA8Isw89aMethLWmokUCXAaA3Yk/funding-and-investors).
+No standalone Terran-R capex figure is disclosed; this capital also funded the earlier
+Terran 1 (flew once, March 2023, reached space but not orbit, since retired). Payload:
+23,500 kg to LEO (reusable, downrange landing) / 33,500 kg expendable
+([Wikipedia: Terran R](https://en.wikipedia.org/wiki/Terran_R)). No commercial price is
+disclosed; company reports a $2.9B launch-services backlog (bookings, not a cost figure),
+including an expanded SES multi-launch deal (Nov 2025,
+[SES press release](https://www.ses.com/press-release/ses-relativity-space-expand-multi-launch-agreement-terran-r)).
+First launch targeted late 2026 from LC-16, Cape Canaveral
+([NASASpaceFlight.com](https://www.nasaspaceflight.com/2026/06/relativity-update-0626/)). Not yet flown.
+
+## Nova (Stoke Space, USA)
+
+$1.34B raised to date as of a Feb 2026 Series D extension (to $860M, from an initial $510M
+in Oct 2025) — [GeekWire](https://www.geekwire.com/2026/stoke-space-350m-added-funding/);
+[Stoke Space press release](https://www.stokespace.com/stoke-space-technologies-extends-previously-announced-series-d-financing-to-860-million/).
+An earlier (2024) Payload Research estimate cited only ~$175M raised at that time — funding
+scaled rapidly since. Payload: 3,000 kg to LEO with full reuse (both stages + fairing
+recovered — Stoke's design targets FULL reusability, unlike the partial reuse of Falcon 9,
+New Glenn, or Neutron) / 7,000 kg fully expendable
+([Wikipedia: Stoke Space Nova](https://en.wikipedia.org/wiki/Stoke_Space_Nova)). No price
+disclosed. Funding is activating Launch Complex 14 at Cape Canaveral. Not yet flown.
+
+## Firefly Alpha (Firefly Aerospace, USA)
+
+Firefly's own 2018 estimate: ~$100M Alpha-specific development cost
+([CompositesWorld](https://www.compositesworld.com/articles/the-alpha-launch-vehicle-designing-performance-in-cost-out)).
+A secondary Payload Research estimate instead treats Firefly's total raised capital (~$483M)
+as a rough proxy, but Firefly is a multi-program company (Blue Ghost lunar landers,
+Eclipse/MLV) so that figure likely overstates Alpha-specific spend
+([Payload Research](https://payloadspace.com/rocket-development-costs-by-vehicle-payload-research/)).
+Price: originally $15M advertised, now $19M
+([Wikipedia: Firefly Alpha](https://en.wikipedia.org/wiki/Firefly_Alpha)) — exact year of the
+increase not confirmed in this research. Payload: 1,030 kg to LEO (300km) / 630 kg to 500km
+SSO. First flight Sept 2, 2021; ~7 flights through mid-2026 (approximate tally, not
+independently reconfirmed flight-by-flight). Active — the only operational US 1-ton-class
+small launcher.
+
+## Eclipse / MLV (Firefly Aerospace + Northrop Grumman, USA)
+
+Northrop Grumman's own stated co-development investment: $50M
+([Firefly press release](https://fireflyspace.com/news/northrop-grumman-invests-50-million-in-firefly-aerospace-to-advance-medium-launch-vehicle-named-eclipse/)) —
+likely UNDERSTATES the true total program cost since it excludes Firefly's own R&D spend
+(undisclosed) as the other co-developer. Payload: 16,300 kg to LEO / 3,200 kg to GTO
+([Wikipedia: Eclipse (rocket)](https://en.wikipedia.org/wiki/Eclipse_(rocket))). No price
+disclosed. Designed as a successor to Antares (Northrop's legacy vehicle, elsewhere in this
+dataset), shares first-stage design and Miranda engines with the planned Antares 330. First
+flight targeted 2027. Not yet flown.
+
+## RS1 (ABL Space Systems, USA) — program terminated
+
+Included as a cautionary data point, not a going-concern vehicle. Total funding raised
+before the program ended: ~$461M ("nearly half a billion dollars" —
+[TechCrunch](https://techcrunch.com/2024/11/15/after-raising-nearly-half-a-billion-dollars-abl-space-pivots-from-launch-vehicles-to-missiles/)).
+Only launch attempt (Jan 10, 2023, Kodiak Island, Alaska) fell back onto the pad and
+exploded; the second built vehicle was destroyed during preflight ground testing in July
+2024, before a second attempt could be made. ABL ended orbital launch plans in Nov 2024
+(citing a tough launch market and supply-chain disruption from the Russian invasion of
+Ukraine) and pivoted to missile-defense/hypersonic test technology, rebranding as "Long
+Wall" in Feb 2025 ([Space.com](https://www.space.com/space-exploration/launches-spacecraft/rocket-startup-abl-space-systems-ends-orbital-launch-plans-pivots-to-missile-defense)).
+No commercial price ever established; payload rating not independently verified in this
+research and left blank rather than guessed.
+
+## Spectrum (Isar Aerospace, Germany)
+
+Total funding raised: ~€870M (~$950M), including a €270M Series D round
+([SpaceNews](https://spacenews.com/isar-aerospace-raises-270-million-euros-for-global-launch-expansion/)).
+Payload: 1,000 kg to LEO. Price: no flat per-launch price disclosed; the company's stated
+TARGET was €10,000/kg (~$11,700/kg) — the CSV's opex figure is back-calculated from that
+per-kg target times full payload, NOT a demonstrated commercial price, since Spectrum hasn't
+reached orbit. Maiden flight March 30, 2025, from Andøya Space, Norway — lost attitude
+control ~30s after liftoff (a vent-valve issue) and was terminated; the first orbital-class
+launch attempt from Continental Europe by a commercial company
+([Isar Aerospace press release](https://isaraerospace.com/press/isar-aerospace-lifts-off-successfully-during-first-test-flight-of-orbital-launch-vehicle)).
+A second flight attempt followed in 2026 per ESA and Astronomy.com coverage; exact date/
+detailed outcome not independently reconfirmed beyond "also fell short of orbit."
+
+## RFA ONE (Rocket Factory Augsburg, Germany)
+
+€30M (~$33M) KKR convertible-debt investment plus an €11M DLR grant
+([RFA press release](https://www.rfa.space/rfa-secures-30m-investment-from-kkr/)) — likely
+UNDERSTATES total spend since RFA (an OHB SE subsidiary) also draws on undisclosed
+parent-company resources. Payload: 1,350 kg to polar orbit / 1,500 kg to 700km SSO. Target
+price: €3M (~$3.3M) per launch, one of the most aggressive price targets in this dataset
+([RFA press release](https://www.rfa.space/german-microlauncher-start-up-rocket-factory-announces-unrivalled-low-price-of-eur-3-million-per-rocket-launch/));
+a more recent framing cites $3,000–4,000/kg for payloads up to 1,300 kg instead. The first
+stage was destroyed in an Aug 2024 static-fire test explosion at SaxaVord Spaceport,
+Shetland — not yet flown.
+
+## Miura 5 (PLD Space, Spain)
+
+Total funding raised: >€350M (~$407M), including a €180M Series C round and a €30M EIB
+venture-debt loan (April 2026) —
+[Spaceflight Now](https://spaceflightnow.com/2026/03/05/spanish-launch-startup-pld-space-raises-209-million-to-scale-its-rocket-production/).
+Also received €169M in Spanish-government-backed launch commitments via ESA's European
+Launcher Challenge (a revenue commitment, not a cost figure). Payload: 1,000 kg to LEO / 540
+kg to SSO. No price disclosed. PLD's earlier Miura 1 (a much smaller suborbital technology
+demonstrator) flew successfully in Oct 2023. Miura 5 targeted for a late-2026 debut from
+Kourou, French Guiana; not yet flown.
+
+## Prime (Orbex, UK)
+
+Total funding raised: >£100M (~$124.5M) across rounds from a 2018 £30M raise through a 2024
+Series D (~$20.7M) and 2025 UK government funding (~$25M) —
+[TechCrunch](https://techcrunch.com/2024/04/18/orbexs-new-funding-may-accelerate-its-prime-microlauncher-into-orbit/).
+Payload: 180 kg to LEO / 150 kg to SSO. No price disclosed. Designed to launch from
+Sutherland Spaceport, Scotland; partially reusable (first-stage recovery planned).
+Preselected (July 2025) for ESA's European Launcher Challenge (up to €169M available, a
+revenue/support commitment, not a cost figure). Not yet flown.
+
+## Maia (MaiaSpace, France)
+
+ArianeGroup's (parent company) cumulative equity investment, raised in stages to €125M
+(~$137M) by 2025, plus warrants that could add another €40M if exercised —
+[European Spaceflight](https://europeanspaceflight.com/arianegroup-to-increase-maiaspace-investment-to-e125m/).
+MaiaSpace separately reported €180M in customer advances/down-payments in 2024 filings —
+prepayments on future launch contracts, not a development-cost figure, so not used as capex
+here. Payload: 500 kg to LEO with first-stage recovery / 1,500 kg fully expendable. No price
+disclosed. Positioned as Europe's push into reusability; also proposed as a future
+booster-recovery upgrade path for Ariane 6 itself. Originally targeted a 2025 debut, since
+delayed; not yet flown.
+
+## Agnibaan (Agnikul Cosmos, India)
+
+Funding raised: ~$40M through an Oct 2023 Series B, plus a further ~$17M round at a $500M
+valuation ([Inc42](https://inc42.com/buzz/update-agnikul-raises-17-mn-at-500-mn-valuation/)).
+Payload (orbital-class configuration): 100 kg to a 700km orbit standard / 500 kg to 700km SSO
+fully expendable. No price disclosed. The one flight to date (May 30, 2024, "Agnibaan
+SOrTeD") was a SUBORBITAL single-stage technology demonstrator using a 3D-printed
+semi-cryogenic engine (Agnilet) — not the full multi-stage orbital configuration this
+dataset's capacity figures describe; treated as a company milestone rather than a true
+orbital first flight. Orbital Agnibaan debut still pending as of this research.
+
+## Vikram-1 (Skyroot Aerospace, India)
+
+Total funding raised: ~$160M, including a $60M round in May 2026 that valued the company
+above $1B — India's first space-tech unicorn
+([SpaceNews](https://spacenews.com/skyroot-raises-60-million-ahead-of-first-orbital-launch-attempt/)).
+Payload: 350 kg to LEO (three solid stages + a liquid-fuel kick stage). No price disclosed.
+The one flight to date (Nov 18, 2022, "Vikram-S") was a SUBORBITAL single-stage
+demonstrator — India's first privately-developed rocket to fly — not the orbital Vikram-1;
+treated as a milestone rather than a true orbital first flight. Orbital debut still pending
+as of this research (mid-2026).
+
+## Kairos (Space One, Japan)
+
+Cumulative fundraising of ¥20 billion (~$130M) per an Oct 2024 company press release
+([Space One](https://www.space-one.co.jp/news/news_20241009_02_e.html)), plus a separate
+¥8.5 billion (~$55M) Japan Ministry of Defense contract for upper-stage enhancements (a
+government contract, distinct from the equity total). Payload: 250 kg to LEO / 150 kg to SSO.
+Space One does not officially disclose pricing; a reported/estimated figure is $9M per launch,
+with a company executive describing it only as "competitive" against Rocket Lab's ~$7M
+Electron price
+([NASASpaceFlight.com](https://www.nasaspaceflight.com/2024/03/space-one-kairos/)). All 3
+launch attempts to date have failed (March 2024, exploded seconds after liftoff; Dec 2024;
+and a third 2025 attempt) — Kairos has not yet reached orbit.
+
+## Zhuque-2 (LandSpace, China)
+
+A Series C+ round raised $175M for Zhuque-2-series development specifically, led by Sequoia
+Capital China, Country Garden Venture Capital, Matrix Partners China, and Cornerstone Capital
+([SpaceNews](https://spacenews.com/chinas-landspace-raises-175-million-for-zhuque-2-launch-vehicles/)).
+Payload: 6,000 kg to 200km LEO / 4,000 kg to SSO. No commercial price was found — a genuine
+gap typical of Chinese commercial space pricing transparency. World's first liquid-methane
+rocket to reach orbit (2nd attempt, July 2023, after a Dec 2022 failure); ~10 flights through
+mid-2026 (approximate tally). Active.
+
+## Zhuque-3 (LandSpace, China)
+
+RMB900M (~$123M) from China's state-backed National Manufacturing Transformation and
+Upgrading Fund, earmarked for the Zhuque reusable methalox vehicles
+([SpaceNews](https://spacenews.com/chinas-landspace-secures-state-backed-funding-for-reusable-rockets/)) —
+in addition to (not summed with, since the split isn't disclosed) the earlier $175M Zhuque-2
+round. Payload: 18,300 kg to LEO with downrange first-stage recovery / 21,000 kg expendable /
+12,500 kg with return-to-launch-site recovery. Launch cost reported at $21M per flight, per a
+July 2026 Pandaily analysis of LandSpace's IPO filing on China's STAR Market — the same
+filing disclosed the company loses ~$240M/year, a rare window into a Chinese commercial
+launch company's real financials
+([Pandaily](https://pandaily.com/landspace-ipo-zhuque-3-rocket-reusable-analysis-jul2026)).
+Maiden flight Dec 3, 2025, reached orbit but the first-stage recovery attempt was
+unsuccessful. Comparable in ambition to Falcon 9 (stainless-steel, partially reusable,
+methalox, two-stage medium-to-heavy).
+
+## Ceres-1 (Galactic Energy, China)
+
+No funding/development-cost figure was found — a genuine gap. Payload: 400 kg to LEO / 300
+kg to 500km SSO. Current flat price: $4.38M
+([nextspaceflight.com](https://nextspaceflight.com/rockets/225/)); company has separately
+stated a longer-term target of under $10,000/kg. Solid-fuel small launcher with a real,
+established multi-year flight record (first flight Nov 2020) rather than a pre-flight
+prediction — one of the most active and reliable Chinese commercial launchers; ~20 flights
+through mid-2026 (approximate tally). Active.
+
+## Hyperbola-1 (i-Space / Beijing Interstellar Glory, China)
+
+No vehicle-specific development-cost figure was found; the company separately raised a $99M
+Series C at an unspecified date for its broader launch-vehicle program (not isolated to
+Hyperbola-1) — not used here as a vehicle-specific figure
+([Payload Space](https://payloadspace.com/chinese-launch-startup-ispace-raises-99m-series-c/)).
+Payload: 300 kg to LEO (solid-fuel, four stages). Price: ~$5M
+([Wikipedia: Hyperbola-1](https://en.wikipedia.org/wiki/Hyperbola-1)). China's first
+privately-developed rocket to reach orbit (July 25, 2019); mixed reliability record since;
+~10 flights through mid-2026 (approximate tally). i-Space is separately developing the
+larger, partially-reusable Hyperbola-3 (methalox, Falcon-9-class) — not included as a
+distinct row given limited public cost data specific to it as of this research.
+
+## Tianlong-3 (Space Pioneer, China)
+
+Two disclosed funding rounds specifically tied to Tianlong-3 development: ~$414M cumulative
+through a July 2023 C-round, plus a further RMB2.5B (~$351M) pre-D/D round in Oct 2025 —
+reported as two separate raises rather than one verified cumulative total, so the ~$765M sum
+used in the CSV should be treated as approximate
+([SpaceNews](https://spacenews.com/space-pioneer-raises-350-million-as-chinas-commercial-launch-boom-accelerates/)).
+Payload: 17,000 kg to LEO / 14,000 kg to 500km SSO — explicitly positioned by the company and
+press as China's closest Falcon-9 analog (two-stage kerolox, reusable first stage). No price
+disclosed. A first-stage vehicle was destroyed in an accidental ignition/crash during a June
+2024 ground static-fire test, prior to any real flight attempt. The company's earlier,
+smaller Tianlong-2 flew successfully in 2023 (not included as a separate row). Had not
+achieved a successful orbital flight as of this research.
+
+---
+
 ## General methodology notes
 
 - **Research conducted:** July 2026, via live web search across NASA, GAO/CBO, NASA OIG,

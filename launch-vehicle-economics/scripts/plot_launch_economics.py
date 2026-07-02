@@ -153,6 +153,21 @@ _SHORT = {
     "SLS (Space Launch System)": "SLS",
     "H-II / H-IIA": "H-II/H-IIA",
     "GSLV Mk III / LVM3 (bonus: better-documented sibling of GSLV)": "GSLV Mk III / LVM3",
+    "Eclipse / MLV (Firefly + Northrop Grumman)": "Eclipse (Firefly/Northrop)",
+    "Hyperbola-1 (i-Space / Beijing Interstellar Glory)": "Hyperbola-1 (i-Space)",
+    "Nova (Stoke Space)": "Nova (Stoke)",
+    "Miura 5 (PLD Space)": "Miura 5",
+    "Prime (Orbex)": "Orbex Prime",
+    "Maia (MaiaSpace)": "Maia",
+    "Kairos (Space One)": "Kairos",
+    "Agnibaan (Agnikul Cosmos)": "Agnibaan",
+    "Vikram-1 (Skyroot Aerospace)": "Vikram-1",
+    "Zhuque-2 (LandSpace)": "Zhuque-2",
+    "Zhuque-3 (LandSpace)": "Zhuque-3",
+    "Ceres-1 (Galactic Energy)": "Ceres-1",
+    "Tianlong-3 (Space Pioneer)": "Tianlong-3",
+    "RS1 (ABL Space Systems)": "RS1 (ABL)",
+    "Spectrum (Isar Aerospace)": "Spectrum",
 }
 
 
@@ -295,32 +310,37 @@ def _scatter_with_na_lanes(ax, df: pd.DataFrame, xcol: str, ycol: str, xlabel_sh
         xmin = min(xmin, y_missing[xcol].min())
         xmax = max(xmax, y_missing[xcol].max())
 
-    x_lane = xmin / 9.0
-    y_lane = ymin / 9.0
+    x_lane = xmin / 14.0
+    y_lane = ymin / 14.0
     x_boundary = xmin / 2.6
     y_boundary = ymin / 2.6
-    x_lo = x_lane / 2.4
-    y_lo = y_lane / 2.4
+    x_lo = x_lane / 2.0
+    y_lo = y_lane / 2.0
     x_hi = xmax * 1.55
     y_hi = ymax * 1.55
 
     both["plot_x"], both["plot_y"] = both[xcol], both[ycol]
 
     # Vehicles sharing a lane would otherwise all land on exactly the same x (or y) and
-    # stack directly on top of each other -- stagger them across a handful of sub-columns
-    # (log-spaced within the lane band), cycling by rank on the OTHER coordinate so
-    # points close together on that axis end up visually separated.
-    N_STAGGER = 4
-    x_cols = np.geomspace(x_lo * 1.6, x_boundary / 1.4, N_STAGGER)
-    y_rows = np.geomspace(y_lo * 1.6, y_boundary / 1.4, N_STAGGER)
+    # stack directly on top of each other -- stagger them across sub-columns (log-spaced
+    # within the lane band), cycling by rank on the OTHER coordinate so points close
+    # together on that axis end up visually separated. Lane size scales with how many
+    # vehicles actually land in it, since a handful of pre-flight startups sharing similar
+    # funding-raised totals can otherwise still bunch up within just 3-4 sub-lanes.
+    n_x_stagger = max(4, min(10, len(x_missing)))
+    n_y_stagger = max(4, min(10, len(y_missing)))
+    x_cols = np.geomspace(x_lo * 1.5, x_boundary / 1.3, n_x_stagger)
+    y_rows = np.geomspace(y_lo * 1.5, y_boundary / 1.3, n_y_stagger)
 
     x_missing = x_missing.sort_values(ycol, ascending=False).reset_index(drop=True)
-    x_missing["plot_x"] = [x_cols[i % N_STAGGER] for i in range(len(x_missing))]
+    x_missing["plot_x"] = [x_cols[i % n_x_stagger] for i in range(len(x_missing))]
     x_missing["plot_y"] = x_missing[ycol]
+    x_missing["_stagger_rank"] = range(len(x_missing))
 
     y_missing = y_missing.sort_values(xcol, ascending=False).reset_index(drop=True)
-    y_missing["plot_y"] = [y_rows[i % N_STAGGER] for i in range(len(y_missing))]
+    y_missing["plot_y"] = [y_rows[i % n_y_stagger] for i in range(len(y_missing))]
     y_missing["plot_x"] = y_missing[xcol]
+    y_missing["_stagger_rank"] = range(len(y_missing))
 
     ax.set_xlim(x_lo, x_hi)
     ax.set_ylim(y_lo, y_hi)
@@ -342,14 +362,28 @@ def _scatter_with_na_lanes(ax, df: pd.DataFrame, xcol: str, ycol: str, xlabel_sh
         _plot_group(ax, sub[sub["is_preflight"]], "plot_x", "plot_y", hollow=True)
 
     combined = pd.concat([both, x_missing, y_missing], ignore_index=True)
+    x_missing_names = set(x_missing["vehicle"])
+    y_missing_names = set(y_missing["vehicle"])
     for _, row in combined.iterrows():
         label = _short(row["vehicle"])
         suffix = ""
-        if row["vehicle"] in x_missing["vehicle"].values:
+        if row["vehicle"] in x_missing_names:
             suffix = " (capex n/a)"
-        elif row["vehicle"] in y_missing["vehicle"].values:
+        elif row["vehicle"] in y_missing_names:
             suffix = " (opex n/a)"
-        dx, dy, ha, va = _LABEL_OFFSETS.get(label, _DEFAULT_OFFSET)
+        if label in _LABEL_OFFSETS:
+            dx, dy, ha, va = _LABEL_OFFSETS[label]
+        elif row["vehicle"] in y_missing_names:
+            # Many pre-flight startups share this lane with similar funding-raised totals
+            # (close x) -- alternate the label above/below by stagger rank so consecutive
+            # rows don't write directly over each other.
+            rank = int(row["_stagger_rank"]) if pd.notna(row.get("_stagger_rank")) else 0
+            dx, dy, ha, va = (8, 8, "left", "bottom") if rank % 2 == 0 else (8, -8, "left", "top")
+        elif row["vehicle"] in x_missing_names:
+            rank = int(row["_stagger_rank"]) if pd.notna(row.get("_stagger_rank")) else 0
+            dx, dy, ha, va = (8, 6, "left", "bottom") if rank % 2 == 0 else (-8, 6, "right", "bottom")
+        else:
+            dx, dy, ha, va = _DEFAULT_OFFSET
         ax.annotate(
             label + suffix, xy=(row["plot_x"], row["plot_y"]), xytext=(dx, dy),
             textcoords="offset points", fontsize=7,

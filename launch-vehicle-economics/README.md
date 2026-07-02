@@ -1,8 +1,9 @@
 # Launch vehicle economics: capex vs. opex
 
 A cross-program scatter analysis of launch vehicle capital cost (development/program capex)
-against operating cost (cost per launch and cost per kg to LEO), covering 22 vehicles from
-the 1957 Atlas ICBM through 2026 pre-flight predictions for Neutron.
+against operating cost (cost per launch and cost per kg to LEO), covering 40 vehicles from
+the 1957 Atlas ICBM through the current global wave of new-space launch startups (Terran R,
+Nova, Spectrum, Zhuque-3, and more — most still pre-first-flight as of this research).
 
 ## Why two capex charts and two opex bases
 
@@ -70,11 +71,24 @@ so treat the resulting positions as roughly comparable, not as a precise "real c
 
 ## Vehicles covered
 
-Falcon 9 v1.0, Falcon 9 (reusable, Block 5), Falcon Heavy, Starship (expendable, scoped to
-IFT-1), Antares, Space Shuttle, SLS, Saturn V, Titan IV, Titan II GLV (Gemini), Original
-Atlas (SM-65/Atlas D), Atlas V, Delta IV (Medium & Heavy), Neutron (Rocket Lab,
-pre-first-flight predictions), New Glenn, Soyuz, Proton, H-II/H-IIA, H3, PSLV, GSLV Mk II,
-and — as a bonus, since it's far better documented than plain GSLV — GSLV Mk III / LVM3.
+**Established/historical (22):** Falcon 9 v1.0, Falcon 9 (reusable, Block 5), Falcon Heavy,
+Starship (expendable, scoped to IFT-1), Antares, Space Shuttle, SLS, Saturn V, Titan IV,
+Titan II GLV (Gemini), Original Atlas (SM-65/Atlas D), Atlas V, Delta IV (Medium & Heavy),
+Neutron (Rocket Lab, pre-first-flight predictions), New Glenn, Soyuz, Proton, H-II/H-IIA, H3,
+PSLV, GSLV Mk II, and — as a bonus, since it's far better documented than plain GSLV — GSLV
+Mk III / LVM3.
+
+**New-space startups (18, added in a second pass):** Terran R (Relativity Space, USA), Nova
+(Stoke Space, USA), Firefly Alpha (USA), Eclipse/MLV (Firefly + Northrop Grumman, USA), RS1
+(ABL Space Systems, USA — program terminated 2024), Spectrum (Isar Aerospace, Germany), RFA
+ONE (Rocket Factory Augsburg, Germany), Miura 5 (PLD Space, Spain), Prime (Orbex, UK), Maia
+(MaiaSpace, France), Agnibaan (Agnikul Cosmos, India), Vikram-1 (Skyroot Aerospace, India),
+Kairos (Space One, Japan), Zhuque-2 (LandSpace, China), Zhuque-3 (LandSpace, China), Ceres-1
+(Galactic Energy, China), Hyperbola-1 (i-Space, China), Tianlong-3 (Space Pioneer, China).
+Almost all of these are pre-first-flight or have only flown sub-scale demonstrators — their
+capex figures are company funding-raised totals (a looser proxy than a disclosed R&D budget)
+and their opex figures, where they exist at all, are unproven target prices. See
+`data/sources.md` for the "New-space startups" section with full caveats per vehicle.
 
 ## Data gaps (recorded and shown, never guessed or dropped)
 
