@@ -288,6 +288,18 @@ def _plot_group(ax, sub, x, y, hollow: bool):
                 facecolor=("none" if hollow else color),
                 edgecolor=color, linewidth=(1.6 if hollow else 0.6),
             )
+        # Rows sitting in the "opex not publicly disclosed" lane have NO cost-basis label
+        # at all (that's the whole point) -- they'd otherwise never match a BASIS_ORDER
+        # filter above and silently get no marker. Give them a plain diamond instead of
+        # dropping them.
+        no_basis = sub[(sub["region"] == region) & (sub["opex_used_basis"].isna())]
+        if not no_basis.empty:
+            color = REGION_COLORS[region]
+            ax.scatter(
+                no_basis[x], no_basis[y], marker="D", s=70, zorder=4,
+                facecolor=("none" if hollow else color),
+                edgecolor=color, linewidth=(1.6 if hollow else 0.6),
+            )
 
 
 def _scatter_with_na_lanes(ax, df: pd.DataFrame, xcol: str, ycol: str, xlabel_short: str, ylabel_short: str):
@@ -404,6 +416,9 @@ def _legend(ax):
     ] + [
         Line2D([0], [0], marker=BASIS_MARKERS[b], linestyle="", color="0.35", markersize=8, label=b)
         for b in BASIS_ORDER
+    ] + [
+        Line2D([0], [0], marker="D", linestyle="", color="0.35", markersize=7,
+               label="no opex figure at all\n(position only)"),
     ] + [
         Line2D([0], [0], marker="o", linestyle="", markerfacecolor="0.35", markeredgecolor="0.35",
                markersize=8, label="has flown"),
