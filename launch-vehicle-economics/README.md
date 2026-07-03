@@ -127,12 +127,21 @@ full per-vehicle caveats.
 
 **Also added on request (1):** Tundra (NordSpace, Canada) — a pre-first-flight small launcher
 targeting 2028 IOC, in the same "predicted, not yet real" category as the startups above.
-Capex is a CA$8.33M Canadian government grant specifically for Tundra (NordSpace separately
-holds a much larger CA$715M Canadian Space Agency award, but that's for broader propulsion-
-manufacturing capability, not Tundra-specific R&D, and isn't included here); opex is
-back-calculated from the company's stated ~$10,000/kg LEO cost target, not a disclosed flat
-price. Canada is its own region/color on the charts (previously grouped countries only
-covered USA, Russia/USSR, Japan, India, China, and Europe).
+Opex is back-calculated from the company's stated ~$10,000/kg LEO cost target (not a
+disclosed flat price) — a peer check against every other vehicle in Tundra's payload class
+(500 kg) shows this is plausible: it lands between SSLV's real $7,800/kg and Ceres-1's real
+$10,950/kg, both actually-flying vehicles, not an implausibly cheap outlier. **Capex is
+deliberately left blank, not just flagged as uncertain:** NordSpace's only vehicle-specific
+disclosure is a CA$8.33M Canadian government grant, which is far below every comparable
+small-launcher peer (Electron and Firefly Alpha each needed ~$100M; RFA ONE has raised $33M
+and still hasn't reached orbit; even SSLV — a heavily state-subsidized ISRO program reusing
+existing PSLV/GSLV infrastructure — needed $20.4M). Plotting $8.33M as "capex" would imply an
+unprecedented, implausible level of cost efficiency for a vehicle that hasn't flown, so Tundra
+appears only on the payload-vs-$/kg chart, not the capex charts. (NordSpace separately holds
+a much larger CA$715M Canadian Space Agency award, but that's for broader propulsion-
+manufacturing capability, not Tundra-specific R&D, and wasn't a good substitute either.)
+Canada is its own region/color on the charts (previously grouped countries only covered USA,
+Russia/USSR, Japan, India, China, and Europe).
 
 ## A note on data quality (read this before trusting any single point)
 
