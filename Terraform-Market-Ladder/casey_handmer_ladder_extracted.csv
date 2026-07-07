@@ -1,0 +1,17 @@
+ladder,tier_id,segment,price_ceiling_native,price_unit,cumulative_market_size_usd_per_yr,category,notes
+methanol,1,Packaged consumer solvent (BEACHHEAD),3000,$/t,90000000,sold as-is (blue) - beachhead,Full retail price at small scale; leftmost/highest-price point on chart
+methanol,2,Semiconductor / electronic grade,2000,$/t,190000000,requires purification beyond AA (green),
+methanol,3,HPLC / LC-MS analytical grade,1300,$/t,216000000,requires purification beyond AA (green),
+methanol,4,USP / pharma grade,700,$/t,426000000,requires purification beyond AA (green),
+methanol,5,Grade AA methanol (bulk),450,$/t,45000000000,sold as-is (blue) - bulk AA,
+methanol,6,MTX aromatics / olefins,267,$/t,462000000000,requires MTX conversion (purple) - fuels/petrochem,
+methanol,7,Direct methanol marine fuel,250,$/t,615000000000,sold as-is (blue) - marine fuel,
+methanol,8,MTG gasoline,223,$/t,1260000000000,requires MTX conversion (purple) - fuels/petrochem,
+methanol,9,MTX diesel,190,$/t,2110000000000,requires MTX conversion (purple) - fuels/petrochem,
+methanol,10,MTX jet / Jet-A,167,$/t,2310000000000,requires MTX conversion (purple) - fuels/petrochem,
+methane,1,CP methane (99.5%) packaged (BEACHHEAD),495,$/MMBtu,180000000,sold as-is (blue) - beachhead,Full retail price at small scale; leftmost/highest-price point on chart
+methane,2,Strategic / remote (diesel displacement),45,$/MMBtu,23000000000,sold as-is (blue),
+methane,3,RNG western US (D3 RIN + LCFS),35,$/MMBtu,94000000000,sold as-is (blue),
+methane,4,Asian LNG spot (JKM),18.9,$/MMBtu,208000000000,sold as-is (blue),
+methane,5,European (TTF),15.5,$/MMBtu,271000000000,sold as-is (blue),
+methane,6,Global bulk (Henry Hub),3.0,$/MMBtu,698000000000,sold as-is (blue) - bulk floor,
