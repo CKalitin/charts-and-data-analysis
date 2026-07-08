@@ -385,7 +385,7 @@ def draw(ax, fig, steps: list[LadderStep], *, title: str, y_label: str, x_top_la
     # Pass 2 — text + boxes, zorder above every arrow drawn in pass 1.
     for s, c, xmid, dx, dy, ha, va in anchors:
         label = (f"{s.name}\n{price_fmt(s.price)}"
-                 f" · Δ{_fmt_dollars(s.dollars_per_year)}"
+                 f" · Mkt {_fmt_dollars(s.dollars_per_year)}"
                  f" · Σ{_fmt_dollars(s.cumulative_dollars_per_year)}")
         bbox = dict(boxstyle="round,pad=0.25", fc="white", ec=c, lw=0.8, alpha=0.95)
         ax.annotate(label, xy=(xmid, s.price), xytext=(dx, dy), textcoords="offset points",
@@ -457,7 +457,7 @@ def figures():
                       "Prices: 2024 basis ($/MMBtu)\n"
                       "Volumes: GLOBAL, non-overlapping (de-double-counted)\n"
                       "IEA/IGU sector shares + Henry Hub as global floor price\n"
-                      "Label: price · Δ own market · Σ cumulative\n"
+                      "Label: price · Mkt = own market size · Σ cumulative\n"
                       "Right axis: Terraform's share of currently-unlocked market\n"
                       "= own production / cumulative ceiling of its current tier\n"
                       "(green <100% · red ≥100%)")
@@ -474,7 +474,7 @@ def figures():
                        "y = methanol netback / reference value\n"
                        "FEEDSTOCK-VALUE approach: Terraform sells methanol,\n"
                        "not the converted end-product (see MTX-TAM variant)\n"
-                       "Label: price · Δ own market · Σ cumulative\n"
+                       "Label: price · Mkt = own market size · Σ cumulative\n"
                        "Right axis: Terraform's share of currently-unlocked market\n"
                        "= own production / cumulative ceiling of its current tier\n"
                        "(green <100% · red ≥100%)")
@@ -500,7 +500,7 @@ def figures():
                        "Non-MTX tiers still feedstock-value (unchanged)\n"
                        "Conversion ratios: MTG 2.584 (sourced, Motunui); others\n"
                        "2.9 (MTO rule-of-thumb, extended to diesel/jet — ASSUMPTION)\n"
-                       "Label: price · Δ own market · Σ cumulative\n"
+                       "Label: price · Mkt = own market size · Σ cumulative\n"
                        "Right axis: Terraform's share of currently-unlocked market\n"
                        "= own production / cumulative ceiling of its current tier\n"
                        "(green <100% · red ≥100%)")
