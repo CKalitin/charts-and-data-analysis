@@ -107,10 +107,22 @@ class LadderStep:
 #                            volumes — no global physical-volume source was found for these
 #                            two niche tiers. At <1% of the 145.6 Tcf total, layering them on
 #                            top is an immaterial, flagged approximation, not a sourced figure.
-#   Industrial/residential reference prices are US benchmarks (EIA) used as a GLOBAL proxy in
-#   the absence of a single blended global price — same convention Casey's own chart uses for
-#   Henry Hub as a "global bulk" floor price.
+#   Chemically pure methane (packaged, CP grade): $495/MMBtu is Terraform's own stated price
+#                            for this tier, used directly (not re-derived). Cross-checked against
+#                            independently sourced cylinder-gas comparables: US retail specialty
+#                            cylinders (CalGasDirect/GASCO CP 99.5%, 305-650L) run ~$29,400-
+#                            60,200/MMBtu, and a Chinese bulk-wholesale cylinder listing (Forterra
+#                            Gas, 99.9-99.999%, 40L @150 bar, 200+ unit rate) computes to
+#                            ~$226-242/MMBtu after a real-gas compressibility correction (Z~0.87
+#                            at 150 bar). $495/MMBtu sits ~2x above that bulk-wholesale floor and
+#                            ~60-400x below retail cylinder pricing — a believable "packaged,
+#                            bulk-delivered, no retail markup" price point, not an outlier.
+#                            Volume is a small ILLUSTRATIVE placeholder (no sourced market-size
+#                            figure exists for this niche a specialty-gas slice) — set smaller
+#                            than the other illustrative tiers above, consistent with "small but
+#                            high price."
 METHANE_MARKETS_GLOBAL = [
+    Market("Chemically pure methane\n(packaged, CP grade)", 495.00, 0.01),
     Market("Remote / off-grid fuel\n(propane displacement)", 27.00, 1.34),
     Market("CNG/LNG vehicle fuel", 20.00, 0.04),
     Market("Global LNG trade (JKM-priced)", 11.91, 19.7),
@@ -238,6 +250,66 @@ def build_ladder(markets: list[Market], terraformers_per_vol: float,
 
 
 # --------------------------------------------------------------------------------------
+# MODEL — Wright's Law cost decline: how much production is needed to unlock each tier,
+# and what fraction of that tier's own market that production represents.
+# --------------------------------------------------------------------------------------
+LEARNING_RATE = 0.20              # cost falls 20% every time cumulative production doubles
+START_TERRAFORMERS = 1.0          # Q0: starting cumulative production
+START_COST_PER_MMBTU = 45.0       # cost0: methane synthesis cost at Q0, $/MMBtu
+START_COST_PER_TONNE_METHANOL = 800.0   # cost0: methanol synthesis cost at Q0, $/t (matches
+                                          # Casey's own methanol starting point — above every
+                                          # feedstock-value tier's price, so all 7 need a step)
+
+
+def wrights_law_b(learning_rate: float) -> float:
+    """Wright's law exponent b in cost(Q) = cost0 * (Q/Q0)^-b, derived from the learning rate:
+    cost multiplies by (1 - learning_rate) every time cumulative production Q doubles."""
+    return -np.log2(1.0 - learning_rate)
+
+
+@dataclass
+class UnlockStep:
+    """One tier's cost-decline unlock point: how much cumulative production Wright's Law says
+    is needed for synthesis cost to reach this tier's price, and what fraction of this tier's
+    OWN market-size ceiling that production represents."""
+    tier_name: str
+    tier_price: float                  # $/MMBtu price of the tier being unlocked
+    cum_terraformers_required: float   # Q_i: cumulative production needed to reach tier_price
+    additional_terraformers: float     # Q_i - Q_(i-1): incremental production for this step
+    tier_ceiling_terraformers: float   # H_i: this tier's own cumulative market-size ceiling
+    market_share_required: float       # Q_i / H_i — can be tiny; see module docstring findings
+    multiple_of_previous: float        # Q_i / Q_(i-1) — e.g. 4.9 means "4.9x current production"
+    cost_decrease_pct: float           # % cost must fall THIS step: (prev_price - price) / prev_price
+
+
+def compute_unlock_steps(steps: list[LadderStep], learning_rate: float,
+                         start_terraformers: float, start_cost: float) -> list[UnlockStep]:
+    """Walk the ladder (already price-descending) and compute, for every tier NOT already
+    unlocked at the starting cost, the cumulative production Wright's Law requires to reach
+    that tier's price, and the resulting share of that tier's own market ceiling.
+
+    Tiers priced at or above start_cost are skipped — they're already profitable at Q0, no
+    cost decline needed. This mirrors add_market_share_axis()'s share = x / H_current_tier
+    definition exactly, just evaluated at cost-derived x values instead of a continuous sweep.
+    """
+    b = wrights_law_b(learning_rate)
+    results: list[UnlockStep] = []
+    prev_q = start_terraformers
+    prev_price = start_cost
+    for s in steps:
+        if s.price >= start_cost:
+            continue
+        q_i = start_terraformers * (start_cost / s.price) ** (1.0 / b)
+        q_i = max(q_i, prev_q)
+        cost_decrease_pct = (prev_price - s.price) / prev_price * 100.0
+        results.append(UnlockStep(s.name, s.price, q_i, q_i - prev_q, s.cum_hi,
+                                  q_i / s.cum_hi, q_i / prev_q, cost_decrease_pct))
+        prev_q = q_i
+        prev_price = s.price
+    return results
+
+
+# --------------------------------------------------------------------------------------
 # PLOTTING — one draw() for both ladders
 # --------------------------------------------------------------------------------------
 def _fmt_dollars(v: float) -> str:
@@ -334,7 +406,7 @@ _DEFAULT_OFFSET = (8, 10, "left", "bottom")
 
 def draw(ax, fig, steps: list[LadderStep], *, title: str, y_label: str, x_top_label: str,
          top_per_terraformer_vol: float, yscale: str, price_fmt, y_ticks,
-         top_fmt, label_offsets: dict, param_text: str) -> None:
+         top_fmt, label_offsets: dict, param_text: str, show_market_share: bool = True) -> None:
     """Draw a descending market-ladder staircase with annotated steps.
 
     top_per_terraformer_vol : native volume per Terraformer, to label a secondary top x-axis
@@ -344,6 +416,9 @@ def draw(ax, fig, steps: list[LadderStep], *, title: str, y_label: str, x_top_la
                               never a distant shared column. Tune only the overlapping
                               neighbours (see skill: "Labels overlap into mush"); unlisted
                               names fall back to _DEFAULT_OFFSET.
+    show_market_share       : add the secondary "Terraform's share of unlocked market" axis.
+                              Off produces the plain market ladder (price vs. cumulative
+                              production only) — same core chart, no twin axis at all.
     """
     n = len(steps)
     colors = cm.plasma_r(np.linspace(0.12, 0.9, n))
@@ -422,7 +497,12 @@ def draw(ax, fig, steps: list[LadderStep], *, title: str, y_label: str, x_top_la
     secax.xaxis.set_major_formatter(FuncFormatter(lambda v, _: top_fmt(v)))
     secax.xaxis.set_minor_formatter(NullFormatter())
 
-    add_market_share_axis(ax, steps)
+    if show_market_share:
+        add_market_share_axis(ax, steps)
+        param_text = (param_text + "\n"
+                      "Right axis: Terraform's share of currently-unlocked market\n"
+                      "= own production / cumulative ceiling of its current tier\n"
+                      "(green <100% · red ≥100%)")
 
     # Signature footer (fixed, below the axes — never competes with the in-axes scan below).
     ax.text(0.5, -0.15, SIGNATURE, transform=ax.transAxes, ha="center", va="top",
@@ -435,6 +515,68 @@ def draw(ax, fig, steps: list[LadderStep], *, title: str, y_label: str, x_top_la
     # fights our global constrained_layout=True (it broke the left price-axis entirely). Stick
     # with mode="on" — the twin axis's line/ticks are made visible to this scan via the phantom
     # mirror artists added at the end of add_market_share_axis(), above.
+    info_box.add_info_box(ax, fig, param_text, mode="on", fontsize=7.5)
+
+
+def draw_unlock_bar_chart(ax, fig, unlock_steps: list[UnlockStep], *, title: str,
+                          param_text: str) -> None:
+    """Bar chart: one bar per tier, x = tier (in unlock order), y = market_share_required —
+    the fraction of that tier's own market ceiling that Wright's-Law-implied cumulative
+    production represents at the moment synthesis cost first reaches that tier's price.
+
+    Log-scale y-axis: real values here span ~0.0007%-0.03% (~40x range) — a linear axis would
+    render every bar as visually zero. Log is what makes the actual spread readable.
+    """
+    n = len(unlock_steps)
+    colors = cm.plasma_r(np.linspace(0.12, 0.9, n))
+    x = np.arange(n)
+    shares_pct = [u.market_share_required * 100 for u in unlock_steps]
+
+    ax.bar(x, shares_pct, color=colors, edgecolor="0.3", linewidth=0.8, zorder=3)
+    for xi, u, pct in zip(x, unlock_steps, shares_pct):
+        # Everything for one bar stacks VERTICALLY, directly above that bar and nothing else —
+        # each line kept short enough to stay within the bar's own horizontal footprint, so
+        # neighbouring bars' text can never collide regardless of bar height (no zigzag needed).
+        # Floats above the bar (white background), not inside its colored fill — grey text read
+        # fine against light yellow/orange bars but was illegible against the dark purple end.
+        ax.annotate(f"{pct:.4f}%", xy=(xi, pct), xytext=(0, 26), textcoords="offset points",
+                    ha="center", va="bottom", fontsize=8, weight="bold", zorder=5)
+        ax.annotate(f"Q={_human(u.cum_terraformers_required)} ({u.multiple_of_previous:.1f}x)\n"
+                   f"cost −{u.cost_decrease_pct:.1f}%",
+                    xy=(xi, pct), xytext=(0, 4), textcoords="offset points",
+                    ha="center", va="bottom", fontsize=6.3, color="0.3", zorder=5, linespacing=1.4)
+
+    ax.set_xticks(x)
+    ax.set_xticklabels([u.tier_name.replace("\n", " ") for u in unlock_steps],
+                       rotation=30, ha="right", fontsize=8)
+    ax.set_yscale("log")
+    ax.set_ylabel("Required market share to unlock this tier\n(cumulative production ÷ tier's own market ceiling)")
+    ax.set_xlabel("Step (tier unlocked, in order)")
+    ax.set_title(title, fontsize=12, weight="bold", pad=14)
+    ax.yaxis.set_major_formatter(FuncFormatter(lambda v, _: f"{v:g}%"))
+    ax.set_ylim(min(shares_pct) * 0.5, max(shares_pct) * 6.0)
+    ax.margins(x=0.06)
+
+    # info_box's occupancy scan checks ax.get_lines() and ax.collections — it never looks at
+    # ax.patches, so it is completely blind to ax.bar()'s Rectangle patches and can place the
+    # box right on top of a tall bar (happened here: methanol's tallest bars sit at the left,
+    # where the scan otherwise had no text/lines to avoid). Mirroring just the bar's OUTLINE
+    # (4 corners) was tried first and didn't work: the scan scores occupancy by counting
+    # sampled points that fall INSIDE a candidate box, so a box positioned entirely within the
+    # bar's interior (never touching the 4 corner points) still scored as empty. Fill each
+    # bar's full rectangle with a point grid instead, so any overlap is detected everywhere,
+    # not just at the edges. Log-spaced in y to match the log axis's actual pixel density.
+    y_bottom = ax.get_ylim()[0]
+    bar_width = 0.8
+    for xi, pct in zip(x, shares_pct):
+        bx0, bx1 = xi - bar_width / 2, xi + bar_width / 2
+        xs_grid = np.linspace(bx0, bx1, 6)
+        ys_grid = np.geomspace(max(y_bottom, 1e-12), pct, 6)
+        xx, yy = np.meshgrid(xs_grid, ys_grid)
+        ax.plot(xx.ravel(), yy.ravel(), alpha=0, marker=".", linestyle="none")
+
+    ax.text(0.5, -0.34, SIGNATURE, transform=ax.transAxes, ha="center", va="top",
+           fontsize=6.5, color="0.5")
     info_box.add_info_box(ax, fig, param_text, mode="on", fontsize=7.5)
 
 
@@ -457,10 +599,7 @@ def figures():
                       "Prices: 2024 basis ($/MMBtu)\n"
                       "Volumes: GLOBAL, non-overlapping (de-double-counted)\n"
                       "IEA/IGU sector shares + Henry Hub as global floor price\n"
-                      "Label: price · Δ own market · Σ cumulative\n"
-                      "Right axis: Terraform's share of currently-unlocked market\n"
-                      "= own production / cumulative ceiling of its current tier\n"
-                      "(green <100% · red ≥100%)")
+                      "Label: price · Δ own market · Σ cumulative")
 
     # Methanol (feedstock) clusters near $340-380: same cascade-from-own-dot treatment.
     methanol_fs_offsets = {
@@ -474,10 +613,7 @@ def figures():
                        "y = methanol netback / reference value\n"
                        "FEEDSTOCK-VALUE approach: Terraform sells methanol,\n"
                        "not the converted end-product (see MTX-TAM variant)\n"
-                       "Label: price · Δ own market · Σ cumulative\n"
-                       "Right axis: Terraform's share of currently-unlocked market\n"
-                       "= own production / cumulative ceiling of its current tier\n"
-                       "(green <100% · red ≥100%)")
+                       "Label: price · Δ own market · Σ cumulative")
 
     # Methanol (MTX-TAM): same $340-380 cluster, plus the 223/190/167 gasoline-diesel-jet
     # cluster now needs its own cascade (their Terraformer widths are huge, spreading them out
@@ -500,12 +636,12 @@ def figures():
                        "Non-MTX tiers still feedstock-value (unchanged)\n"
                        "Conversion ratios: MTG 2.584 (sourced, Motunui); others\n"
                        "2.9 (MTO rule-of-thumb, extended to diesel/jet — ASSUMPTION)\n"
-                       "Label: price · Δ own market · Σ cumulative\n"
-                       "Right axis: Terraform's share of currently-unlocked market\n"
-                       "= own production / cumulative ceiling of its current tier\n"
-                       "(green <100% · red ≥100%)")
+                       "Label: price · Δ own market · Σ cumulative")
 
-    def build_methane():
+    # Every chart comes in two variants: with the market-share twin axis, and the plain ladder
+    # (price vs. cumulative production only) — same underlying draw(), just show_market_share
+    # toggled and a "_no_share" filename suffix for the plain version.
+    def build_methane(share: bool):
         fig, ax = render.new_figure(figsize=(12, 7))
         draw(ax, fig, methane,
              title="Methane market ladder (GLOBAL) — cumulative Terraformers vs scale price",
@@ -514,13 +650,49 @@ def figures():
              top_per_terraformer_vol=TERRAFORMER_CH4_MMCF_YR / MMCF_PER_TCF,  # Tcf per Terraformer
              yscale="log",
              price_fmt=lambda p: f"${p:,.0f}" if p >= 10 else f"${p:,.1f}",
-             y_ticks=[2, 3, 5, 10, 20, 30],
+             y_ticks=[2, 3, 5, 10, 20, 30, 50, 100, 200, 500],
              top_fmt=lambda v: f"{v:g}",
              label_offsets=methane_offsets,
-             param_text=methane_params)
-        return fig, OUTPUT_ROOT / "methane_market_ladder.png"
+             param_text=methane_params, show_market_share=share)
+        suffix = "" if share else "_no_share"
+        return fig, OUTPUT_ROOT / f"methane_market_ladder{suffix}.png"
 
-    def build_methanol_feedstock():
+    def build_methane_unlock_bars(learning_rate: float):
+        rate_steps = compute_unlock_steps(methane, learning_rate, START_TERRAFORMERS,
+                                          START_COST_PER_MMBTU)
+        params = (f"Wright's Law: {learning_rate:.0%} learning rate\n"
+                 f"Start: {START_TERRAFORMERS:g} Terraformer @ ${START_COST_PER_MMBTU:.0f}/MMBtu\n"
+                 "Required share = cumulative production needed for\n"
+                 "cost to reach that tier's price, ÷ tier's own market ceiling\n"
+                 "\"Chemically pure methane\" tier excluded — already\n"
+                 "unlocked at the starting cost, no cost decline needed")
+        fig, ax = render.new_figure(figsize=(12, 7))
+        draw_unlock_bar_chart(ax, fig, rate_steps,
+                              title=f"Methane: required market share to unlock each tier"
+                                   f" (Wright's Law, {learning_rate:.0%} LR)",
+                              param_text=params)
+        return fig, OUTPUT_ROOT / f"methane_unlock_share_bars_lr{learning_rate * 100:.0f}.png"
+
+    def build_methanol_unlock_bars(learning_rate: float):
+        # methanol_fs tiers top out at $600/t, below the $800/t starting cost — every tier
+        # (unlike methane's pre-unlocked "chemically pure" beachhead) needs a cost-decline step.
+        rate_steps = compute_unlock_steps(methanol_fs, learning_rate, START_TERRAFORMERS,
+                                          START_COST_PER_TONNE_METHANOL)
+        params = (f"Wright's Law: {learning_rate:.0%} learning rate\n"
+                 f"Start: {START_TERRAFORMERS:g} Terraformer @"
+                 f" ${START_COST_PER_TONNE_METHANOL:.0f}/t (Casey's own starting point)\n"
+                 "Required share = cumulative production needed for\n"
+                 "cost to reach that tier's price, ÷ tier's own market ceiling\n"
+                 "Feedstock-value ladder: every tier priced below the\n"
+                 "starting cost — all 7 tiers need a cost-decline step")
+        fig, ax = render.new_figure(figsize=(12, 7))
+        draw_unlock_bar_chart(ax, fig, rate_steps,
+                              title=f"Methanol: required market share to unlock each tier"
+                                   f" (Wright's Law, {learning_rate:.0%} LR)",
+                              param_text=params)
+        return fig, OUTPUT_ROOT / f"methanol_unlock_share_bars_lr{learning_rate * 100:.0f}.png"
+
+    def build_methanol_feedstock(share: bool):
         fig, ax = render.new_figure(figsize=(12, 7))
         draw(ax, fig, methanol_fs,
              title="Methanol market ladder (feedstock-value) — cumulative Terraformers vs scale price",
@@ -532,10 +704,11 @@ def figures():
              y_ticks=None,
              top_fmt=lambda v: f"{v:g}",
              label_offsets=methanol_fs_offsets,
-             param_text=methanol_fs_params)
-        return fig, OUTPUT_ROOT / "methanol_market_ladder.png"
+             param_text=methanol_fs_params, show_market_share=share)
+        suffix = "" if share else "_no_share"
+        return fig, OUTPUT_ROOT / f"methanol_market_ladder{suffix}.png"
 
-    def build_methanol_tam():
+    def build_methanol_tam(share: bool):
         fig, ax = render.new_figure(figsize=(12, 7))
         draw(ax, fig, methanol_tam,
              title="Methanol market ladder (destination-product TAM) — cumulative Terraformers vs scale price",
@@ -547,12 +720,19 @@ def figures():
              y_ticks=None,
              top_fmt=lambda v: f"{v:g}",
              label_offsets=methanol_tam_offsets,
-             param_text=methanol_tam_params)
-        return fig, OUTPUT_ROOT / "methanol_market_ladder_mtx_tam.png"
+             param_text=methanol_tam_params, show_market_share=share)
+        suffix = "" if share else "_no_share"
+        return fig, OUTPUT_ROOT / f"methanol_market_ladder_mtx_tam{suffix}.png"
 
-    return [("methane", build_methane),
-            ("methanol_feedstock", build_methanol_feedstock),
-            ("methanol_mtx_tam", build_methanol_tam)]
+    return [("methane_with_share", lambda: build_methane(True)),
+            ("methane_no_share", lambda: build_methane(False)),
+            ("methane_unlock_bars_lr20", lambda: build_methane_unlock_bars(0.20)),
+            ("methanol_unlock_bars_lr20", lambda: build_methanol_unlock_bars(0.20)),
+            ("methanol_unlock_bars_lr10", lambda: build_methanol_unlock_bars(0.10)),
+            ("methanol_feedstock_with_share", lambda: build_methanol_feedstock(True)),
+            ("methanol_feedstock_no_share", lambda: build_methanol_feedstock(False)),
+            ("methanol_mtx_tam_with_share", lambda: build_methanol_tam(True)),
+            ("methanol_mtx_tam_no_share", lambda: build_methanol_tam(False))]
 
 
 if __name__ == "__main__":
@@ -578,3 +758,15 @@ if __name__ == "__main__":
     total_meoh_equiv_mt = meoh_tam[-1].cum_hi / TERRAFORMERS_PER_MT_MEOH
     print(f"Full MTX-TAM build-out implies ~{total_meoh_equiv_mt:,.0f} Mt/yr methanol-equivalent production"
           f" — ~{total_meoh_equiv_mt/100:.0f}x today's entire global methanol market (~100 Mt/yr).")
+
+    unlock_steps = compute_unlock_steps(methane_g, LEARNING_RATE, START_TERRAFORMERS, START_COST_PER_MMBTU)
+    last = unlock_steps[-1]
+    print(f"\nWright's Law ({LEARNING_RATE:.0%} LR) from {START_TERRAFORMERS:g} Terraformer @"
+          f" ${START_COST_PER_MMBTU:.0f}/MMBtu:")
+    print(f"  Cost reaches the FULL ladder's bulk floor (${last.tier_price:.2f}/MMBtu, {last.tier_name})"
+          f" after only ~{last.cum_terraformers_required:,.0f} cumulative Terraformers"
+          f" — {last.market_share_required*100:.4f}% of that tier's own {last.tier_ceiling_terraformers:,.0f}"
+          f"-Terraformer market ceiling.")
+    print("  Every intermediate tier's required share is similarly tiny (0.0007%-0.03%) — cost decline "
+         "vastly outpaces market size. The real constraint on how fast Terraform can grow into these "
+         "markets is production RAMP, not the learning rate.")
