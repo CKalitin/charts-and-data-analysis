@@ -546,7 +546,7 @@ def draw_unlock_bar_chart(ax, fig, unlock_steps: list[UnlockStep], *, title: str
                     ha="center", va="bottom", fontsize=8, weight="bold", zorder=5)
         ax.annotate(f"Q={_human(u.cum_terraformers_required)} ({u.multiple_of_previous:.1f}x)\n"
                    f"cost −{u.cost_decrease_pct:.1f}%\n"
-                   f"Mkt {_fmt_dollars(u.market_dollars_per_year)}",
+                   f"Terraform mkt: {_fmt_dollars(u.market_dollars_per_year)}",
                     xy=(xi, pct), xytext=(0, 4), textcoords="offset points",
                     ha="center", va="bottom", fontsize=6.3, color="0.3", zorder=5, linespacing=1.4)
 
