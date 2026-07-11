@@ -280,6 +280,7 @@ class UnlockStep:
     market_share_required: float       # Q_i / H_i — can be tiny; see module docstring findings
     multiple_of_previous: float        # Q_i / Q_(i-1) — e.g. 4.9 means "4.9x current production"
     cost_decrease_pct: float           # % cost must fall THIS step: (prev_price - price) / prev_price
+    market_dollars_per_year: float     # this tier's own market size, $/yr (price x volume)
 
 
 def compute_unlock_steps(steps: list[LadderStep], learning_rate: float,
@@ -303,7 +304,8 @@ def compute_unlock_steps(steps: list[LadderStep], learning_rate: float,
         q_i = max(q_i, prev_q)
         cost_decrease_pct = (prev_price - s.price) / prev_price * 100.0
         results.append(UnlockStep(s.name, s.price, q_i, q_i - prev_q, s.cum_hi,
-                                  q_i / s.cum_hi, q_i / prev_q, cost_decrease_pct))
+                                  q_i / s.cum_hi, q_i / prev_q, cost_decrease_pct,
+                                  s.dollars_per_year))
         prev_q = q_i
         prev_price = s.price
     return results
@@ -539,10 +541,11 @@ def draw_unlock_bar_chart(ax, fig, unlock_steps: list[UnlockStep], *, title: str
         # neighbouring bars' text can never collide regardless of bar height (no zigzag needed).
         # Floats above the bar (white background), not inside its colored fill — grey text read
         # fine against light yellow/orange bars but was illegible against the dark purple end.
-        ax.annotate(f"{pct:.4f}%", xy=(xi, pct), xytext=(0, 26), textcoords="offset points",
+        ax.annotate(f"{pct:.4f}%", xy=(xi, pct), xytext=(0, 36), textcoords="offset points",
                     ha="center", va="bottom", fontsize=8, weight="bold", zorder=5)
         ax.annotate(f"Q={_human(u.cum_terraformers_required)} ({u.multiple_of_previous:.1f}x)\n"
-                   f"cost −{u.cost_decrease_pct:.1f}%",
+                   f"cost −{u.cost_decrease_pct:.1f}%\n"
+                   f"Mkt {_fmt_dollars(u.market_dollars_per_year)}",
                     xy=(xi, pct), xytext=(0, 4), textcoords="offset points",
                     ha="center", va="bottom", fontsize=6.3, color="0.3", zorder=5, linespacing=1.4)
 
