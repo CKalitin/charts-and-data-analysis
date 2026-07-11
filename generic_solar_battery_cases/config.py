@@ -40,6 +40,12 @@ OUT_BUILD_PLANE = OUTPUT_ROOT / "build_plane"
 OUT_TIMESERIES = OUTPUT_ROOT / "timeseries"
 OUT_UTIL_VS_LOAD_CAPEX = OUTPUT_ROOT / "util_vs_load_capex"
 OUT_LOAD_PLANE = OUTPUT_ROOT / "load_plane"
+# Two cases, in their own subfolders (flat outputs/load_plane/ got messy once
+# both existed): "constant load" fixes LOAD_KW=1 and optimizes solar/battery
+# only (the original chart); "constant budget" fixes an annual $ budget and
+# jointly optimizes the load/solar/battery split (see LOAD_PLANE_TOTAL_BUDGET).
+OUT_LOAD_PLANE_CONSTANT_LOAD = OUT_LOAD_PLANE / "constant_load"
+OUT_LOAD_PLANE_CONSTANT_BUDGET = OUT_LOAD_PLANE / "constant_budget"
 
 # --------------------------------------------------------------------------- #
 # Physics
@@ -120,6 +126,15 @@ TERNARY_CASES: dict[str, tuple[float, float, int]] = {
     "electrolyzer":          (0.0125, 50.0, 5),   # real Terraform electrolyzer
     "electrolyzer_expensive_h2": (0.125, 50.0, 5),   # same income, expensive hypothetical load
 }
+
+# --------------------------------------------------------------------------- #
+# Load plane, constant-budget case — like the ternary chart, a fixed $/yr
+# budget split three ways among load/solar/battery, but PROFIT-OPTIMIZED (not
+# resultant) at every point of the (load capex x income) plane. Since the
+# annual cost always equals total_budget by construction, the profit-argmax
+# split is exactly the served-energy-argmax split for ANY income > 0 — so it
+# is solved once per load-capex column, independent of income.
+LOAD_PLANE_TOTAL_BUDGET = 100_000.0    # $/yr
 
 # --------------------------------------------------------------------------- #
 # Inner optimization grid: solar nameplate (kW) × battery capacity (kWh)

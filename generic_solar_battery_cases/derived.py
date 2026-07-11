@@ -743,3 +743,112 @@ def ternary_allocation(
         load_cost_ann=load_cost_ann, amortization_years=amortization_years,
         load_amortization_years=load_amortization_years,
     )
+
+
+# --------------------------------------------------------------------------- #
+# Chart D (constant-budget variant) — load plane, but a fixed $/yr budget is
+# split three ways among load/solar/battery (jointly optimized) instead of
+# fixing LOAD_KW=1 and optimizing only solar/battery.
+# --------------------------------------------------------------------------- #
+@dataclass
+class LoadPlaneBudget:
+    """Profit-optimal build over the (load capex x income) plane when a fixed
+    annual ``total_budget`` must be split three ways among load / solar /
+    battery — the joint-allocation counterpart to :class:`LoadPlane`.
+
+    Annual cost is pinned at ``total_budget`` by construction (every split
+    spends the whole budget), so for any income > 0 the profit-argmax split is
+    exactly the served-energy-argmax split — independent of income. Each
+    column (one load_cost_ann value) is therefore solved ONCE via
+    :func:`ternary_allocation`'s own simplex + argmax, and income only decides
+    whether that column's fixed build clears its own breakeven — a cheap
+    broadcast, not a re-optimization.
+    """
+    income_per_kwh: np.ndarray      # (nI,) y-axis
+    load_cost_ann: np.ndarray       # (nCl,) x-axis, $/kW·yr annualized  ← primary axis
+    load_kw: np.ndarray             # (nCl,) budget-optimal load size at each column
+    kw_solar: np.ndarray            # (nCl,)
+    kwh_battery: np.ndarray         # (nCl,)
+    served_kwh: np.ndarray          # (nCl,) at the budget-optimal split (income-independent)
+    breakeven_income: np.ndarray    # (nCl,) $/kWh needed to clear the budget at this column
+    utilization: np.ndarray         # (nI, nCl) 0 below breakeven, else the column's optimal util
+    profit_per_yr: np.ndarray       # (nI, nCl) 0 below breakeven ("build nothing" wins)
+    lvoe: np.ndarray                # (nI, nCl) $/kWh, NaN below breakeven
+    off_grid: np.ndarray            # (nCl,) bool — see TernaryAllocation.off_grid
+    total_budget: float             # $/yr
+    solar_cost_ann: float
+    batt_cost_ann: float
+    load_amortization_years: float
+
+    @property
+    def load_capex_raw(self) -> np.ndarray:
+        """Raw load capex ($/kW) = annualized x amortization years."""
+        return self.load_cost_ann * self.load_amortization_years
+
+    @property
+    def off_grid_fraction(self) -> float:
+        return float(np.mean(self.off_grid))
+
+
+def load_plane_budget(
+    grid: model.ServedGrid,
+    total_budget: float = cfg.LOAD_PLANE_TOTAL_BUDGET,
+    income_values: np.ndarray = cfg.LOAD_PLANE_INCOME_SWEEP,
+    load_capex_raw_sweep: np.ndarray = cfg.LOAD_CAPEX_RAW_SWEEP,
+    solar_cost_ann: float = cfg.SOLAR_COST_ANN,
+    batt_cost_ann: float = cfg.BATTERY_COST_ANN,
+    load_amortization_years: float = cfg.LOAD_AMORTIZATION_YEARS,
+    n: int = cfg.TERNARY_RESOLUTION,
+) -> LoadPlaneBudget:
+    """Profit-optimal (load, solar, battery) split of a fixed annual budget,
+    swept over (load capex, income).
+
+    For each load_cost_ann column, run the ternary-allocation simplex once
+    (placeholder income=1.0 — irrelevant to the argmax location, since cost is
+    pinned at total_budget regardless of split) and take the served-energy
+    argmax. income only decides, per column, whether that fixed build clears
+    breakeven (income >= total_budget / served_kwh); below it, "build nothing"
+    wins (profit=0, utilization=0%), same convention as LoadPlane.
+    """
+    load_cost_ann_sweep = load_capex_raw_sweep / load_amortization_years
+    nCl = load_cost_ann_sweep.size
+
+    load_kw = np.empty(nCl)
+    kw_solar = np.empty(nCl)
+    kwh_battery = np.empty(nCl)
+    served_kwh = np.empty(nCl)
+    util_col = np.empty(nCl)
+    off_grid = np.empty(nCl, dtype=bool)
+
+    for j, c_load in enumerate(load_cost_ann_sweep):
+        ta = ternary_allocation(grid, total_budget=total_budget, income_per_kwh=1.0,
+                                load_cost_ann=c_load, solar_cost_ann=solar_cost_ann,
+                                batt_cost_ann=batt_cost_ann, n=n)
+        best = int(np.argmax(ta.served_kwh))
+        load_kw[j] = ta.load_kw[best]
+        kw_solar[j] = ta.kw_solar[best]
+        kwh_battery[j] = ta.kwh_battery[best]
+        served_kwh[j] = ta.served_kwh[best]
+        util_col[j] = ta.utilization[best]
+        off_grid[j] = ta.off_grid[best]
+
+    breakeven_income = total_budget / served_kwh   # (nCl,)
+
+    profit = income_values[:, None] * served_kwh[None, :] - total_budget   # (nI, nCl)
+    built = profit >= 0.0
+    utilization = np.where(built, util_col[None, :], 0.0)
+    profit = np.where(built, profit, 0.0)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        # profit / served_kwh = income - total_budget/served_kwh = income - LCOE = LVOE,
+        # since cost is pinned at total_budget for every split (same identity ternary
+        # allocation uses).
+        lvoe = np.where(built, profit / served_kwh[None, :], np.nan)
+
+    return LoadPlaneBudget(
+        income_per_kwh=income_values, load_cost_ann=load_cost_ann_sweep,
+        load_kw=load_kw, kw_solar=kw_solar, kwh_battery=kwh_battery,
+        served_kwh=served_kwh, breakeven_income=breakeven_income,
+        utilization=utilization, profit_per_yr=profit, lvoe=lvoe, off_grid=off_grid,
+        total_budget=total_budget, solar_cost_ann=solar_cost_ann,
+        batt_cost_ann=batt_cost_ann, load_amortization_years=load_amortization_years,
+    )
