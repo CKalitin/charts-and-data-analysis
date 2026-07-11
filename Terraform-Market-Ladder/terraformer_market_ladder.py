@@ -541,7 +541,8 @@ def draw_unlock_bar_chart(ax, fig, unlock_steps: list[UnlockStep], *, title: str
         # neighbouring bars' text can never collide regardless of bar height (no zigzag needed).
         # Floats above the bar (white background), not inside its colored fill — grey text read
         # fine against light yellow/orange bars but was illegible against the dark purple end.
-        ax.annotate(f"{pct:.4f}%", xy=(xi, pct), xytext=(0, 36), textcoords="offset points",
+        ax.annotate(f"share: {pct:.4f}%", xy=(xi, pct), xytext=(0, 36),
+                    textcoords="offset points",
                     ha="center", va="bottom", fontsize=8, weight="bold", zorder=5)
         ax.annotate(f"Q={_human(u.cum_terraformers_required)} ({u.multiple_of_previous:.1f}x)\n"
                    f"cost −{u.cost_decrease_pct:.1f}%\n"
