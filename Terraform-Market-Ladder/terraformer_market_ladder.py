@@ -323,6 +323,19 @@ def _fmt_dollars(v: float) -> str:
     return f"${v / 1e6:.0f}M/yr"
 
 
+def _fmt_dollars_small(v: float) -> str:
+    """$/yr in compact form, extended down to K — for Terraform's ADDRESSED slice of a tier
+    (tier's own market size x required market share), which can be orders of magnitude
+    smaller than the tier's own $/yr and would otherwise round to "$0M/yr" under _fmt_dollars."""
+    if v >= 1e9:
+        return f"${v / 1e9:.2f}B/yr"
+    if v >= 1e6:
+        return f"${v / 1e6:.2f}M/yr"
+    if v >= 1e3:
+        return f"${v / 1e3:.1f}K/yr"
+    return f"${v:.0f}/yr"
+
+
 def _human(x: float) -> str:
     """Big count -> 100k / 1M / 10M (no mathtext — parse_math is off)."""
     if x >= 1e6:
@@ -544,9 +557,10 @@ def draw_unlock_bar_chart(ax, fig, unlock_steps: list[UnlockStep], *, title: str
         ax.annotate(f"share: {pct:.4f}%", xy=(xi, pct), xytext=(0, 36),
                     textcoords="offset points",
                     ha="center", va="bottom", fontsize=8, weight="bold", zorder=5)
+        addressed_dollars = u.market_dollars_per_year * u.market_share_required
         ax.annotate(f"Q={_human(u.cum_terraformers_required)} ({u.multiple_of_previous:.1f}x)\n"
                    f"cost −{u.cost_decrease_pct:.1f}%\n"
-                   f"Terraform mkt: {_fmt_dollars(u.market_dollars_per_year)}",
+                   f"Terraform mkt: {_fmt_dollars_small(addressed_dollars)}",
                     xy=(xi, pct), xytext=(0, 4), textcoords="offset points",
                     ha="center", va="bottom", fontsize=6.3, color="0.3", zorder=5, linespacing=1.4)
 
