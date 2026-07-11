@@ -100,14 +100,19 @@ LOAD_CASES: dict[str, tuple[float, float, int]] = {
 }
 
 # --------------------------------------------------------------------------- #
-# Ternary allocation chart — fixed $ budget split three ways among
-# load / solar / battery capex. Solar & battery $/unit costs stay at the
-# project defaults (SOLAR_CAPEX_PER_KW, BATTERY_CAPEX_PER_KWH) in every case;
-# what varies between cases is load capex + load income (income $/kWh,
-# load_capex $/kW, load_amort_years) — the two axes Handmer's frame can't see.
+# Ternary allocation chart — fixed $/yr budget split three ways among
+# load / solar / battery spend, using ANNUALIZED $/(unit·yr) rates throughout
+# so the budget and the per-unit costs share the same units. Solar & battery
+# $/(unit·yr) costs stay at the project defaults (SOLAR_COST_ANN,
+# BATTERY_COST_ANN) in every case; what varies between cases is load capex +
+# load income (income $/kWh, load_capex $/kW, load_amort_years) — the two axes
+# Handmer's frame can't see.
 OUT_TERNARY = OUTPUT_ROOT / "ternary_allocation"
 TERNARY_RESOLUTION = 140     # simplex steps/edge -> (n)(n+1)/2 sample points
-TERNARY_TOTAL_BUDGET = 100_000.0    # $, fixed across every case
+# $/yr, fixed across every case. Set to the old one-time TERNARY_TOTAL_BUDGET
+# (100,000) divided by AMORTIZATION_YEARS so a 100%-solar/battery split still
+# buys the same kW/kWh as before, now expressed as an annual spend rate.
+TERNARY_TOTAL_BUDGET = 100_000.0 / AMORTIZATION_YEARS
 
 TERNARY_CASES: dict[str, tuple[float, float, int]] = {
     "colossus_capex":       (5.0, 28_000.0, 5),   # real Colossus load capex

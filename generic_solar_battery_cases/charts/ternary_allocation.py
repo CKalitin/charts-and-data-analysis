@@ -1,22 +1,24 @@
-"""Ternary allocation — how to split a FIXED $ budget between load, solar,
-and battery capex.
+"""Ternary allocation — how to split a FIXED $/yr budget between load, solar,
+and battery spend.
 
 Every other chart in this project asks "given a load, what's the optimal
 hardware?" (an argmax). This one asks a different question: given a constant
-number of dollars, what's the best 3-way SPLIT of that budget across load /
-solar / battery capex? Each point in the triangle is one such split — it
-directly fixes a build (L, S, B), with no optimizer choosing among builds.
-The heatmap is therefore the RESULTANT utilization/profit that split
-produces, not an optimal one.
+annual dollar rate, what's the best 3-way SPLIT of that budget across load /
+solar / battery spend? Each point in the triangle is one such split — it
+directly fixes a build (L, S, B) via the ANNUALIZED $/(unit·yr) cost of each
+component (matching the $/yr budget's units), with no optimizer choosing
+among builds. The heatmap is therefore the RESULTANT utilization/profit that
+split produces, not an optimal one.
 
 Layout: 100% load at the top vertex ("load on the bottom" — read via
 horizontal gridlines), 100% solar at bottom-left, 100% battery at
 bottom-right.
 
-Total budget is fixed at config.TERNARY_TOTAL_BUDGET across every case, so
-the two cases are directly comparable — only the load's own capex and income
-per kWh change between them (see config.TERNARY_CASES). Solar/battery
-$/unit costs stay at project defaults in every case.
+Total budget is fixed at config.TERNARY_TOTAL_BUDGET ($/yr) across every
+case, so the two cases are directly comparable — only the load's own
+annualized cost and income per kWh change between them (see
+config.TERNARY_CASES). Solar/battery $/(unit·yr) costs stay at project
+defaults in every case.
 """
 
 from __future__ import annotations
@@ -260,11 +262,11 @@ def _params(ta: derived.TernaryAllocation, grid: model.ServedGrid, case_name: st
         "Case": case_name,
         "Site": common.site_label(),
         "Capacity factor": f"{grid.capacity_factor:.0%}",
-        "Total budget": common._dollar_fmt(ta.total_budget),
+        "Total budget": f"{common._dollar_fmt(ta.total_budget)}/yr",
         "Load income": f"${ta.income_per_kwh:.3g}/kWh",
-        "Load capex": f"${ta.load_capex_per_kw:,.0f}/kW  ({ta.load_amortization_years:g} yr)",
-        "Solar cost": f"${ta.solar_capex_per_kw:.0f}/kW  ({ta.amortization_years:g} yr)",
-        "Battery cost": f"${ta.batt_capex_per_kwh:.0f}/kWh  ({ta.amortization_years:g} yr)",
+        "Load cost": f"${ta.load_cost_ann:.3g}/kW·yr  ({ta.load_amortization_years:g} yr amort.)",
+        "Solar cost": f"${ta.solar_cost_ann:.3g}/kW·yr  ({ta.amortization_years:g} yr amort.)",
+        "Battery cost": f"${ta.batt_cost_ann:.3g}/kWh·yr  ({ta.amortization_years:g} yr amort.)",
         "Round-trip eff.": f"{cfg.ROUND_TRIP_EFFICIENCY:.0%}",
     }
     if ta.off_grid_fraction > 0.005:
@@ -376,7 +378,7 @@ def all_cases_figures(grid: model.ServedGrid):
     for case_name, (income, load_capex, load_amort) in cfg.TERNARY_CASES.items():
         ta = derived.ternary_allocation(
             grid, total_budget=cfg.TERNARY_TOTAL_BUDGET, income_per_kwh=income,
-            load_capex_per_kw=load_capex, load_amortization_years=load_amort,
+            load_cost_ann=load_capex / load_amort, load_amortization_years=load_amort,
         )
         if ta.off_grid_fraction > 0.005:
             print(f"  [{case_name}] {ta.off_grid_fraction:.0%} of splits exceed the "
