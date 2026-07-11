@@ -258,15 +258,6 @@ def _human(x: float) -> str:
     return f"{x:g}"
 
 
-def _human_count(x: float) -> str:
-    """Same as _human but rounded to 3 sig figs — for arbitrary (non-tick) counts in labels."""
-    if x >= 1e6:
-        return f"{x / 1e6:.1f}M"
-    if x >= 1e3:
-        return f"{x / 1e3:.0f}k"
-    return f"{x:.0f}"
-
-
 def add_market_share_axis(ax, steps: list[LadderStep]) -> None:
     """Overlay Terraform's share of the currently-unlocked cumulative market, on a secondary
     (right) y-axis: share(x) = x / H_n, where x is Terraform's own cumulative production (the
@@ -393,10 +384,8 @@ def draw(ax, fig, steps: list[LadderStep], *, title: str, y_label: str, x_top_la
 
     # Pass 2 — text + boxes, zorder above every arrow drawn in pass 1.
     for s, c, xmid, dx, dy, ha, va in anchors:
-        pct_decrease = (steps[0].price - s.price) / steps[0].price * 100.0
-        label = (f"{s.name}\n{price_fmt(s.price)} (-{pct_decrease:.0f}%)"
-                 f" · {_human_count(s.cum_hi)} TF"
-                 f" · Mkt {_fmt_dollars(s.dollars_per_year)}"
+        label = (f"{s.name}\n{price_fmt(s.price)}"
+                 f" · Δ{_fmt_dollars(s.dollars_per_year)}"
                  f" · Σ{_fmt_dollars(s.cumulative_dollars_per_year)}")
         bbox = dict(boxstyle="round,pad=0.25", fc="white", ec=c, lw=0.8, alpha=0.95)
         ax.annotate(label, xy=(xmid, s.price), xytext=(dx, dy), textcoords="offset points",
@@ -459,18 +448,16 @@ def figures():
     # Crowded low-price methane tiers cluster in both x and y: cascade each label's dy upward
     # (anchored to its OWN dot, not a shared column) so boxes stack without crossing leaders.
     methane_offsets = {
-        "Global LNG trade (JKM-priced)": (-8, 10, "right", "bottom"),
         "Industrial process fuel\n(residual, ex-ammonia/LNG)": (10, 20, "left", "bottom"),
-        "Ammonia / fertilizer feedstock": (14, 70, "left", "bottom"),
-        "Residential / commercial\n(global buildings, 21% share)": (18, 120, "left", "bottom"),
-        "Gas-fired electricity\n(global power, 39% share)": (-10, 170, "right", "bottom"),
+        "Ammonia / fertilizer feedstock": (14, 72, "left", "bottom"),
+        "Residential / commercial\n(global buildings, 21% share)": (18, 124, "left", "bottom"),
+        "Gas-fired electricity\n(global power, 39% share)": (-10, 176, "right", "bottom"),
     }
     methane_params = ("1 Terraformer = 2.4 MMcf CH4/yr\n"
                       "Prices: 2024 basis ($/MMBtu)\n"
                       "Volumes: GLOBAL, non-overlapping (de-double-counted)\n"
                       "IEA/IGU sector shares + Henry Hub as global floor price\n"
-                      "Label: price (-% vs beachhead) · TF = cumulative Terraformers\n"
-                      "to unlock · Mkt = own market size · Σ cumulative\n"
+                      "Label: price · Δ own market · Σ cumulative\n"
                       "Right axis: Terraform's share of currently-unlocked market\n"
                       "= own production / cumulative ceiling of its current tier\n"
                       "(green <100% · red ≥100%)")
@@ -487,8 +474,7 @@ def figures():
                        "y = methanol netback / reference value\n"
                        "FEEDSTOCK-VALUE approach: Terraform sells methanol,\n"
                        "not the converted end-product (see MTX-TAM variant)\n"
-                       "Label: price (-% vs beachhead) · TF = cumulative Terraformers\n"
-                      "to unlock · Mkt = own market size · Σ cumulative\n"
+                       "Label: price · Δ own market · Σ cumulative\n"
                        "Right axis: Terraform's share of currently-unlocked market\n"
                        "= own production / cumulative ceiling of its current tier\n"
                        "(green <100% · red ≥100%)")
@@ -498,13 +484,13 @@ def figures():
     # in x, but check for y-collisions on the linear axis and tune if needed).
     methanol_tam_offsets = {
         "MTBE / gasoline octane": (10, 16, "left", "bottom"),
-        "Acetic acid": (10, 60, "left", "bottom"),
-        "Formaldehyde": (10, 100, "left", "bottom"),
-        "MTX aromatics/olefins\n(global olefins TAM)": (24, 168, "left", "bottom"),
-        "Bulk DME\n(residual direct-fuel use)": (10, 212, "left", "bottom"),
+        "Acetic acid": (10, 50, "left", "bottom"),
+        "Formaldehyde": (10, 84, "left", "bottom"),
+        "MTX aromatics/olefins\n(global olefins TAM)": (10, 118, "left", "bottom"),
+        "Bulk DME\n(residual direct-fuel use)": (10, 152, "left", "bottom"),
         "MTG gasoline\n(global gasoline TAM)": (10, 20, "left", "bottom"),
-        "MTX diesel\n(global diesel TAM)": (16, 110, "left", "bottom"),
-        "MTX jet / Jet-A\n(global jet fuel TAM)": (-40, 235, "right", "bottom"),
+        "MTX diesel\n(global diesel TAM)": (16, 90, "left", "bottom"),
+        "MTX jet / Jet-A\n(global jet fuel TAM)": (-22, 160, "right", "bottom"),
     }
     methanol_tam_params = ("1 Terraformer = ~87 t methanol/yr\n"
                        "y = max methanol netback for conversion to stay profitable\n"
@@ -514,8 +500,7 @@ def figures():
                        "Non-MTX tiers still feedstock-value (unchanged)\n"
                        "Conversion ratios: MTG 2.584 (sourced, Motunui); others\n"
                        "2.9 (MTO rule-of-thumb, extended to diesel/jet — ASSUMPTION)\n"
-                       "Label: price (-% vs beachhead) · TF = cumulative Terraformers\n"
-                      "to unlock · Mkt = own market size · Σ cumulative\n"
+                       "Label: price · Δ own market · Σ cumulative\n"
                        "Right axis: Terraform's share of currently-unlocked market\n"
                        "= own production / cumulative ceiling of its current tier\n"
                        "(green <100% · red ≥100%)")
@@ -551,7 +536,7 @@ def figures():
         return fig, OUTPUT_ROOT / "methanol_market_ladder.png"
 
     def build_methanol_tam():
-        fig, ax = render.new_figure(figsize=(15, 8))
+        fig, ax = render.new_figure(figsize=(12, 7))
         draw(ax, fig, methanol_tam,
              title="Methanol market ladder (destination-product TAM) — cumulative Terraformers vs scale price",
              y_label="Max methanol netback price  [$/tonne]",
