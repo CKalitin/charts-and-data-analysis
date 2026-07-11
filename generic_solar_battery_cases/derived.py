@@ -606,3 +606,135 @@ def load_capex_sweep_lcoe(
         batt_cost_ann=batt_cost_ann,
         load_amortization_years=load_amortization_years,
     )
+
+
+# --------------------------------------------------------------------------- #
+# Chart F — ternary allocation: split a fixed $ budget 3 ways (load/solar/battery)
+# --------------------------------------------------------------------------- #
+@dataclass
+class TernaryAllocation:
+    """Resultant (NOT optimized) build + economics at every 3-way split of a
+    fixed total $ budget among load / solar / battery capex.
+
+    Unlike every other chart in this project, (S, B, L) here is not an argmax
+    over anything — it's whatever the chosen split directly buys. That's the
+    point: this answers "what happens if I split $X this way", not "what's
+    the best hardware for a given load".
+    """
+    f_load: np.ndarray         # (N,) barycentric load fraction, sums to 1 with the other two
+    f_solar: np.ndarray        # (N,)
+    f_battery: np.ndarray      # (N,)
+    load_kw: np.ndarray        # (N,) load built at this split
+    kw_solar: np.ndarray       # (N,)
+    kwh_battery: np.ndarray    # (N,)
+    utilization: np.ndarray    # (N,) resultant served/demand, fraction
+    served_kwh: np.ndarray     # (N,) kWh/yr actually delivered
+    profit_per_yr: np.ndarray  # (N,)
+    lcoe: np.ndarray           # (N,) $/kWh, NaN where served_kwh == 0
+    lvoe: np.ndarray           # (N,) $/kWh, NaN where served_kwh == 0
+    off_grid: np.ndarray       # (N,) bool: solar-or-battery-per-kW-load ratio exceeded the
+                                #      served-grid's calibrated range (utilization clipped there)
+    total_budget: float
+    income_per_kwh: float
+    solar_capex_per_kw: float
+    batt_capex_per_kwh: float
+    load_capex_per_kw: float
+    amortization_years: float
+    load_amortization_years: float
+
+    @property
+    def off_grid_fraction(self) -> float:
+        return float(np.mean(self.off_grid))
+
+
+def _bilinear_lookup(x_grid: np.ndarray, y_grid: np.ndarray, z: np.ndarray,
+                     xq: np.ndarray, yq: np.ndarray) -> np.ndarray:
+    """Bilinear interpolation of z(x_grid, y_grid) at query points, CLIPPED to
+    the grid's range (safe here because utilization saturates well inside the
+    calibrated range — see TernaryAllocation.off_grid). x_grid/y_grid must be
+    uniformly spaced (true of KW_SOLAR_GRID / KWH_BATTERY_GRID)."""
+    dx = x_grid[1] - x_grid[0]
+    dy = y_grid[1] - y_grid[0]
+    nx, ny = x_grid.size, y_grid.size
+    fx = np.clip((xq - x_grid[0]) / dx, 0.0, nx - 1 - 1e-9)
+    fy = np.clip((yq - y_grid[0]) / dy, 0.0, ny - 1 - 1e-9)
+    ix, iy = np.floor(fx).astype(int), np.floor(fy).astype(int)
+    tx, ty = fx - ix, fy - iy
+    z00, z10 = z[ix, iy], z[ix + 1, iy]
+    z01, z11 = z[ix, iy + 1], z[ix + 1, iy + 1]
+    return (z00 * (1 - tx) * (1 - ty) + z10 * tx * (1 - ty)
+            + z01 * (1 - tx) * ty + z11 * tx * ty)
+
+
+def ternary_allocation(
+    grid: model.ServedGrid,
+    total_budget: float,
+    income_per_kwh: float,
+    solar_capex_per_kw: float = cfg.SOLAR_CAPEX_PER_KW,
+    batt_capex_per_kwh: float = cfg.BATTERY_CAPEX_PER_KWH,
+    load_capex_per_kw: float = cfg.LOAD_CAPEX_PER_KW,
+    amortization_years: float = cfg.AMORTIZATION_YEARS,
+    load_amortization_years: float = cfg.LOAD_AMORTIZATION_YEARS,
+    n: int = cfg.TERNARY_RESOLUTION,
+) -> TernaryAllocation:
+    """Resultant utilization/profit/LCOE/LVOE for every way to split
+    ``total_budget`` three ways among load / solar / battery capex.
+
+    Each simplex point (f_load, f_solar, f_battery) directly fixes a build —
+    load_kw = f_load*budget/load_capex_per_kw, and likewise for solar/battery —
+    with NO argmax. Utilization is read straight off the existing served-energy
+    grid rather than re-simulated: the dispatch is linear under a uniform
+    rescale of (load, solar, battery), so served_kwh at load L equals L times
+    served_kwh at load 1 for the same (S/L, B/L) ratio, and the grid was built
+    at LOAD_KW=1. So utilization only depends on (kw_solar/load_kw,
+    kwh_battery/load_kw), found by bilinear interpolation and CLIPPED to the
+    grid's calibrated 0-50 range. That's a safe approximation, not a fudge:
+    utilization saturates near its ~99.8% ceiling well inside that range (see
+    the served-grid findings), so clipping barely moves utilization for
+    off-grid cells — but the dollar cost of those cells is computed directly
+    from the actual split, not from the grid, so overbuilding still correctly
+    tanks profit even where utilization itself is clipped.
+
+    f_load=0 (no load bought) is a 0/0 singularity, skipped — same convention
+    as solar_fraction_sweep's alpha>0.
+    """
+    triples = [(i, j, n - i - j) for i in range(1, n + 1) for j in range(0, n - i + 1)]
+    i_arr = np.array([t[0] for t in triples], dtype=float)
+    j_arr = np.array([t[1] for t in triples], dtype=float)
+    k_arr = np.array([t[2] for t in triples], dtype=float)
+
+    f_load, f_solar, f_battery = i_arr / n, j_arr / n, k_arr / n
+
+    load_dollars = f_load * total_budget
+    solar_dollars = f_solar * total_budget
+    batt_dollars = f_battery * total_budget
+
+    load_kw = load_dollars / load_capex_per_kw
+    kw_solar = solar_dollars / solar_capex_per_kw
+    kwh_battery = batt_dollars / batt_capex_per_kwh
+
+    ratio_s = kw_solar / load_kw
+    ratio_b = kwh_battery / load_kw
+    off_grid = (ratio_s > grid.kw_solar.max()) | (ratio_b > grid.kwh_battery.max())
+
+    utilization = _bilinear_lookup(grid.kw_solar, grid.kwh_battery, grid.utilization,
+                                   ratio_s, ratio_b)
+    served_kwh = utilization * grid.demand_kwh * load_kw
+
+    annual_cost = ((solar_dollars + batt_dollars) / amortization_years
+                  + load_dollars / load_amortization_years)
+    profit_per_yr = income_per_kwh * served_kwh - annual_cost
+    with np.errstate(divide="ignore", invalid="ignore"):
+        lcoe = np.where(served_kwh > 0, annual_cost / served_kwh, np.nan)
+    lvoe = income_per_kwh - lcoe
+
+    return TernaryAllocation(
+        f_load=f_load, f_solar=f_solar, f_battery=f_battery,
+        load_kw=load_kw, kw_solar=kw_solar, kwh_battery=kwh_battery,
+        utilization=utilization, served_kwh=served_kwh, profit_per_yr=profit_per_yr,
+        lcoe=lcoe, lvoe=lvoe, off_grid=off_grid,
+        total_budget=total_budget, income_per_kwh=income_per_kwh,
+        solar_capex_per_kw=solar_capex_per_kw, batt_capex_per_kwh=batt_capex_per_kwh,
+        load_capex_per_kw=load_capex_per_kw, amortization_years=amortization_years,
+        load_amortization_years=load_amortization_years,
+    )

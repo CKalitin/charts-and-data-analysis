@@ -25,6 +25,7 @@ from charts import (build_plane, common, cost_plane, daily_timeseries as daily_t
                     load_capex_profiles as load_capex_profiles_chart,
                     load_plane as load_plane_chart, solar_fraction as solar_fraction_chart,
                     terraform_lcoe as terraform_lcoe_chart,
+                    ternary_allocation as ternary_allocation_chart,
                     timeseries, utilization_vs_income, utilization_vs_load_capex,
                     util_plane as util_plane_chart,
                     util_lines as util_lines_chart)
@@ -132,6 +133,7 @@ def main() -> None:
         *terraform_lcoe_chart.figures(data, grid),
         *util_plane_chart.figures(grid, grid),
         *util_lines_chart.figures(grid),
+        *ternary_allocation_chart.all_cases_figures(grid),
     ]
 
     if args.count:

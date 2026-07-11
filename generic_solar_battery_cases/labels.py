@@ -23,7 +23,13 @@ _LABELS: dict[str, str] = {
     # Outcomes
     "utilization_pct":  "Optimal utilization  (%)",
     "profit_per_yr":    "Optimal profit  ($/yr)",
+    # Resultant (not optimized) outcomes — a fixed build's own utilization/profit,
+    # e.g. the ternary allocation chart where (S, B, L) is directly fixed by the
+    # $ split, not argmax-chosen.
+    "utilization_pct_resultant": "Utilization  (%)",
+    "profit_per_yr_resultant":   "Profit  ($/yr)",
     "lcoe":             "LCOE  ($/kWh)",
+    "lvoe":             "LVOE  ($/kWh)",
     "solar_fraction":   "Solar fraction  α",
     "served_kwh":       "Energy delivered to load  (kWh/yr)",
     # Time-series quantities

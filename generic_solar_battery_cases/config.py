@@ -100,6 +100,23 @@ LOAD_CASES: dict[str, tuple[float, float, int]] = {
 }
 
 # --------------------------------------------------------------------------- #
+# Ternary allocation chart — fixed $ budget split three ways among
+# load / solar / battery capex. Solar & battery $/unit costs stay at the
+# project defaults (SOLAR_CAPEX_PER_KW, BATTERY_CAPEX_PER_KWH) in every case;
+# what varies between cases is load capex + load income (income $/kWh,
+# load_capex $/kW, load_amort_years) — the two axes Handmer's frame can't see.
+OUT_TERNARY = OUTPUT_ROOT / "ternary_allocation"
+TERNARY_RESOLUTION = 140     # simplex steps/edge -> (n)(n+1)/2 sample points
+TERNARY_TOTAL_BUDGET = 100_000.0    # $, fixed across every case
+
+TERNARY_CASES: dict[str, tuple[float, float, int]] = {
+    "colossus_capex":       (5.0, 28_000.0, 5),   # real Colossus load capex
+    "colossus_1000_per_kw": (5.0,  1_000.0, 5),   # same income, cheap hypothetical load
+    "electrolyzer":          (0.0125, 50.0, 5),   # real Terraform electrolyzer
+    "electrolyzer_expensive_h2": (0.125, 50.0, 5),   # same income, expensive hypothetical load
+}
+
+# --------------------------------------------------------------------------- #
 # Inner optimization grid: solar nameplate (kW) × battery capacity (kWh)
 # --------------------------------------------------------------------------- #
 # Ranges must be generous enough that the profit-maximizing build does not clip

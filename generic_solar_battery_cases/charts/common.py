@@ -67,7 +67,7 @@ def site_label() -> str:
 # Dollar / log axis formatting
 # --------------------------------------------------------------------------- #
 def _dollar_fmt(v: float) -> str:
-    if v == 0:
+    if abs(v) < 1e-9:   # exact 0 AND floating-point noise from tick/level generation
         return "$0"
     if abs(v) >= 1:
         return f"${v:,.0f}"
