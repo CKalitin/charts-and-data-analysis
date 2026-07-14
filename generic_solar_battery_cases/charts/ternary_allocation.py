@@ -111,7 +111,11 @@ def _draw_ternary_frame(ax) -> None:
 # Draw functions
 # --------------------------------------------------------------------------- #
 def draw_utilization(ax, ta: derived.TernaryAllocation, *, show_contours: bool = True):
-    """Resultant (not optimized) utilization at every budget split."""
+    """Resultant (not optimized) utilization at every budget split. The
+    profit-optimal split (same point marked on the profit/LVOE panels) is
+    marked here too, labeled with ITS utilization — utilization is resultant,
+    not optimized, so the profit-best point isn't necessarily the highest
+    utilization on the triangle."""
     x, y = _to_xy(ta.f_load, ta.f_solar, ta.f_battery)
     z = ta.utilization * 100.0
     triang = mtri.Triangulation(x, y)
@@ -123,6 +127,14 @@ def draw_utilization(ax, ta: derived.TernaryAllocation, *, show_contours: bool =
         cs = ax.tricontour(triang, z, levels=levels, colors="black",
                            linewidths=0.8, alpha=0.85, zorder=3)
         ax.clabel(cs, fmt=lambda v: f"{v:.3g}%", fontsize=7.5, inline=True, colors="black")
+
+    best = int(np.nanargmax(ta.profit_per_yr))
+    xb, yb = float(x[best]), float(y[best])
+    ax.scatter([xb], [yb], s=90, marker="*", color="white", edgecolor="black",
+              linewidth=0.8, zorder=5,
+              label=(f"Best (max profit): {ta.f_load[best]:.0%} load / {ta.f_solar[best]:.0%} solar / "
+                     f"{ta.f_battery[best]:.0%} battery  ({z[best]:.3g}% util)"))
+    ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.02), fontsize=7.5, framealpha=0.85)
 
     _draw_ternary_frame(ax)
     ax.set_title("Resultant utilization — every 3-way budget split")
@@ -152,12 +164,21 @@ def _draw_diverging_metric(ax, ta: derived.TernaryAllocation, z: np.ndarray, *,
 
     if crosses_zero:
         # Genuine sign change: center the diverging map at the true breakeven
-        # so its visual midpoint means something.
-        vmax = max(abs(p_lo), abs(p_hi)) or 1.0
-        norm = mcolors.TwoSlopeNorm(vmin=-vmax, vcenter=0.0, vmax=vmax)
-        levels = np.linspace(-vmax, vmax, 41)
+        # so its visual midpoint means something — but DON'T force a symmetric
+        # +/-max(|p_lo|,|p_hi|) range. For heavily skewed splits (e.g. a cheap
+        # load where almost the whole simplex is profitable and only a thin
+        # sliver near the pure-load vertex dips negative), that symmetric
+        # range wastes most of its span mirroring a magnitude the minority
+        # side never reaches, crushing the majority side's real variation
+        # into a handful of colormap steps (a near-solid-green triangle even
+        # though profit genuinely ranges from ~$0 to ~$500k). Use the data's
+        # own asymmetric bounds on each side of zero instead — TwoSlopeNorm
+        # supports vmin/vmax independently, it doesn't require symmetry.
+        lo = min(p_lo, -1e-6 * max(abs(p_hi), 1.0))
+        hi = max(p_hi, 1e-6 * max(abs(p_lo), 1.0))
+        norm = mcolors.TwoSlopeNorm(vmin=lo, vcenter=0.0, vmax=hi)
+        levels = np.linspace(lo, hi, 41)
         cmap = "RdYlGn"
-        lo, hi = -vmax, vmax
     else:
         # No sign change: forcing a symmetric +/-vmax range around 0 would waste
         # the unused half of the colorbar on the sign that never occurs, crushing
@@ -269,8 +290,6 @@ def _params(ta: derived.TernaryAllocation, grid: model.ServedGrid, case_name: st
         "Battery cost": f"${ta.batt_cost_ann:.3g}/kWh·yr  ({ta.amortization_years:g} yr amort.)",
         "Round-trip eff.": f"{cfg.ROUND_TRIP_EFFICIENCY:.0%}",
     }
-    if ta.off_grid_fraction > 0.005:
-        p["Off-grid (clipped)"] = f"{ta.off_grid_fraction:.0%} of splits"
     return p
 
 
@@ -286,7 +305,7 @@ def figures(ta: derived.TernaryAllocation, grid: model.ServedGrid, case_name: st
         fig, ax = render.new_figure(figsize=(9, 8))
         mesh = draw_utilization(ax, ta, show_contours=True)
         fig.colorbar(mesh, ax=ax, pad=0.02, shrink=0.85).set_label(axis_label("utilization_pct_resultant"))
-        common.info(ax, fig, params, mode="on")
+        common.info(ax, fig, params, mode="off", off_side="left")
         common.watermark(ax, fig)
         return fig, out_dir / f"utilization_contours_{suffix}.png"
 
@@ -294,7 +313,7 @@ def figures(ta: derived.TernaryAllocation, grid: model.ServedGrid, case_name: st
         fig, ax = render.new_figure(figsize=(9, 8))
         mesh = draw_utilization(ax, ta, show_contours=False)
         fig.colorbar(mesh, ax=ax, pad=0.02, shrink=0.85).set_label(axis_label("utilization_pct_resultant"))
-        common.info(ax, fig, params, mode="on")
+        common.info(ax, fig, params, mode="off", off_side="left")
         common.watermark(ax, fig)
         return fig, out_dir / f"utilization_no_contours_{suffix}.png"
 
@@ -304,7 +323,7 @@ def figures(ta: derived.TernaryAllocation, grid: model.ServedGrid, case_name: st
         cbar = fig.colorbar(mesh, ax=ax, pad=0.02, shrink=0.85)
         cbar.set_label(axis_label("profit_per_yr_resultant"))
         common.dollar_colorbar(cbar)
-        common.info(ax, fig, params, mode="on")
+        common.info(ax, fig, params, mode="off", off_side="left")
         common.watermark(ax, fig)
         return fig, out_dir / f"profit_contours_{suffix}.png"
 
@@ -314,7 +333,7 @@ def figures(ta: derived.TernaryAllocation, grid: model.ServedGrid, case_name: st
         cbar = fig.colorbar(mesh, ax=ax, pad=0.02, shrink=0.85)
         cbar.set_label(axis_label("profit_per_yr_resultant"))
         common.dollar_colorbar(cbar)
-        common.info(ax, fig, params, mode="on")
+        common.info(ax, fig, params, mode="off", off_side="left")
         common.watermark(ax, fig)
         return fig, out_dir / f"profit_no_contours_{suffix}.png"
 
@@ -324,7 +343,7 @@ def figures(ta: derived.TernaryAllocation, grid: model.ServedGrid, case_name: st
         cbar = fig.colorbar(mesh, ax=ax, pad=0.02, shrink=0.85)
         cbar.set_label(axis_label("lvoe"))
         _lvoe_colorbar(cbar)
-        common.info(ax, fig, params, mode="on")
+        common.info(ax, fig, params, mode="off", off_side="left")
         common.watermark(ax, fig)
         return fig, out_dir / f"lvoe_contours_{suffix}.png"
 
@@ -334,7 +353,7 @@ def figures(ta: derived.TernaryAllocation, grid: model.ServedGrid, case_name: st
         cbar = fig.colorbar(mesh, ax=ax, pad=0.02, shrink=0.85)
         cbar.set_label(axis_label("lvoe"))
         _lvoe_colorbar(cbar)
-        common.info(ax, fig, params, mode="on")
+        common.info(ax, fig, params, mode="off", off_side="left")
         common.watermark(ax, fig)
         return fig, out_dir / f"lvoe_no_contours_{suffix}.png"
 
@@ -350,7 +369,9 @@ def figures(ta: derived.TernaryAllocation, grid: model.ServedGrid, case_name: st
         cbar3 = fig.colorbar(mesh3, ax=ax3, pad=0.02, shrink=0.8)
         cbar3.set_label(axis_label("lvoe"))
         _lvoe_colorbar(cbar3)
-        common.info(ax3, fig, params, mode="on")
+        # "left" (used by the single-panel figures) would collide with cbar2,
+        # which sits immediately to ax3's left in this 3-panel layout.
+        common.info(ax3, fig, params, mode="off", off_side="bottom")
         common.watermark(ax1, fig)
         return fig
 
