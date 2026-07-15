@@ -163,20 +163,24 @@ def _draw_diverging_metric(ax, ta: derived.TernaryAllocation, z: np.ndarray, *,
     p_lo, p_hi = (float(v) for v in np.nanpercentile(z, [2.0, 98.0]))
 
     if crosses_zero:
-        # Genuine sign change: center the diverging map at the true breakeven
-        # so its visual midpoint means something — but DON'T force a symmetric
-        # +/-max(|p_lo|,|p_hi|) range. For heavily skewed splits (e.g. a cheap
-        # load where almost the whole simplex is profitable and only a thin
-        # sliver near the pure-load vertex dips negative), that symmetric
-        # range wastes most of its span mirroring a magnitude the minority
-        # side never reaches, crushing the majority side's real variation
-        # into a handful of colormap steps (a near-solid-green triangle even
-        # though profit genuinely ranges from ~$0 to ~$500k). Use the data's
-        # own asymmetric bounds on each side of zero instead — TwoSlopeNorm
-        # supports vmin/vmax independently, it doesn't require symmetry.
+        # Genuine sign change, but DON'T force a symmetric +/-max(|p_lo|,|p_hi|)
+        # range (wastes span mirroring a magnitude the minority side never
+        # reaches, crushing the majority side into a handful of colormap
+        # steps — a near-solid-green triangle even though profit genuinely
+        # ranges from ~$0 to ~$500k) and DON'T use TwoSlopeNorm even with
+        # asymmetric bounds (it always puts the zero-crossing at the exact
+        # PIXEL midpoint regardless of how asymmetric the value ranges either
+        # side of it are — e.g. lo=-0.02, hi=0.11 still gets split 50/50 by
+        # pixels, so the narrow negative side is stretched ~5x relative to
+        # the positive side, and the color-per-dollar rate visibly jumps at
+        # the crossing — a "kink" that reads as a non-smooth band). A plain
+        # linear map over the data's own [lo, hi] has ONE constant rate
+        # throughout — genuinely smooth — and RdYlGn still reads red/yellow/
+        # green at whatever fraction of [lo, hi] zero actually falls; the
+        # explicit black "breakeven" contour below marks it exactly either way.
         lo = min(p_lo, -1e-6 * max(abs(p_hi), 1.0))
         hi = max(p_hi, 1e-6 * max(abs(p_lo), 1.0))
-        norm = mcolors.TwoSlopeNorm(vmin=lo, vcenter=0.0, vmax=hi)
+        norm = mcolors.Normalize(vmin=lo, vmax=hi)
         levels = np.linspace(lo, hi, 41)
         cmap = "RdYlGn"
     else:
