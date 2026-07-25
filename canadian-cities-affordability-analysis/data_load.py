@@ -4,15 +4,16 @@ Both series are converted to REAL (CPI-deflated) terms in the city's own currenc
 being turned into base-100 indices, so the within-city "house price growth vs wage growth"
 comparison isn't distorted by mixing a nominal series against a real one:
   - US: Zillow ZHVI and QCEW wages are nominal at the source -> deflated by US CPI (FRED).
-  - Canada: NHPI is nominal at the source -> deflated by Canadian CPI (StatCan).
-            The wage table (11-10-0239-01) is already reported in constant 2024 dollars,
-            so it is used as-is (deflating it again would double-count inflation).
+  - Canada: the CREA MLS HPI benchmark price is nominal at the source -> deflated by
+            Canadian CPI (StatCan). The wage table (11-10-0239-01) is already reported in
+            constant 2024 dollars, so it is used as-is (deflating it again would double-count
+            inflation).
 """
 from __future__ import annotations
 
-import csv
 import io
 import sys
+import zipfile
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -65,11 +66,16 @@ def _load_qcew_wage(city_key: str) -> pd.Series:
     return pd.Series({y: w * 52 for y, w in wages.items()})
 
 
-def _load_statcan_nhpi(city_key: str) -> pd.Series:
-    points = scrape.fetch_statcan_nhpi(city_key)
-    dates = [p["refPer"] for p in points]
-    values = [p["value"] for p in points]
-    return _year_avg(dates, values)
+def _load_crea_house_price(city_key: str) -> pd.Series:
+    """Composite benchmark price ($, nominal), resale market, monthly -> annual mean."""
+    zip_path = scrape.fetch_crea_hpi_workbook()
+    sheet = cfg.CITIES[city_key]["crea_sheet"]
+    with zipfile.ZipFile(zip_path) as zf:
+        with zf.open(cfg.CREA_HPI_SHEET_FILE) as f:
+            df = pd.read_excel(io.BytesIO(f.read()), sheet_name=sheet, engine="openpyxl")
+    df = df.dropna(subset=["Date"])
+    df["Date"] = pd.to_datetime(df["Date"])
+    return df.groupby(df["Date"].dt.year)["Composite_Benchmark"].mean()
 
 
 def _load_statcan_wage(city_key: str) -> pd.Series:
@@ -93,7 +99,7 @@ def build_panel() -> pd.DataFrame:
             house_real = house_nom / cpi * cpi.loc[cfg.START_YEAR]
             wage_real = wage_nom / cpi * cpi.loc[cfg.START_YEAR]
         else:
-            house_nom = _load_statcan_nhpi(city_key)
+            house_nom = _load_crea_house_price(city_key)
             cpi = ca_cpi
             house_real = house_nom / cpi * cpi.loc[cfg.START_YEAR]
             wage_real = _load_statcan_wage(city_key)   # already real (constant 2024$)

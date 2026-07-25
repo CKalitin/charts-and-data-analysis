@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import io
 import json
+import re
 import sys
 import zipfile
 from pathlib import Path
@@ -96,12 +97,27 @@ def _statcan_fetch(product_id: str, coordinate: str, latest_n: int) -> list[dict
     return points
 
 
-def fetch_statcan_nhpi(city_key: str) -> list[dict]:
-    """Canada new-housing price index (2007=100, total house+land), monthly, since 1981."""
-    geo_id = cfg.CITIES[city_key]["nhpi_geo_id"]
-    coordinate = f"{geo_id}.1.0.0.0.0.0.0.0.0"
-    n_months = (2027 - 1981) * 12
-    return _statcan_fetch(cfg.STATCAN_NHPI_PRODUCT_ID, coordinate, n_months)
+_CREA_ZIP_RE = re.compile(r'https://www\.crea\.ca/files/mls-hpi-data/MLS_HPI-[^"]+?_EN\.zip')
+
+
+def _discover_crea_zip_url() -> str:
+    """CREA's HPI download link is versioned by publication month with no stable 'latest'
+    alias, so find the current one from the tool page rather than hardcoding a URL that goes
+    stale next month."""
+    resp = requests.get(cfg.CREA_HPI_TOOL_PAGE, timeout=TIMEOUT)
+    resp.raise_for_status()
+    match = _CREA_ZIP_RE.search(resp.text)
+    if not match:
+        raise RuntimeError(f"Could not find MLS HPI zip link on {cfg.CREA_HPI_TOOL_PAGE}")
+    return match.group(0)
+
+
+def fetch_crea_hpi_workbook() -> Path:
+    """CREA MLS HPI (resale market, benchmark $ price + index), monthly by board, since 2005."""
+    path = cfg.RAW_DIR / "crea_mls_hpi.zip"
+    if not path.exists():
+        _cached_bytes(path, _discover_crea_zip_url())
+    return path
 
 
 def fetch_statcan_wage(city_key: str) -> list[dict]:
@@ -112,7 +128,7 @@ def fetch_statcan_wage(city_key: str) -> list[dict]:
 
 
 def fetch_statcan_cpi() -> list[dict]:
-    """Canada all-items CPI, monthly, since 1914 -- deflator for the CA nominal series (NHPI)."""
+    """Canada all-items CPI, monthly, since 1914 -- deflator for the CA house-price series."""
     n_months = (2027 - 1914) * 12
     return _statcan_fetch(cfg.STATCAN_CPI_PRODUCT_ID, cfg.STATCAN_CPI_COORDINATE, n_months)
 
@@ -130,8 +146,8 @@ def fetch_all() -> None:
             for year in range(cfg.START_YEAR, cfg.END_YEAR + 1):
                 fetch_qcew_annual_wage(city_key, year)
         else:
-            print(f"StatCan NHPI + wages: {city['label']}...")
-            fetch_statcan_nhpi(city_key)
+            print(f"CREA HPI + StatCan wages: {city['label']}...")
+            fetch_crea_hpi_workbook()
             fetch_statcan_wage(city_key)
     print("Done.")
 

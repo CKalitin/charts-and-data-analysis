@@ -29,8 +29,8 @@ CITIES = {
         "label": "Vancouver",
         "country": "CA",
         "color": "#d62728",
-        # StatCan NHPI (table 18-10-0205-01) geography member id
-        "nhpi_geo_id": 39,
+        # Sheet name in CREA's MLS HPI workbook (resale benchmark price, not new-construction)
+        "crea_sheet": "GREATER_VANCOUVER",
         # StatCan table 11-10-0239-01 coordinate for median wage income
         # (Geography.AgeGroup.Gender.IncomeSource.Statistics, padded to 10 dims)
         "wage_coordinate": "21.1.1.4.5.0.0.0.0.0",
@@ -39,7 +39,7 @@ CITIES = {
         "label": "Toronto",
         "country": "CA",
         "color": "#ff7f0e",
-        "nhpi_geo_id": 20,
+        "crea_sheet": "GREATER_TORONTO",
         "wage_coordinate": "17.1.1.4.5.0.0.0.0.0",
     },
     "san_francisco": {
@@ -68,12 +68,16 @@ ZILLOW_ZHVI_URL = ("https://files.zillowstatic.com/research/public_csvs/zhvi/"
                     "Metro_zhvi_uc_sfrcondo_tier_0.33_0.67_sm_sa_month.csv")
 QCEW_BULK_ZIP_TMPL = "https://data.bls.gov/cew/data/files/{year}/csv/{year}_annual_by_area.zip"
 STATCAN_WDS_BASE = "https://www150.statcan.gc.ca/t1/wds/rest"
-STATCAN_NHPI_PRODUCT_ID = "18100205"   # New housing price index, monthly (2007=100)
 STATCAN_WAGE_PRODUCT_ID = "11100239"   # Income of individuals ... selected CMAs
 STATCAN_CPI_PRODUCT_ID = "18100004"    # CPI, monthly, not seasonally adjusted
 STATCAN_CPI_COORDINATE = "2.2.0.0.0.0.0.0.0.0"   # Canada, All-items
 
 FRED_CPI_URL = "https://fred.stlouisfed.org/graph/fredgraph.csv?id=CPIAUCSL"  # US, monthly, NSA
+
+# CREA's MLS HPI download link is versioned by publication month (e.g. .../MLS_HPI-July-2026_EN.zip)
+# with no stable "latest" alias, so scrape.py discovers the current link from this page each run.
+CREA_HPI_TOOL_PAGE = "https://www.crea.ca/housing-market-stats/mls-home-price-index/hpi-tool/"
+CREA_HPI_SHEET_FILE = "Not Seasonally Adjusted (M).xlsx"   # sheet-per-board workbook inside the zip
 
 # All series are converted to REAL terms (deflated by the city's own national CPI) before
 # indexing, so the within-country "house price growth vs wage growth" gap isn't distorted by
@@ -82,8 +86,8 @@ FRED_CPI_URL = "https://fred.stlouisfed.org/graph/fredgraph.csv?id=CPIAUCSL"  # 
 
 SOURCE_NOTES = {
     "house_price_us": "Zillow ZHVI, all-homes tier, metro, monthly -> annual mean",
-    "house_price_ca": "StatCan 18-10-0205-01 New Housing Price Index, total (house+land), "
-                       "2007=100 -- NEW CONSTRUCTION, not resale; index, not a $ level",
+    "house_price_ca": "CREA MLS HPI, composite benchmark price ($), resale market, by board, "
+                       "monthly -> annual mean",
     "wage_us": "BLS QCEW, all industries/ownership, annual avg weekly wage, metro (MSA)",
     "wage_ca": "StatCan 11-10-0239-01, median wage/salary/commission income (2024 constant $), "
                "individuals 15+, CMA",

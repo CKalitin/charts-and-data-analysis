@@ -26,7 +26,7 @@ def figures_overlay(indexed):
              title=f"Real house-price growth by city ({cfg.START_YEAR} = 100)")
         add_info_box(ax, fig,
                      "Deflated by each country's own CPI\n"
-                     "CA: StatCan New Housing Price Index (new construction)\n"
+                     "CA: CREA MLS HPI, composite benchmark price (resale market)\n"
                      "US: Zillow ZHVI (all-homes tier)", mode="on")
         return fig, cfg.OUTPUT_DIR / "ranking" / "house_price_index_overlay.png"
 
