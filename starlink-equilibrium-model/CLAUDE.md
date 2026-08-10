@@ -1061,3 +1061,80 @@ Phases 1-5 are done. Start **Phase 6 (derived charts)**, but two things first:
    already structured as reusable functions, so this should mostly be re-running
    them across a finer cost grid rather than new modeling) and the final
    revenue-per-satellite-by-orbit chart.
+
+## WorldPop world-map heatmap chart (2026-08-10)
+
+New session, user request: re-download the gitignored `data/raw/worldpop/` GeoTIFFs
+(a fresh container has none — see the "Download complete" note in the Phase 6
+section above) and produce an actual population-density heatmap of the world from
+them. Re-running `download_worldpop.py` reproduced the exact same **215/217**
+result as the original run (CHI, XKX permanently absent from WorldPop's own country
+list — not a network issue, confirmed by retrying those two alone to a clean
+`no_data` status after transient connection resets cleared on retry).
+
+**New environment dependency, not yet formalized as a requirements file**: this
+container had NO scientific Python stack at all (no numpy/matplotlib/pip packages
+beyond stdlib). Created a project-local `.venv/` (already covered by the repo's
+`.gitignore` `.venv` entry, nothing to add) with `numpy`, `matplotlib`, `tifffile`,
+`imagecodecs`. **Deliberately did NOT add `rasterio`/GDAL** — WorldPop's GeoTIFFs are
+plain unprojected WGS84 rasters with simple `ModelPixelScaleTag`/`ModelTiepointTag`
+georeferencing, so `tifffile` + manual tag parsing was enough and avoids a heavy
+GDAL binary dependency. **A future session must `source .venv/bin/activate` (or
+recreate it) before running any chart in this project** — nothing was installed
+system-wide.
+
+**New module: `population_density_grid.py`** (root) — mosaics the 215 independent,
+unaligned per-country GeoTIFFs into one global 0.1deg lon/lat grid.
+`SRC_DEG = 1/120` (WorldPop's native "1km" pixel) divides evenly into
+`TARGET_DEG = 0.1` (`BLOCK = 12`), so downsampling is exact block-averaging, no
+resampling/interpolation. Each country is read, NaN-masked (`GDAL_NODATA = -99999`),
+block-reduced (tiny territories smaller than one block keep native resolution
+instead of vanishing), then scatter-accumulated (sum + count, i.e. a true weighted
+mean) into the shared grid via direct floor-division indexing — deliberately NOT
+`np.searchsorted` on the descending latitude-edges array, which is a sign-convention
+trap (caught before shipping, not after). Result cached to
+`data/raw/worldpop/_grid_cache_0.1deg.npz` (inside the already-gitignored worldpop
+dir) since the full mosaic takes ~1 minute — **always call
+`load_or_build_grid()`, never `build_global_grid()` directly**, so a chart rerun is
+instant.
+
+**Sanity check run, not printed on the chart itself**: integrating the grid's
+density x per-cell area (accounting for `cos(latitude)` cell-width shrinkage) back
+out to a global population total gives **~8.85B**, vs. WorldPop's actual ~7.9B
+(2020) — about 10-12% high, expected order of magnitude for a coarse 0.1deg
+block-mean (mixed land/ocean coastal cells get averaged over valid land pixels only
+but multiplied by the FULL cell area, biasing coastal/archipelago cells upward).
+Good enough as a visual heatmap; **do not use this grid for a quantitative
+population total** without correcting for that bias first — Phase 5/6's actual
+demand model still uses whole-country `AG.LND.TOTL.K2` land area, not this grid (see
+the still-open density-cap integration step logged in the Phase 6 section above).
+
+**New chart: `charts/population_density_map.py`** ->
+`results/population/population_density_heatmap.png`. Reuses
+`coverage_map.load_land_paths()` / `draw_world_basemap()` directly (imported via a
+second `sys.path.insert` of the `charts/` dir itself, since `charts/` has no
+`__init__.py` and isn't a package) rather than duplicating the basemap code.
+`pcolormesh` + `LogNorm` (population density spans 1 to ~48,200 people/km2 — linear
+would show almost nothing), `plasma` colormap with `cmap.set_bad(alpha=0)` so
+below-floor (`DENSITY_FLOOR = 1` person/km2) and no-data cells are fully transparent
+and the grey land basemap shows through uninhabited land instead of leaving a hole.
+Colorbar ticks set explicitly via `FuncFormatter` (the project's established
+LogNorm-colorbar-ticks fix — see the edge-case catalog in the `charting-and-modeling`
+skill; the default `LogFormatter` renders literal `$\mathdefault{10^n}$` otherwise).
+Title follows the project's binding "vs. axes" rule even though this is a 2D map,
+not a scatter: "Population density (people/km2) vs. longitude and latitude".
+
+Visual result matches expectation: Nile valley, Ganges/Indus plains, Java, the
+NE-US/BosWash corridor, and coastal China are the brightest (highest-density)
+regions; Sahara, Amazon interior, Siberia, and central Australia render fully
+transparent (below the 1 person/km2 floor) with the bare land basemap showing
+through.
+
+**Not yet done**: this is a **visualization-only** artifact, same status as the raw
+GeoTIFF download itself — `equilibrium_model.py`'s density-cap logic is still
+unchanged (whole-country land area, not populated area). If a future session
+integrates the WorldPop data into the model per the Phase 6 "Next step for whoever
+picks up the integration" note above, `population_density_grid.py`'s per-country
+block-reduced arrays (before global-mosaic accumulation) are the natural building
+block for a per-country "populated area above threshold X" function — don't
+re-parse the GeoTIFFs a second time with a different approach.
