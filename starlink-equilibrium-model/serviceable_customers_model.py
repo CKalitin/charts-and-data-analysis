@@ -120,17 +120,25 @@ def effective_density_cap_by_latitude(total_sats: float, scenario: cdm.CapacityS
     return centers, np.where(covered, base_cap * sats_overhead, 0.0)
 
 
-def effective_density_cap_at_latitudes(total_sats: float, latitudes_deg,
-                                        scenario: cdm.CapacityScenario = cdm.V2_MINI_BEAD_SCENARIO,
-                                        base_shells: list[og.Shell] | None = None,
-                                        bin_width_deg: float = BIN_WIDTH_DEG) -> np.ndarray:
-    """effective_density_cap_by_latitude(), sampled at specific latitudes (nearest
-    bin) -- for a chart plotting the density ceiling at a few representative
-    latitudes as a function of N, rather than the full per-latitude-band array."""
-    centers, cap_by_lat = effective_density_cap_by_latitude(total_sats, scenario, base_shells, bin_width_deg)
-    idx = np.clip(np.round((np.asarray(latitudes_deg, dtype=float) - centers[0]) / bin_width_deg).astype(int),
-                  0, len(centers) - 1)
-    return cap_by_lat[idx]
+def effective_density_cap_profile_average(total_sats: float,
+                                           scenario: cdm.CapacityScenario = cdm.V2_MINI_BEAD_SCENARIO,
+                                           base_shells: list[og.Shell] | None = None,
+                                           bin_width_deg: float = BIN_WIDTH_DEG) -> float:
+    """A single number summarizing effective_density_cap_by_latitude() across the
+    WHOLE real shell profile, instead of picking a few representative latitudes:
+    the satellites-overhead-WEIGHTED average density ceiling. Weighting by
+    sats_overhead (not a plain average across latitude bins) means this reflects
+    where the real constellation actually puts its satellites -- dominated by the
+    53deg shells (72% of Gen1), pulled down somewhat by the thinner 70/97.6deg
+    coverage -- "the effective ceiling a typical satellite in this constellation
+    supports," not an arbitrary single-latitude cut."""
+    centers, sats_overhead = sats_overhead_by_latitude(total_sats, base_shells, bin_width_deg)
+    base_cap = cdm.max_customer_density_per_km2(scenario)
+    covered = np.abs(centers) <= max_latitude_covered(base_shells)
+    cap_by_lat = np.where(covered, base_cap * sats_overhead, 0.0)
+    weight = np.where(covered, sats_overhead, 0.0)
+    total_weight = weight.sum()
+    return float((cap_by_lat * weight).sum() / total_weight) if total_weight > 0 else 0.0
 
 
 def _lat_bin_edges(bin_width_deg: float):

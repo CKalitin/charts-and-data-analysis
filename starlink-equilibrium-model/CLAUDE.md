@@ -1499,17 +1499,21 @@ than the full per-band array at one N.
 
 **New chart**: `charts/serviceable_customers_per_satellite_chart.py` gained a third
 figure, `fig_servable_density_vs_satellites()` -> `results/population/servable_density_vs_satellites.png`.
-5 representative latitudes (0/30/53/70/80deg), log-log, plus the flat fixed-cap
-value (2.57/km2) as a dashed reference line. **Real finding, directly visible**: the
-53deg line (where Starlink's real Gen1 shells concentrate 72% of satellites) crosses
-the fixed-cap reference line far earlier than any other latitude -- already ~369/km2
-at just Gen1's 4,408 satellites, ~150x the fixed cap, while 70deg/80deg are still
-BELOW the fixed cap at that same N (8.6 and 12.3/km2 respectively, vs. 2.57).
-Directly shows WHY the per-satellite model's aggregate ceiling can climb so much
-higher than the fixed model's: the real constellation's shell concentration means
-the density ceiling loosens dramatically faster at the latitudes with the most real
-population (temperate, ~30-55deg) than at the sparse near-polar latitudes.
 
-Also re-sent (not regenerated -- unchanged since Phase/session that built them)
+Also re-sent (not regenerated -- unchanged since the Phase/session that built them)
 `population_vs_density_histogram_global.png` and `_us.png`
 (`charts/population_stats.py`) per the user's request to see them again.
+
+**Revised same day, right after shipping**: first version plotted 5 representative
+latitudes (0/30/53/70/80deg) as separate lines. User: **"don't make it a series of
+latitudes, just use one for the Starlink profile."** Correct call -- an arbitrary
+5-latitude sample isn't "the Starlink profile," it's 5 disconnected cuts through it.
+Replaced with `effective_density_cap_profile_average()`: a single
+satellites-overhead-WEIGHTED average across ALL covered latitude bands (weight =
+`sats_overhead(lat, N)`, the same quantity the constellation actually distributes
+satellites by) -- "the effective ceiling a typical satellite in this real
+constellation supports," collapsing the whole shell profile into one honest number
+instead of 5 arbitrary ones. `effective_density_cap_at_latitudes()` (the sampling
+helper the first version used) was deleted along with it -- no longer had a caller,
+and per this project's "no dead code" convention, an unused sampling helper doesn't
+get kept around "in case it's useful later."

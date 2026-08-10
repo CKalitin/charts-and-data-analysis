@@ -41,12 +41,6 @@ US_100M_DENSITY_HIST_CACHE = pdg.WORLDPOP_DIR / "_us_100m_density_area_hist.npz"
 
 CAP_NOTE = "Dashed = fixed cap. Solid = cap scales per satellite.\n" + SHELL_RATIO_NOTE + ". " + SOURCE_NOTE
 
-# Representative latitudes for the density-vs-N chart: 53deg is where Starlink's real
-# Gen1 shells concentrate (72% of satellites, see CLAUDE.md), 70/80deg are progressively
-# thinner coverage, 0/30deg are far from any shell's turning point (low time-density).
-DENSITY_REFERENCE_LATITUDES = (0.0, 30.0, 53.0, 70.0, 80.0)
-DENSITY_LAT_COLORS = ("#4575b4", "#74add1", "#d73027", "#fdae61", "#66301c")
-
 
 def _density_formatter(x, _pos):
     if x <= 0:
@@ -211,17 +205,16 @@ def fig_serviceable_vs_satellites_us_per_satellite_cap_linear(us_grid_1km: pdg.P
 
 
 # --------------------------------------------------------------------------------------
-# Chart 3: servable population DENSITY (not customer count) vs. total satellites,
-# per-satellite cap, at a few representative latitudes
+# Chart 3: servable population DENSITY (not customer count) vs. total satellites --
+# ONE curve for the real Starlink shell profile (satellites-overhead-weighted average
+# across all covered latitudes), not a per-latitude breakout.
 # --------------------------------------------------------------------------------------
-def fig_servable_density_vs_satellites(latitudes_deg=DENSITY_REFERENCE_LATITUDES):
+def fig_servable_density_vs_satellites():
     sat_counts = np.geomspace(100, 2_000_000, 40)
-    caps = np.array([scm.effective_density_cap_at_latitudes(n, latitudes_deg) for n in sat_counts])
+    caps = np.array([scm.effective_density_cap_profile_average(n) for n in sat_counts])
 
     fig, ax = render.new_figure(figsize=(12, 7.5))
-    for i, lat in enumerate(latitudes_deg):
-        color = DENSITY_LAT_COLORS[i % len(DENSITY_LAT_COLORS)]
-        ax.plot(sat_counts, caps[:, i], color=color, linewidth=2, label=f"{lat:.0f}deg latitude")
+    ax.plot(sat_counts, caps, color="#d73027", linewidth=2, label="Servable density (Starlink shell profile)")
 
     base_cap = cdm.max_customer_density_per_km2(cdm.V2_MINI_BEAD_SCENARIO)
     ax.axhline(base_cap, color="0.3", linestyle="--", linewidth=1.3,
@@ -232,7 +225,7 @@ def fig_servable_density_vs_satellites(latitudes_deg=DENSITY_REFERENCE_LATITUDES
     ax.set_yscale("log")
     ax.set_xlabel("Total satellites (log scale)")
     ax.set_ylabel("Servable population density (people/km2, log scale)")
-    ax.set_title("Servable population density vs. total satellites, per-satellite cap, by latitude")
+    ax.set_title("Servable population density vs. total satellites, per-satellite cap (Starlink shell profile)")
     ax.xaxis.set_major_formatter(mticker.FuncFormatter(lambda v, _: f"{v:,.0f}"))
     ax.yaxis.set_major_formatter(mticker.FuncFormatter(_density_formatter))
     ax.yaxis.set_minor_formatter(mticker.NullFormatter())
@@ -240,8 +233,8 @@ def fig_servable_density_vs_satellites(latitudes_deg=DENSITY_REFERENCE_LATITUDES
 
     info_box.add_info_box(
         ax, fig,
-        "Density ceiling = base cap x satellites overhead that latitude band --\n"
-        "grows with N (per-satellite model), unlike the flat fixed-cap line.\n"
+        "Satellites-overhead-weighted average density ceiling across the real\n"
+        "shell profile (dominated by the 53deg shells, 72% of satellites).\n"
         + SHELL_RATIO_NOTE + ". " + SOURCE_NOTE,
         mode="on",
     )
