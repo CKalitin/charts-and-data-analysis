@@ -1301,13 +1301,27 @@ memory now ~1x chunk size. Clean run: ~570s (~9.5 min) with `row_chunk=512`.
 
 **Two full streaming runs were needed**: the first (memory-safe) run completed but
 used the still-buggy `fmin` code (392.1M result, caught as impossible per the bug
-section above); re-run after the `minimum` fix. See the comparison chart
-(`results/population/serviceable_customers_vs_satellites_us_1km_vs_100m.png`) and
-its info box for the final 1km-vs-100m ceiling values and % difference -- worth
-reading directly rather than duplicating the exact numbers here, since re-running
-`charts/serviceable_customers_chart.py` regenerates them from the cached
-`data/raw/worldpop/_us_100m_pop_cap_by_lat.npz` (itself gitignored, inside
-`data/raw/worldpop/`) without needing to re-stream the whole 100m file.
+section above); re-run after the `minimum` fix, giving **6.8M** for the 100m ceiling
+(vs. **8.2M** for the same country at 1km, from the ALREADY-fixed whole-grid path --
+a real, moderate **-17%** difference from using finer input data). Directionally
+sensible: finer resolution resolves more small-scale density peaks that individually
+exceed the cap and get clipped, which 1km's coarser averaging partially smooths away
+-- so finer data should generally push the capped ceiling DOWN, not up, and it did.
+Chart: `results/population/serviceable_customers_vs_satellites_us_1km_vs_100m.png`.
+
+**One more bug, caught immediately after, same root-cause family (log-axis
+formatting, not NaN this time)**: the US comparison chart's y-range (~200K to ~8M,
+under 2 decades) was narrow enough that matplotlib auto-enabled MINOR tick labels,
+which bypassed the chart's `set_major_formatter`-only fix and rendered literal
+`$\mathdefault{6\times10^{6}}$` text -- the global chart's wider range (several
+decades) never triggered this, so it shipped clean and hid the issue. Also: the
+info box's one long unwrapped line was implicated in a `constrained_layout not
+applied because axes sizes collapsed to zero` warning and a squished/cut-off box.
+Fixed BOTH at the shared level (`_format_log_axes()`, applied to every chart in this
+file, not just the one that showed the symptom) rather than patching the one chart
+-- add `ax.yaxis.set_minor_formatter(mticker.NullFormatter())` alongside the major
+formatter on any log-scale numeric axis in this project going forward, and keep
+info-box text to short wrapped lines per the project's existing convention.
 
 **Open question, explicitly NOT resolved, flagged mid-session by the user**: the
 density cap (2.57 customers/km2) is a SINGLE BEAM's footprint limit, and the model

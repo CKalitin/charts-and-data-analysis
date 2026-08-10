@@ -56,6 +56,17 @@ def _draw_curve(ax, sat_counts, served, color, label):
     ax.axhline(ceiling, color=color, linestyle="--", linewidth=0.9, alpha=0.6, zorder=2)
 
 
+def _format_log_axes(ax):
+    """Apply the plain (non-scientific) tick formatter to BOTH major and minor
+    ticks. A log-scale y-axis spanning less than ~2 decades (e.g. the US-only chart)
+    auto-enables minor tick labels that bypass a major-only formatter, rendering
+    literal '$\\mathdefault{6\\times10^{6}}$' text -- caught on this exact chart, fixed
+    here once so it can't recur on any future narrow-range log chart in this file."""
+    ax.xaxis.set_major_formatter(mticker.FuncFormatter(lambda v, _: f"{v:,.0f}"))
+    ax.yaxis.set_major_formatter(mticker.FuncFormatter(_pop_formatter))
+    ax.yaxis.set_minor_formatter(mticker.NullFormatter())
+
+
 # --------------------------------------------------------------------------------------
 # Chart 1: global, 1km resolution
 # --------------------------------------------------------------------------------------
@@ -72,8 +83,7 @@ def fig_serviceable_vs_satellites_global(grid: pdg.PopulationGrid):
     ax.set_xlabel("Total satellites (log scale)")
     ax.set_ylabel("Serviceable customers (log scale)")
     ax.set_title("Serviceable customers vs. total satellites -- global")
-    ax.xaxis.set_major_formatter(mticker.FuncFormatter(lambda v, _: f"{v:,.0f}"))
-    ax.yaxis.set_major_formatter(mticker.FuncFormatter(_pop_formatter))
+    _format_log_axes(ax)
     ax.legend(loc="lower right", fontsize=8.5)
 
     max_lat = scm.max_latitude_covered()
@@ -108,17 +118,15 @@ def fig_serviceable_vs_satellites_us_resolution(us_grid_1km: pdg.PopulationGrid,
     ax.set_xlabel("Total satellites (log scale)")
     ax.set_ylabel("Serviceable customers (log scale)")
     ax.set_title("Serviceable customers vs. total satellites -- US, 1km vs. 100m population data")
-    ax.xaxis.set_major_formatter(mticker.FuncFormatter(lambda v, _: f"{v:,.0f}"))
-    ax.yaxis.set_major_formatter(mticker.FuncFormatter(_pop_formatter))
+    _format_log_axes(ax)
     ax.legend(loc="lower right", fontsize=8.5)
 
     ceil_1km, ceil_100m = served_1km[-1], served_100m[-1]
     pct_diff = 100 * (ceil_100m - ceil_1km) / ceil_1km
     info_box.add_info_box(
         ax, fig,
-        f"Ceilings: 1km {_pop_formatter(ceil_1km, None)}, 100m {_pop_formatter(ceil_100m, None)} "
-        f"({pct_diff:+.0f}%).\n{SHELL_RATIO_NOTE}. Satellite capacity is the SAME global curve for both "
-        f"-- only the US demand ceiling differs by resolution. " + SOURCE_NOTE,
+        f"Ceilings: 1km {_pop_formatter(ceil_1km, None)}, 100m {_pop_formatter(ceil_100m, None)} ({pct_diff:+.0f}%).\n"
+        f"Same satellite-capacity curve; only pop. data resolution differs. " + SOURCE_NOTE,
         mode="on",
     )
     return fig, OUT_ROOT / "serviceable_customers_vs_satellites_us_1km_vs_100m.png"
