@@ -1213,22 +1213,112 @@ needed there).
   local density-capped population ceiling, then flattens at **~1.13B customers**
   globally (density-capped population within the 80deg coverage envelope). Gen1
   (4,408) and current-fleet (~10,900) marked as vertical reference lines, both still
-  on the steep/linear part of the curve. Cross-check: this model's value at N=4,408
-  (~29.6M) matches Phase 3's original flat-capacity-model finding (~29.6M) almost
-  exactly, despite using a different shell-ratio assumption and per-cell (not
-  per-country) population data -- good agreement between two independently-built
-  approaches.
+  on the steep/linear part of the curve. (An early cross-check claimed N=4,408 gave
+  ~29.6M, "matching" Phase 3's original finding almost exactly -- **that was against
+  the buggy pre-fix code below and is superseded**; see the bug writeup for the
+  corrected value.)
 
-**In progress, not yet done**: user also asked for a US-only chart comparing this
-same model at 1km vs. 100m population-data resolution, to show how much the
-serviceable-customer curve changes with finer input data. Downloading
-`data/raw/worldpop/usa_ppp_2020_100m.tif` (WorldPop's `wpgp` "Unconstrained
-individual countries 2000-2020, 100m resolution" product, `usa_ppp_2020.tif`,
-**~4.0GB, POPULATION COUNT not density** -- confirmed via the same `hub.worldpop.org`
-REST API used by `download_worldpop.py`, category `pop`, alias `wpgp`; the
-`pop_density` category only exposes 1km products, hence needing a different
-category/alias for 100m). Slow download (~1.3MB/s observed), still running as of
-this note. `load_population_count_raster_as_density()` above is already written and
-ready to consume it once the download completes -- the remaining work is purely the
-comparison chart itself (two curves, `load_country_density_grid("USA")` at 1km vs.
-the 100m file, overlaid on one figure).
+## CRITICAL BUG, found and fixed same day: np.fmin silently zeroed out the whole density cap (2026-08-10)
+
+User asked a sharp follow-up question ("isn't that beam density for one satellite?")
+that led to re-examining the model, which surfaced a real, serious bug in
+`serviceable_customers_model.py`'s core capping step -- **affecting every
+serviceable-customers number shipped earlier the same day**, not just the
+in-progress US 100m work.
+
+**The bug**: `_capped_population_per_row()` and the streaming variant both used
+`np.fmin(density, max_density_cap)` to clamp density to the cap. `np.fmin` has a
+specific, easy-to-miss NaN behavior: **it IGNORES NaN and returns the other
+operand** (`np.fmin(nan, cap) == cap`, not `nan`). Every no-data cell -- ocean, or
+any land not covered by a country's WorldPop raster -- was silently converted into
+"a cell at exactly the density cap" instead of contributing zero. For the GLOBAL
+grid, where ~70% of the array is ocean (NaN), this is enormous: `nansum` no longer
+excludes those cells (they're not NaN anymore after `fmin`), so the ceiling was
+inflated by roughly `cap x total_ocean_area`.
+
+**How it was caught**: not by inspection -- by the numbers not adding up. The 100m US
+streaming run (see below) produced a "density-capped population" of 392M for the
+US, which is mathematically IMPOSSIBLE: `capped_total` can never exceed
+`cap x total_valid_land_area` (a hard upper bound from the min() itself), and the
+US's real land area (~9.33M km2, cross-checked directly from the working 1km grid)
+x the 2.57/km2 cap caps out at ~24M. Getting 392M -- 16x over the hard ceiling --
+meant the arithmetic itself was broken, not just an assumption being generous.
+Traced to the exact `fmin`-vs-`minimum` distinction via a sampled diagnostic pass.
+
+**Fix**: `np.fmin` -> `np.minimum` (`minimum` propagates NaN as an operand should),
+in both `_capped_population_per_row()` (grid.py's whole-array path) and
+`density_capped_population_by_latitude_streaming()`'s in-place chunk loop. One-line
+fix in two places, but the numeric impact is large:
+
+| Quantity | Buggy (fmin) | Fixed (minimum) |
+|---|---|---|
+| Global density-capped ceiling | 1.13B | **188.6M** |
+| Global serviceable @ N=4,408 (Gen1) | 29.6M | **24.5M** |
+| Global serviceable @ N=10,900 (current fleet) | (not separately reported) | **55.8M** |
+| US 1km density-capped ceiling | (not separately reported pre-fix) | **8.20M** |
+| US 100m density-capped ceiling (streaming) | 392.1M (impossible) | recomputed after fix, see below |
+
+`results/population/serviceable_customers_vs_satellites_global.png` was already
+committed with the WRONG (1.13B-ceiling) numbers -- **regenerated and recommitted
+with the fix**. Anyone reading the earlier commit's chart or this same day's earlier
+CLAUDE.md text (the "1.13B ceiling," "99.7% of population lives above the cap,"
+Gen1-matches-Phase-3 claims) should treat those specific NUMBERS as superseded by
+this table; the MECHANISM description (per-latitude-band min of supply vs. demand,
+shell ratios, etc.) is unaffected -- only the NaN-handling bug, not the modeling
+logic itself, was wrong.
+
+**Lesson for future numeric code in this project**: `np.fmin`/`np.fmax` are almost
+never what you want when NaN means "excluded/no-data" rather than "a real value to
+compare." Default to `np.minimum`/`np.maximum` (which propagate NaN) unless you have
+a specific, deliberate reason to want NaN-skipping comparison behavior -- and if you
+do use fmin/fmax on an array that can contain structural NaN (not measurement noise),
+that's worth a comment explaining why the skip is intentional.
+
+## US 1km vs. 100m resolution comparison (2026-08-10, same day, after the bug fix above)
+
+`data/raw/worldpop/usa_ppp_2020_100m.tif` downloaded successfully (WorldPop's `wpgp`
+"Unconstrained individual countries 2000-2020, 100m resolution" product,
+`usa_ppp_2020.tif`, exactly 4,011,468,120 bytes as declared by the server --
+confirmed via the same `hub.worldpop.org` REST API used by `download_worldpop.py`,
+category `pop`, alias `wpgp`; the `pop_density` category only exposes 1km products,
+hence needing a different category/alias for 100m). **This file is a population
+COUNT product ("ppp" = people per pixel), NOT density** -- unlike the 1km product,
+values must be divided by each pixel's own geographic area to get people/km2;
+`load_population_count_raster_as_density()` / the streaming aggregator handle this.
+
+**Too large to load whole**: 62,976 x 430,711 pixels, ~101GB uncompressed as
+float32. Added `population_density_grid.open_raster_zarr()` (tifffile's zarr store,
+tile-decode-on-demand) and
+`serviceable_customers_model.density_capped_population_by_latitude_streaming()`
+(row-chunked accumulation, never holding more than one chunk in memory).
+
+**First streaming attempt OOM-killed** (exit 137) at `row_chunk=2048`: each chunk's
+divide/fmin(now minimum)/multiply sequence allocated a FRESH full-size array at
+every step (~4x the ~3.5GB chunk size = ~14GB, on a 15GB box). Fixed by mutating the
+chunk buffer in place at every step (`out=chunk` on divide and minimum, `chunk *=
+area_col`) and dropping to `row_chunk=512` (one tile-row, ~881MB/chunk) -- peak
+memory now ~1x chunk size. Clean run: ~570s (~9.5 min) with `row_chunk=512`.
+
+**Two full streaming runs were needed**: the first (memory-safe) run completed but
+used the still-buggy `fmin` code (392.1M result, caught as impossible per the bug
+section above); re-run after the `minimum` fix. See the comparison chart
+(`results/population/serviceable_customers_vs_satellites_us_1km_vs_100m.png`) and
+its info box for the final 1km-vs-100m ceiling values and % difference -- worth
+reading directly rather than duplicating the exact numbers here, since re-running
+`charts/serviceable_customers_chart.py` regenerates them from the cached
+`data/raw/worldpop/_us_100m_pop_cap_by_lat.npz` (itself gitignored, inside
+`data/raw/worldpop/`) without needing to re-stream the whole 100m file.
+
+**Open question, explicitly NOT resolved, flagged mid-session by the user**: the
+density cap (2.57 customers/km2) is a SINGLE BEAM's footprint limit, and the model
+applies it as a hard per-area ceiling that does NOT grow with satellite count N --
+correctly matching `capacity_density_model.py`'s original explicit Phase 3
+assumption ("independent of how many satellites are overhead"), but this is a real,
+acknowledged simplification: multiple satellites' beams reaching the same ground
+patch (frequency reuse, polarization diversity, time-multiplexing across passes)
+could plausibly loosen the effective per-area ceiling as N grows, and nothing in
+this model captures that. The source paper itself notes overlapping beams on a
+SINGLE satellite with a tighter beamwidth could already loosen the ceiling ~4.5x
+(6.66 -> ~30 subscribers/sq mi). Do not add N-dependent density-cap scaling without
+the user picking a concrete reuse-factor assumption first -- flagged to them, not
+yet answered as of this note.

@@ -111,7 +111,11 @@ def _capped_population_per_row(density_or_count_chunk: np.ndarray, area_row_km2:
     chunk (people per pixel, e.g. the 100m 'ppp' product) by its own cell area first."""
     density = density_or_count_chunk if already_density else density_or_count_chunk / area_row_km2[:, None]
     with np.errstate(invalid="ignore"):
-        return np.nansum(np.fmin(density, max_density_cap) * area_row_km2[:, None], axis=1)
+        # np.minimum, NOT np.fmin: fmin IGNORES NaN and returns the other operand,
+        # so fmin(nan, cap) == cap -- every no-data cell (ocean, uncovered land)
+        # would silently be counted as "at the cap" instead of contributing zero.
+        # minimum propagates NaN as intended, which nansum then correctly excludes.
+        return np.nansum(np.minimum(density, max_density_cap) * area_row_km2[:, None], axis=1)
 
 
 def density_capped_population_by_latitude(grid: pdg.PopulationGrid,
@@ -165,9 +169,12 @@ def density_capped_population_by_latitude_streaming(path,
         area_col = ((meta["dy"] * pdg.KM_PER_DEG) * (meta["dx"] * pdg.KM_PER_DEG
                     * np.cos(np.radians(lat_centers))))[:, None]
 
-        np.divide(chunk, area_col, out=chunk)       # count/pixel -> people/km^2
-        np.fmin(chunk, max_density_cap, out=chunk)  # apply the beam-footprint cap
-        chunk *= area_col                            # back to capped population per cell
+        np.divide(chunk, area_col, out=chunk)           # count/pixel -> people/km^2
+        np.minimum(chunk, max_density_cap, out=chunk)   # apply the cap -- NOT np.fmin, see
+                                                          # _capped_population_per_row's comment: fmin
+                                                          # would silently turn every NaN (no-data/ocean)
+                                                          # cell into a phantom "at the cap" contribution.
+        chunk *= area_col                                # back to capped population per cell
         with np.errstate(invalid="ignore"):
             pop_row = np.nansum(chunk, axis=1)
         np.add.at(out, _lat_bin_index(lat_centers, bin_width_deg, len(centers)), pop_row)
