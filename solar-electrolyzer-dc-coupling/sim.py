@@ -21,7 +21,7 @@ Author: Christopher Kalitin, 2026 (well, Claude)
 
 import os
 import sys
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace as _dc_replace
 from typing import Optional
 
 import numpy as np
@@ -112,6 +112,47 @@ class SimConfig:
     G_single: float = 800.0     # W/m^2 used for single-G analysis plots
 
 
+# ─── Config ↔ flat-dict bridge (shared with the Streamlit app) ───────────────
+# app.py's sliders / app_state.json use this same flat key set. Centralized
+# here so the raw->SimConfig field mapping (unit conversions included) is
+# defined once, not duplicated between the UI and standalone chart scripts.
+APP_STATE_FILE = os.path.join(os.path.dirname(__file__), 'app_state.json')
+
+
+def sim_config_from_dict(d: dict) -> SimConfig:
+    """Build a SimConfig from the flat parameter dict used by app.py / app_state.json."""
+    return SimConfig(
+        solar=SolarConfig(
+            I_sc=d['I_sc'], V_oc=d['V_oc'], N_series=d['N_series'], N_parallel=d['N_parallel'],
+            G_ref=d['G_ref'], T_cell=d['T_cell_C'] + 273.15, n_ideality=d['n_ideality'],
+            V_oc_per_cell=d['V_oc_per_cell'],
+        ),
+        elec=ElectrolyzerConfig(
+            N_cells_series=d['N_cells_series'], electrode_area_cm2=d['electrode_area_cm2'],
+            M_strings=d['M_strings'], V_onset=d['V_onset_cell'], R_ohmic_area=d['R_ohmic_area'],
+            A_tafel=d['A_tafel'], j0=d['j0_mA'] / 1000.0, j_lim=d['j_lim_mA'] / 1000.0,
+            B_mt=d['B_mt'], faradaic_eff=d['faradaic_eff'],
+        ),
+        sweep=SweepConfig(G_min=d['G_min'], G_max=d['G_max'], G_steps=d['G_steps']),
+        G_single=d['G_single'],
+    )
+
+
+def load_website_config(path: str = APP_STATE_FILE) -> SimConfig:
+    """Load the Streamlit app's persisted parameter state as a SimConfig.
+
+    Keeps standalone charts in sync with "whatever the website is currently
+    configured to" instead of drifting from sim.py's own SimConfig() defaults.
+    Falls back to SimConfig() if app_state.json is missing.
+    """
+    if not os.path.exists(path):
+        return SimConfig()
+    import json
+    with open(path, encoding='utf-8') as f:
+        d = json.load(f)
+    return sim_config_from_dict(d)
+
+
 # ─── Solar physics (single-diode model) ──────────────────────────────────────
 def thermal_voltage(cfg: SolarConfig) -> float:
     """Effective array thermal voltage V_T_eff [V].
@@ -149,13 +190,24 @@ def solar_current(V: float, G: float, cfg: SolarConfig) -> float:
 
 
 def solar_voltage_for_current(I: float, G: float, cfg: SolarConfig) -> float:
-    """Invert solar I(V) for V given I, by bisection on V in [0, V_oc_array]."""
-    V_oc_array = cfg.V_oc * cfg.N_series
+    """Invert solar I(V) for V given I, by bisection on V in [0, V_oc_exact(G)].
+
+    V_oc_exact is the analytic root of solar_current(V, G, cfg) = 0, i.e.
+    V_T * ln(I_ph/I_0 + 1). This is used as the upper bracket instead of the
+    nameplate V_oc (rated at G_ref) because for G > G_ref the true open-circuit
+    voltage rises slightly above nameplate — using the flat nameplate bound
+    then leaves no root in [0, V_oc_array] and brentq raises a sign-mismatch
+    error. Real irradiance data routinely exceeds G_ref around solar noon.
+    """
+    I_ph = array_iph(G, cfg)
+    I_0  = array_idark(cfg)
+    V_T  = thermal_voltage(cfg)
+    V_oc_exact = V_T * np.log(I_ph / I_0 + 1.0) if I_ph > 0 else 0.0
     if I <= 0:
-        return V_oc_array
-    if I >= array_iph(G, cfg):
+        return V_oc_exact
+    if I >= I_ph:
         return 0.0
-    return brentq(lambda V: solar_current(V, G, cfg) - I, 0.0, V_oc_array)
+    return brentq(lambda V: solar_current(V, G, cfg) - I, 0.0, V_oc_exact)
 
 
 # ─── Electrolyzer physics (per-cell polarization) ────────────────────────────
@@ -319,8 +371,13 @@ def evaluate(G: float, sim: SimConfig):
 
 
 # ─── Plotting ────────────────────────────────────────────────────────────────
-def _save(fig, name):
-    path = os.path.join(OUTPUT_DIR, name)
+def _save(fig, name, subdir: str = ''):
+    """Save under OUTPUT_DIR/<subdir>/<name> — subdir groups charts by type so
+    results/ stays navigable as the number of chart families grows.
+    """
+    out_dir = os.path.join(OUTPUT_DIR, subdir) if subdir else OUTPUT_DIR
+    os.makedirs(out_dir, exist_ok=True)
+    path = os.path.join(out_dir, name)
     fig.savefig(path, dpi=140, bbox_inches='tight')
     print(f"  saved {os.path.relpath(path)}")
 
@@ -367,7 +424,7 @@ def plot_iv_overlay(G: float, sim: SimConfig):
     ax.grid(alpha=0.3)
     ax.legend(loc='lower left', fontsize=8, ncol=2)
     fig.tight_layout()
-    _save(fig, f'iv_overlay_G{int(G)}.png')
+    _save(fig, f'iv_overlay_G{int(G)}.png', subdir='general')
     plt.close(fig)
 
 
@@ -396,7 +453,7 @@ def plot_pv_with_mpp(G: float, sim: SimConfig):
     ax.grid(alpha=0.3)
     ax.legend(fontsize=10)
     fig.tight_layout()
-    _save(fig, f'pv_mpp_G{int(G)}.png')
+    _save(fig, f'pv_mpp_G{int(G)}.png', subdir='general')
     plt.close(fig)
 
 
@@ -427,7 +484,7 @@ def plot_loss_breakdown(G: float, sim: SimConfig):
     ax.set_ylim(0, max(parts) * 1.25)
     ax.grid(axis='y', alpha=0.3)
     fig.tight_layout()
-    _save(fig, f'loss_breakdown_G{int(G)}.png')
+    _save(fig, f'loss_breakdown_G{int(G)}.png', subdir='general')
     plt.close(fig)
 
 
@@ -518,7 +575,7 @@ def plot_sweep(sim: SimConfig):
     fig.suptitle('Solar-Electrolyzer DC Coupling — Irradiance Sweep',
                  fontsize=14, y=1.00)
     fig.tight_layout()
-    _save(fig, 'sweep_overview.png')
+    _save(fig, 'sweep_overview.png', subdir='general')
     plt.close(fig)
 
     return Gs, rows
@@ -559,7 +616,436 @@ def plot_op_trajectory(Gs, rows, sim: SimConfig):
     ax.set_ylim(0, max(I_op.max(), I_mp.max()) * 1.15)
     ax.grid(alpha=0.3); ax.legend(loc='lower left', fontsize=9)
     fig.tight_layout()
-    _save(fig, 'op_trajectory.png')
+    _save(fig, 'op_trajectory.png', subdir='general')
+    plt.close(fig)
+
+
+def _draw_control_dashboard(x, xlabel, rows, sim: SimConfig, suptitle: str,
+                             sub2_note: str = ""):
+    """Shared three-panel control-algorithm dashboard, parameterized by x-axis.
+
+    (1) DC-coupled operating point: Power / Voltage / Current on a triple y-axis.
+    (2) Active-stack count — the control decision (stack switching).
+    (3) MPP-tracking efficiency: raw (P_op/P_mpp, %) vs current-weighted
+        (I_op * P_op/P_mpp, A) — the latter collapses toward zero whenever
+        current is low even when raw tracking is excellent, since it's
+        dominated by the shrinking current term rather than tracking quality.
+
+    Used both for the synthetic G-sweep (x = irradiance) and for a measured
+    diurnal irradiance profile (x = time of day) — same physics, same
+    figure-of-merit, different independent variable.
+
+    Returns (fig, eta_pct, cw_eff) so callers can add their own intuition prints.
+    """
+    P     = np.array([r['op']['P'] for r in rows]) / 1000.0  # kW
+    V     = np.array([r['op']['V'] for r in rows])
+    I     = np.array([r['op']['I'] for r in rows])
+    n_act = np.array([r['op']['n_active'] for r in rows])
+    P_op_w = np.array([r['op']['P']  for r in rows])
+    P_mpp  = np.array([r['mpp']['P'] for r in rows])
+
+    eta_frac = np.divide(P_op_w, P_mpp, out=np.zeros_like(P_op_w), where=P_mpp > 1e-9)
+    eta_pct  = eta_frac * 100.0
+    cw_eff   = I * eta_frac  # A
+
+    fig, axes = plt.subplots(3, 1, figsize=(10, 12), sharex=True)
+
+    # Panel 1: P, V, I triple-axis.
+    ax1 = axes[0]
+    ax2 = ax1.twinx()
+    ax3 = ax1.twinx()
+    ax3.spines['right'].set_position(('outward', 60))
+
+    l1, = ax1.plot(x, P, color='tab:blue',   lw=2, label='Power (kW)')
+    l2, = ax2.plot(x, V, color='tab:green',  lw=2, label='Voltage (V)')
+    l3, = ax3.plot(x, I, color='tab:orange', lw=2, label='Current (A)')
+
+    ax1.set_ylabel('Power (kW)',   color='tab:blue')
+    ax2.set_ylabel('Voltage (V)',  color='tab:green')
+    ax3.set_ylabel('Current (A)',  color='tab:orange')
+    ax1.tick_params(axis='y', colors='tab:blue')
+    ax2.tick_params(axis='y', colors='tab:green')
+    ax3.tick_params(axis='y', colors='tab:orange')
+    ax1.set_title('DC-coupled operating point: Power / Voltage / Current')
+    ax1.grid(alpha=0.3)
+    ax1.legend([l1, l2, l3], [l.get_label() for l in (l1, l2, l3)],
+               loc='upper left', fontsize=9)
+
+    # Panel 2: active stacks — the control decision.
+    ax = axes[1]
+    ax.step(x, n_act, where='post', color='purple', lw=2)
+    ax.set_ylabel('Active stacks (#)')
+    title2 = f'Stack-switching control decision (M = {sim.elec.M_strings})'
+    ax.set_title(title2 + (f' — {sub2_note}' if sub2_note else ''))
+    ax.set_yticks(range(0, sim.elec.M_strings + 1))
+    ax.grid(alpha=0.3)
+
+    # Panel 3: raw vs current-weighted efficiency.
+    ax  = axes[2]
+    axb = ax.twinx()
+    l1, = ax.plot(x, eta_pct, color='black',   lw=2, ls='--',
+                  label='Raw MPP efficiency (%)')
+    l2, = axb.plot(x, cw_eff, color='crimson', lw=2,
+                   label='Current-weighted efficiency (A) = I × P/P_mpp')
+    ax.set_ylabel('Raw MPP efficiency (%)')
+    axb.set_ylabel('Current-weighted efficiency (A)', color='crimson')
+    axb.tick_params(axis='y', colors='crimson')
+    ax.set_ylim(0, 105)
+    ax.set_xlabel(xlabel)
+    ax.set_title('MPP-tracking efficiency: raw vs current-weighted')
+    ax.grid(alpha=0.3)
+    h1, lab1 = ax.get_legend_handles_labels()
+    h2, lab2 = axb.get_legend_handles_labels()
+    ax.legend(h1 + h2, lab1 + lab2, loc='lower right', fontsize=9)
+
+    fig.suptitle(suptitle, fontsize=14, y=1.00)
+    fig.tight_layout()
+
+    return fig, eta_pct, cw_eff
+
+
+def _report_cw_eff_collapse(x, x_fmt, eta_pct, cw_eff):
+    """Print a note if current-weighted efficiency collapses despite good raw tracking."""
+    mid = eta_pct > 50.0
+    if mid.any() and cw_eff[mid].min() < 0.05 * cw_eff.max():
+        x_at_min = x[mid][np.argmin(cw_eff[mid])]
+        print(f"  >> Note: current-weighted efficiency drops near-zero at {x_fmt(x_at_min)} "
+              f"even though raw MPP efficiency stays >50% there — it's tracking current, not "
+              f"tracking quality.")
+
+
+def plot_control_dashboard(Gs, rows, sim: SimConfig):
+    """Control-algorithm dashboard across the synthetic irradiance sweep."""
+    fig, eta_pct, cw_eff = _draw_control_dashboard(
+        Gs, 'Irradiance G (W/m²)', rows, sim,
+        'Solar-Electrolyzer DC Coupling — Control Algorithm Overview')
+    _save(fig, 'control_dashboard.png', subdir='control_dashboard')
+    plt.close(fig)
+    _report_cw_eff_collapse(Gs, lambda g: f"G≈{g:.0f} W/m²", eta_pct, cw_eff)
+
+
+def load_irradiance_profile(csv_path: str):
+    """Load a measured diurnal profile: columns time_hours, G_W_m2, T_amb_C."""
+    data = np.genfromtxt(csv_path, delimiter=',', names=True)
+    return data['time_hours'], data['G_W_m2'], data['T_amb_C']
+
+
+def plot_control_dashboard_timeseries(csv_path: str, sim: SimConfig):
+    """Control-algorithm dashboard driven by a measured G(t) irradiance profile.
+
+    Ambient temperature from the CSV is loaded but not fed into the model —
+    sim.py's solar/electrolyzer physics run at the configured fixed T_cell,
+    so this is irradiance-only fidelity, not a full thermal simulation.
+    """
+    t_hr, G_arr, T_amb = load_irradiance_profile(csv_path)
+    rows = [evaluate(float(G), sim) for G in G_arr]
+
+    csv_name = os.path.basename(csv_path)
+    fig, eta_pct, cw_eff = _draw_control_dashboard(
+        t_hr, 'Time of day (hr)', rows, sim,
+        f'Solar-Electrolyzer DC Coupling — Control Algorithm vs. Time of Day\n'
+        f'({csv_name}, G_peak={G_arr.max():.0f} W/m², T_amb {T_amb.min():.0f}–{T_amb.max():.0f} °C)',
+        sub2_note='vs. time of day')
+    _save(fig, f'control_dashboard_timeseries_{os.path.splitext(csv_name)[0]}.png',
+          subdir='control_dashboard')
+    plt.close(fig)
+    _report_cw_eff_collapse(t_hr, lambda h: f"t≈{h:.1f} hr", eta_pct, cw_eff)
+
+
+def plot_iv_trajectory_timeseries(csv_path: str, sim: SimConfig, M_strings: int = 1000):
+    """Operating-point trajectory across a time-of-day irradiance profile, laid
+    over the family of solar I-V curves — the time-driven counterpart to
+    plot_op_trajectory. Run through the auto-switching control algorithm with
+    an oversized bank (M_strings) so the controller has fine-grained room to
+    track MPP across the whole profile.
+    """
+    t_hr, G_arr, _T_amb = load_irradiance_profile(csv_path)
+    sim_big = _dc_replace(sim, elec=_dc_replace(sim.elec, M_strings=M_strings))
+    rows = [evaluate(float(G), sim_big) for G in G_arr]
+
+    V_oc_array = sim.solar.V_oc * sim.solar.N_series
+    V_arr = np.linspace(0, V_oc_array, 400)
+
+    fig, ax = plt.subplots(figsize=(10, 6.5))
+    G_levels = np.linspace(max(G_arr.max() * 0.1, 1.0), G_arr.max(), 6)
+    cmap_iv = plt.get_cmap('Greys')
+    for k, G in enumerate(G_levels):
+        I_arr = np.array([solar_current(V, G, sim.solar) for V in V_arr])
+        ax.plot(V_arr, I_arr, color=cmap_iv(0.3 + 0.6 * k / len(G_levels)),
+                lw=1, alpha=0.7,
+                label=f'I-V @ G={G:.0f}' if k in (0, len(G_levels) - 1) else None)
+
+    V_op = np.array([r['op']['V'] for r in rows])
+    I_op = np.array([r['op']['I'] for r in rows])
+    V_mp = np.array([r['mpp']['V'] for r in rows])
+    I_mp = np.array([r['mpp']['I'] for r in rows])
+    P_op = np.array([r['op']['P'] for r in rows])
+    P_mp = np.array([r['mpp']['P'] for r in rows])
+
+    # Hard voltage floor set by cells IN SERIES — no number of parallel strings
+    # can push the bank below this, since per-string voltage only approaches it
+    # (never crosses below) as current density -> 0. Whenever the array's true
+    # MPP voltage sits below this floor, the coupled system clamps here instead
+    # and loses real power, regardless of M_strings.
+    V_floor = sim.elec.N_cells_series * sim.elec.V_onset
+
+    sc = ax.scatter(V_op, I_op, c=t_hr, cmap='plasma', s=18,
+                    label=f'Op point (control algo, M_strings={M_strings})', zorder=5)
+    ax.plot(V_mp, I_mp, 'k--', lw=1.2, alpha=0.7, label='MPP locus')
+    ax.axvline(V_floor, color='crimson', ls=':', lw=1.5,
+               label=f'Bank onset floor ({V_floor:.0f} V = {sim.elec.N_cells_series} cells × '
+                     f'{sim.elec.V_onset:.2f} V)')
+    plt.colorbar(sc, ax=ax, label='Time of day (hr)')
+
+    csv_name = os.path.basename(csv_path)
+    ax.set_xlabel('Terminal Voltage (V)')
+    ax.set_ylabel('Current (A)')
+    ax.set_title(f'Operating-point trajectory vs. time of day ({csv_name})\n'
+                 f'control algorithm, n = {M_strings} (auto-switching)')
+    ax.set_xlim(0, V_oc_array * 1.02)
+    ax.set_ylim(0, max(I_op.max(), I_mp.max()) * 1.15)
+    ax.grid(alpha=0.3); ax.legend(loc='lower left', fontsize=8)
+    fig.tight_layout()
+    stem = os.path.splitext(csv_name)[0]
+    _save(fig, f'iv_trajectory_vs_time_n{M_strings}_{stem}.png', subdir='sweeps')
+    plt.close(fig)
+
+    # Surface the floor-clamping loss even though it's visible on the chart —
+    # printed numbers are what actually get noticed (see other _report_* calls).
+    clamped = (V_mp < V_floor) & (P_mp > 1e-9)
+    if clamped.any():
+        loss_pct = 100.0 * (P_mp[clamped] - P_op[clamped]) / P_mp[clamped]
+        g_clamped = G_arr[clamped]
+        worst = np.argmax(loss_pct)
+        print(f"  >> Note: for G below ~{g_clamped.max():.0f} W/m² the array's true MPP voltage "
+              f"sits below the bank's {V_floor:.0f} V onset floor ({sim.elec.N_cells_series} "
+              f"cells/string × {sim.elec.V_onset:.2f} V) — the coupled system clamps there instead "
+              f"of tracking MPP, losing up to {loss_pct[worst]:.0f}% of available power at "
+              f"G={g_clamped[worst]:.0f} W/m². Adding strings (even up to M_strings={M_strings}) "
+              f"cannot fix this — the floor is set by cells in series, not parallel count.")
+
+
+def plot_efficiency_vs_current(Gs, rows, sim: SimConfig):
+    """Raw MPP-tracking efficiency vs. operating current for the auto-switching
+    control algorithm (the case we have — best_operating_point picks n_active).
+    """
+    I      = np.array([r['op']['I']  for r in rows])
+    P_op   = np.array([r['op']['P']  for r in rows])
+    P_mpp  = np.array([r['mpp']['P'] for r in rows])
+    eta_pct = np.divide(P_op, P_mpp, out=np.zeros_like(P_op), where=P_mpp > 1e-9) * 100.0
+
+    fig, ax = plt.subplots(figsize=(9, 6))
+    ax.plot(I, eta_pct, '-', color='gray', lw=1, alpha=0.6, zorder=1)
+    sc = ax.scatter(I, eta_pct, c=Gs, cmap='plasma', s=22, zorder=2)
+    plt.colorbar(sc, ax=ax, label='G (W/m²)')
+    ax.set_xlabel('Current I (A)')
+    ax.set_ylabel('Raw MPP efficiency (%)')
+    ax.set_title('MPP-tracking efficiency vs. operating current\n'
+                 f'DC-coupled control algorithm ({sim.elec.M_strings} electrolyzers, auto-switching)')
+    ax.set_ylim(0, 105)
+    ax.grid(alpha=0.3)
+    fig.tight_layout()
+    _save(fig, 'efficiency_vs_current.png', subdir='sweeps')
+    plt.close(fig)
+
+
+def _op_for_n(G: float, n: int, sim: SimConfig, control_algo: bool):
+    """Operating point at n electrolyzers: FIXED (no switching, n always active)
+    unless control_algo=True, in which case n is the bank size M_strings and
+    the auto-switching algorithm picks how many of those n to activate.
+    """
+    if control_algo:
+        sim_n = _dc_replace(sim, elec=_dc_replace(sim.elec, M_strings=n))
+        return best_operating_point(G, sim_n)
+    return operating_point(G, n, sim)
+
+
+def run_constant_n_sweep(n_values, sim: SimConfig, control_algo_n=()):
+    """Sweep G for each n in n_values.
+
+    n in control_algo_n is treated as a bank SIZE run through the auto-switching
+    control algorithm (best_operating_point); every other n is held FIXED with
+    no switching (operating_point directly). Returns {n: {'G','I','eta_pct','cw_eff'}}.
+    """
+    Gs = np.linspace(sim.sweep.G_min, sim.sweep.G_max, sim.sweep.G_steps)
+    out = {}
+    for n in n_values:
+        is_control = n in control_algo_n
+        I, eta_pct, cw_eff = [], [], []
+        for G in Gs:
+            op = _op_for_n(G, n, sim, is_control)
+            mp = mpp(G, sim.solar)
+            eta_frac = op['P'] / mp['P'] if mp['P'] > 1e-9 else 0.0
+            I.append(op['I'])
+            eta_pct.append(eta_frac * 100.0)
+            cw_eff.append(op['I'] * eta_frac)
+        out[n] = {'G': Gs, 'I': np.array(I), 'eta_pct': np.array(eta_pct),
+                   'cw_eff': np.array(cw_eff), 'control_algo': is_control}
+    return out
+
+
+def _n_family_split(data_by_n: dict):
+    """Split n's into (fixed_ns, control_ns) using each entry's control_algo flag
+    (set by run_constant_n_sweep/timeseries) — not a magnitude heuristic, so it
+    stays correct regardless of how wide the fixed-n range grows.
+    """
+    ns = sorted(data_by_n.keys(), reverse=True)
+    fixed_ns   = sorted([n for n in ns if not data_by_n[n]['control_algo']], reverse=True)
+    control_ns = sorted([n for n in ns if data_by_n[n]['control_algo']], reverse=True)
+    return ns, fixed_ns, control_ns
+
+
+def _n_family_style(data_by_n: dict):
+    """Assign each n a plot style. Fixed (no-switching) n's get a viridis
+    gradient by n magnitude (so equal n-gaps read as equal color-gaps even with
+    a variable step schedule); control-algo n's get a fixed high-contrast
+    dashed style so they don't fight the gradient for color slots.
+    """
+    ns, fixed_ns, control_ns = _n_family_split(data_by_n)
+    cmap = plt.get_cmap('viridis')
+    norm = plt.Normalize(vmin=min(fixed_ns), vmax=max(fixed_ns)) if fixed_ns else None
+    styles = {}
+    for n in fixed_ns:
+        styles[n] = dict(color=cmap(norm(n)), ls='-', lw=1.6)
+    for n in control_ns:
+        styles[n] = dict(color='black', ls='--', lw=2.2)
+    return ns, styles
+
+
+def _n_family_legend_set(data_by_n: dict, max_fixed_labels: int = 10):
+    """Which n's get a legend entry. A wide variable-step family can have 50+
+    fixed-n lines — label only ~max_fixed_labels evenly-spaced ones (by rank)
+    plus every control-algo n, matching the rest of the codebase's legend-
+    subsampling convention for swept families.
+    """
+    ns, fixed_ns, control_ns = _n_family_split(data_by_n)
+    k = min(max_fixed_labels, len(fixed_ns))
+    if k <= 1:
+        keep = set(fixed_ns[:1])
+    else:
+        keep_idx = {round(i * (len(fixed_ns) - 1) / (k - 1)) for i in range(k)}
+        keep = {fixed_ns[i] for i in keep_idx}
+    return keep | set(control_ns)
+
+
+def _n_family_title(data_by_n: dict):
+    ns, fixed_ns, control_ns = _n_family_split(data_by_n)
+    label = f'n = {min(fixed_ns)}→{max(fixed_ns)} fixed (variable step)' if fixed_ns else ''
+    if control_ns:
+        label += (' + ' if label else '') + 'n = ' + ', '.join(str(n) for n in control_ns) + ' (control algo)'
+    return label
+
+
+def _n_family_fname(data_by_n: dict):
+    ns, fixed_ns, control_ns = _n_family_split(data_by_n)
+    stem = f'n{min(fixed_ns)}to{max(fixed_ns)}' if fixed_ns else ''
+    if control_ns:
+        stem += ('_' if stem else '') + 'plusctrl' + '_'.join(str(n) for n in control_ns)
+    return stem
+
+
+def plot_cw_efficiency_by_n(data_by_n: dict, sim: SimConfig, log_x: bool = False):
+    """Current-weighted efficiency vs. G, one series per constant electrolyzer count."""
+    ns, styles = _n_family_style(data_by_n)
+    legend_ns = _n_family_legend_set(data_by_n)
+    fig, ax = plt.subplots(figsize=(9.5, 6.5))
+    for n in ns:
+        d = data_by_n[n]
+        G, cw = d['G'], d['cw_eff']
+        if log_x:
+            mask = G > 0
+            G, cw = G[mask], cw[mask]
+        label = _n_label(n, d) if n in legend_ns else None
+        ax.plot(G, cw, label=label, **styles[n])
+    if log_x:
+        ax.set_xscale('log')
+    ax.set_xlabel('Irradiance G (W/m²)')
+    ax.set_ylabel('Current-weighted efficiency (A) = I × P/P_mpp')
+    ax.set_title(f'Current-weighted efficiency vs. G{" (log)" if log_x else ""}\n'
+                 f'{_n_family_title(data_by_n)}')
+    ax.legend(fontsize=7.5, ncol=2, loc='upper left')
+    ax.grid(alpha=0.3, which='both' if log_x else 'major')
+    fig.tight_layout()
+    suffix = '_log' if log_x else ''
+    _save(fig, f'cw_efficiency_vs_G_{_n_family_fname(data_by_n)}{suffix}.png', subdir='sweeps')
+    plt.close(fig)
+
+
+def plot_mpp_efficiency_vs_current_by_n(data_by_n: dict, sim: SimConfig, log_x: bool = False):
+    """Raw MPP efficiency vs. current, one series per constant electrolyzer count."""
+    ns, styles = _n_family_style(data_by_n)
+    legend_ns = _n_family_legend_set(data_by_n)
+    fig, ax = plt.subplots(figsize=(9.5, 6.5))
+    for n in ns:
+        d = data_by_n[n]
+        order = np.argsort(d['I'])
+        I, eta = d['I'][order], d['eta_pct'][order]
+        if log_x:
+            mask = I > 0
+            I, eta = I[mask], eta[mask]
+        label = _n_label(n, d) if n in legend_ns else None
+        ax.plot(I, eta, label=label, **styles[n])
+    if log_x:
+        ax.set_xscale('log')
+    ax.set_xlabel('Current I (A)')
+    ax.set_ylabel('Raw MPP efficiency (%)')
+    ax.set_title(f'MPP-tracking efficiency vs. current{" (log)" if log_x else ""}\n'
+                 f'{_n_family_title(data_by_n)}')
+    ax.set_ylim(0, 105)
+    ax.legend(fontsize=7.5, ncol=2, loc='lower right')
+    ax.grid(alpha=0.3, which='both' if log_x else 'major')
+    fig.tight_layout()
+    suffix = '_log' if log_x else ''
+    _save(fig, f'mpp_efficiency_vs_current_{_n_family_fname(data_by_n)}{suffix}.png',
+          subdir='sweeps')
+    plt.close(fig)
+
+
+def run_constant_n_timeseries(n_values, t_hr, G_arr, sim: SimConfig, control_algo_n=()):
+    """Like run_constant_n_sweep, but driven by a measured G(t) profile instead
+    of a synthetic G sweep. Returns {n: {'t', 'I', 'eta_pct', 'cw_eff'}}.
+    """
+    out = {}
+    for n in n_values:
+        is_control = n in control_algo_n
+        I, eta_pct, cw_eff = [], [], []
+        for G in G_arr:
+            op = _op_for_n(float(G), n, sim, is_control)
+            mp = mpp(float(G), sim.solar)
+            eta_frac = op['P'] / mp['P'] if mp['P'] > 1e-9 else 0.0
+            I.append(op['I'])
+            eta_pct.append(eta_frac * 100.0)
+            cw_eff.append(op['I'] * eta_frac)
+        out[n] = {'t': t_hr, 'I': np.array(I), 'eta_pct': np.array(eta_pct),
+                   'cw_eff': np.array(cw_eff), 'control_algo': is_control}
+    return out
+
+
+def _n_label(n: int, d: dict) -> str:
+    return f'n = {n} (control algo)' if d.get('control_algo') else f'n = {n}'
+
+
+def plot_cw_efficiency_by_n_timeseries(data_by_n: dict, csv_name: str):
+    """Current-weighted efficiency vs. time of day, one series per constant
+    electrolyzer count — the time-of-day counterpart to plot_cw_efficiency_by_n.
+    """
+    ns, styles = _n_family_style(data_by_n)
+    legend_ns = _n_family_legend_set(data_by_n)
+    fig, ax = plt.subplots(figsize=(9.5, 6.5))
+    for n in ns:
+        d = data_by_n[n]
+        label = _n_label(n, d) if n in legend_ns else None
+        ax.plot(d['t'], d['cw_eff'], label=label, **styles[n])
+    ax.set_xlabel('Time of day (hr)')
+    ax.set_ylabel('Current-weighted efficiency (A) = I × P/P_mpp')
+    ax.set_title(f'Current-weighted efficiency vs. time of day ({csv_name})\n'
+                 f'{_n_family_title(data_by_n)}')
+    ax.legend(fontsize=7.5, ncol=2, loc='upper left')
+    ax.grid(alpha=0.3)
+    fig.tight_layout()
+    stem = os.path.splitext(csv_name)[0]
+    _save(fig, f'cw_efficiency_vs_time_{_n_family_fname(data_by_n)}_{stem}.png',
+          subdir='sweeps')
     plt.close(fig)
 
 
@@ -640,9 +1126,10 @@ def report_sweep_summary(Gs, rows, sim: SimConfig):
 
 # ─── Entry point ─────────────────────────────────────────────────────────────
 def main():
-    sim = SimConfig()
+    sim = load_website_config()
     print("Solar-Electrolyzer DC Coupling Simulator")
     print("=" * 60)
+    print(f"(config: {'website (app_state.json)' if os.path.exists(APP_STATE_FILE) else 'sim.py built-in defaults'})")
     print(f"Array:   I_sc={sim.solar.I_sc} A · V_oc={sim.solar.V_oc} V "
           f"· N_s={sim.solar.N_series} · N_p={sim.solar.N_parallel} "
           f"· T={sim.solar.T_cell} K")
@@ -666,7 +1153,47 @@ def main():
     print("\nRunning irradiance sweep ...")
     Gs, rows = plot_sweep(sim)
     plot_op_trajectory(Gs, rows, sim)
+    plot_control_dashboard(Gs, rows, sim)
     report_sweep_summary(Gs, rows, sim)
+    plot_efficiency_vs_current(Gs, rows, sim)
+
+    # Fixed (no-switching) electrolyzer counts, variable step so the range can
+    # reach 1000 without 490 lines: step 2 up to 50, step 10 up to 200, step 20
+    # up to 400, step 40 up to (but excluding) 1000 — 1000 itself is reserved
+    # for the control-algo reference case below.
+    n_core = (list(range(20, 51, 2)) + list(range(60, 201, 10)) +
+              list(range(220, 401, 20)) + list(range(440, 1000, 40)))
+    print(f"\nRunning constant-electrolyzer-count sweep "
+          f"(n = {n_core[0]}→{n_core[-1]} fixed/no switching, variable step, "
+          f"+ n=1000 control-algo reference) ...")
+    n_values      = n_core + [1000]
+    control_algo_n = {1000}   # n=1000 = bank size for the auto-switching algorithm, not a fixed count
+    data_by_n = run_constant_n_sweep(n_values, sim, control_algo_n=control_algo_n)
+    plot_cw_efficiency_by_n(data_by_n, sim)
+    plot_cw_efficiency_by_n(data_by_n, sim, log_x=True)
+    plot_mpp_efficiency_vs_current_by_n(data_by_n, sim)
+    plot_mpp_efficiency_vs_current_by_n(data_by_n, sim, log_x=True)
+    eta_hi = data_by_n[max(n_core)]['eta_pct'][-1]
+    eta_lo = data_by_n[min(n_core)]['eta_pct'][-1]
+    if eta_hi - eta_lo < 2.0:
+        print(f"  >> Note: n = {min(n_core)}..{max(n_core)} barely separates at G_max — raw MPP "
+              f"efficiency only spans {eta_lo:.2f}–{eta_hi:.2f}% there. At this bank voltage "
+              f"({sim.elec.N_cells_series} cells/string), the array sits close enough to every "
+              f"n's I-V curve that electrolyzer count stops mattering much in this range; the "
+              f"switching algorithm's real payoff is at low G, not high G.")
+
+    data_dir = os.path.join(os.path.dirname(__file__), 'data')
+    if os.path.isdir(data_dir):
+        for fname in sorted(os.listdir(data_dir)):
+            if fname.endswith('.csv'):
+                print(f"\nRunning time-of-day profile: {fname} ...")
+                csv_path = os.path.join(data_dir, fname)
+                plot_control_dashboard_timeseries(csv_path, sim)
+                t_hr, G_arr, _T_amb = load_irradiance_profile(csv_path)
+                data_by_n_t = run_constant_n_timeseries(n_values, t_hr, G_arr, sim,
+                                                         control_algo_n=control_algo_n)
+                plot_cw_efficiency_by_n_timeseries(data_by_n_t, fname)
+                plot_iv_trajectory_timeseries(csv_path, sim, M_strings=1000)
 
     print(f"\nAll outputs saved to: {os.path.relpath(OUTPUT_DIR)}")
 

@@ -1,0 +1,3 @@
+# Cached network pulls -- large (QCEW bulk files are ~130MB/year) and fully reproducible
+# via `python scrape.py`. The derived data/panel.csv (small, tidy) IS committed.
+data/raw/

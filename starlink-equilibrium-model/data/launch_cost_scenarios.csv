@@ -1,0 +1,4 @@
+scenario,usd_per_kg,source,note
+f9_internal_marginal,857,Reflect Orbital sourcing file (derived: ~$15M/launch / ~17.5t reusable LEO payload),SpaceX's own cost to launch its own satellites -- NOT the rideshare price external customers pay. Used for all F9-launched generations since Starlink IS SpaceX.
+starship_initial,200,Reflect Orbital sourcing file (SpaceNexus, ~$30M/launch conservative near-term estimate),Used for v3 "initial" scenario per user instruction.
+starship_endstate,67,Reflect Orbital sourcing file (SpaceNexus, $10M/launch, 150000kg, SpaceX aspirational target -- NOT achieved),Used for v3 "end-state" scenario per user instruction. Aspirational, not a current achieved cost.

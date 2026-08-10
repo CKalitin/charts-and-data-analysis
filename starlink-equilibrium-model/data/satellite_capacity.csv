@@ -1,0 +1,5 @@
+generation,downlink_gbps_total,uplink_gbps_total,beams_per_satellite,downlink_gbps_per_beam,uplink_gbps_per_beam,confidence
+v1.0,20,,,,,analyst_estimate_2_polarization_64qam
+v1.5,20,,,,,analyst_estimate_range_17_23_reused_v1.0_figure_no_separate_source
+v2_mini,96,6.7,16,6.0,0.419,analyst_estimate_cross_confirmed_2_sources
+v3_broadband,1024,200,,,,company_design_target_unbuilt

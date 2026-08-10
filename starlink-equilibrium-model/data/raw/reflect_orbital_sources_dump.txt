@@ -1,0 +1,27 @@
+Category | Item / Fact | Notes | Source 1 | Source 2 | Source 3
+Launch Cost | F9 dedicated list price: $74M, 22,800 kg → $3,246/kg | Upper bound. What Reflect actually pays is the rideshare rate. | Wikipedia – Falcon 9 |  | 
+Launch Cost | F9 rideshare (Transporter SSO): $6,000/kg | What Reflect pays today. Nowack quoted ~$6,500/kg in Monocle interview. | Wikipedia – Falcon 9 | Monocle – Nowack interview | 
+Launch Cost | F9 internal marginal cost: ~$15M/launch → ~$857/kg | SpaceX's actual cost. Floor on how cheap F9 could ever get for Reflect. | Wikipedia – Falcon 9 |  | 
+Launch Cost | Starship aspirational: $10M/launch, 150,000 kg → $67/kg | SpaceX stated target at high cadence. Not achieved. The number that makes Reflect's economics work. | SpaceNexus – launch cost economics |  | 
+Launch Cost | Starship conservative near-term: ~$30M/launch → ~$200/kg | More realistic early operational estimate from analysts. | SpaceNexus – launch cost economics |  | 
+Starlink Mass & Cost | v1.0: 260 kg, $200k/unit → $769/kg | First operational generation. Cost from Quilty Space analyst estimate via SpaceNews. | Mass – Skyrocket | Cost – SpaceNews | 
+Starlink Mass & Cost | v1.5: ~305 kg, ~$250k/unit (estimated) → ~$820/kg | Added laser ISLs. Mass from Teslarati/FCC filing. Cost interpolated — no primary source. | Mass – Teslarati | Mass – Wikipedia Starlink | Cost – interpolated (no source)
+Starlink Mass & Cost | v2 Mini: 800 kg, $800k/unit → $1,000/kg | Current generation, launched on F9. Cost from Quilty Space via SpaceNews. | Mass – Wikipedia Starlink | Cost – SpaceNews | 
+Starlink Mass & Cost | v2 full (Starship-only): ~1,250 kg, ~$1M/unit (estimated) → ~$800/kg | Too large for F9, not yet launched. Mass from Musk statement. Cost estimated — no primary source. | Mass – Teslarati | Cost – estimate only | 
+Starlink Mass & Cost | v3 (projected): 1,500 kg, $1.2M/unit → $800/kg | Future generation. Both figures from Quilty Space via SpaceNews. | SpaceNews – Quilty Space |  | 
+Reflect Orbital – Satellite Specs | Eärendil-1 mirror mass: 16 kg | Mirror only (Mylar film on deployable booms), not total satellite. | Wikipedia – Reflect Orbital | Space.com | 
+Reflect Orbital – Satellite Specs | Eärendil-1 total satellite mass: 100 kg | Full sat incl. bus, propulsion, avionics. From Monocle interview: "100 kg packed into a box the size of a microwave". | Monocle – Nowack interview | Orbital Today | 
+Reflect Orbital – Satellite Specs | Eärendil-1 mirror area: 324 m² (18m × 18m) | Derived. m²/kg = 20.3 (mirror only) / 3.24 (whole satellite). | Wikipedia – Reflect Orbital |  | 
+Reflect Orbital – Satellite Specs | Future constellation mirror: 54m × 55m (~2,916–3,025 m²) | Stated goal for production satellites. ~9× more area than Eärendil. | Payload Space – Series A | LiveScience | 
+Reflect Orbital – Satellite Specs | Future constellation satellite total mass: NO PUBLIC DATA | Estimate: mirror film ~144 kg (9× Eärendil), bus ~200–400 kg → total ~300–500 kg. Treat as unknown. |  |  | 
+Reflect Orbital – Mission | Orbit: SSO, 600–650 km altitude | Sets ground track geometry and pass duration. | Wikipedia – Reflect Orbital |  | 
+Reflect Orbital – Mission | Beam diameter on ground: 5 km | Set by sun's angular diameter (0.53°) projected from altitude. Physics constraint, not a design choice. | Wikipedia – Reflect Orbital |  | 
+Reflect Orbital – Mission | Target irradiance: 200 W/m² | Reflect's stated goal for the full constellation. ~20% of midday sun. | Monocle – Nowack interview |  | 
+Reflect Orbital – Mission | Pricing: ~$5,000/hour per satellite | Nowack's stated figure for lighting customers. Solar farm revenue-share also discussed, no public rate. | Futurism |  | 
+Data Quality Notes |  |  |  |  | 
+All Starlink cost figures are analyst estimates (Quilty Space), not SpaceX disclosures. Treat as ±30%. |  |  |  |  | 
+Starlink mass figures are well-sourced (FCC filings, NSF launch reports, Wikipedia citing primary sources). |  |  |  |  | 
+Reflect total satellite mass (100 kg) comes from one interview — treat as approximate. |  |  |  |  | 
+Future constellation satellite mass has no source and must be modeled or assumed. |  |  |  |  | 
+F9 rideshare pricing is publicly listed and reliable. |  |  |  |  | 
+Starship cost figures are targets, not achieved prices. |  |  |  |  | 

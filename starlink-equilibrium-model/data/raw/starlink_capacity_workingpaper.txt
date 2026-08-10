@@ -1,0 +1,206 @@
+Starlink Capacity Analysis v0.2
+Sascha Meinrath1 Karl Grindal2 Glenn Fishbine3 Nancy DeGidio3
+July 18, 2025
+Abstract
+Assuming no topographical considerations or pre-existing user base, in areas where
+there are more than 6.66 households per square mile within a Starlink beam’s coverage
+area, Starlink may fail to deliver the minimum service level (100/20Mbps) to qualify
+as a broadband service, thus failing to meet the NTIA eligibility requirements to re-
+ceive federal support for broadband through programs such as the Broadband Equity,
+Access, and Deployment (BEAD) program.
+Keywords: Starlink; Broadband Requirements; Network Oversubscription, Network Capac-
+ity, Beam Coverage
+1 Introduction
+This analysis provides an initial estimate and evaluation of the capacities and saturation
+limits of the Starlink satellite infrastructure. As an exploratory analysis, the goal is to pro-
+vide general heuristics that relate to Starlink implementation to meet Federal requirements
+for “broadband” (i.e., sub-100ms latency connectivity of at least 100Mbps download speed
+and 20Mbps upload speed).
+It should be noted preliminary that full technical specifications for Starlink are not pub-
+licly available and the assumptions utilized to produce this analysis are explicitly condi-
+tional as stated. Overall, these analyses underscore the need for comprehensive capacity
+analyses prior to allocation of Federal funding for satellite connectivity and that a failure
+to take into account fundamental real-world limits to Starlink capacity will result in the
+allocation of Federal funding to support connectivity that may not meet the eligibility re-
+quirements to receive Federal funding, thus raising serious concerns over waste, fraud,
+and abuse.
+1.1 Disclaimer
+The analyses presented below are based, in part, on public information available through
+June 2025, and which may not accurately represent the full technical capabilities of Starlink
+satellites. Because Starlink does not publish thorough and detailed technical specifications
+for their satellites, the assumptions made in these analyses may be incorrect; however, ci-
+tations to source materials, whenever available (e.g., Starlink FCC filings), are provided.
+1Director, X-Lab, Palmer Chair in Telecommunications, Penn State University
+2Department of Security Studies, University of New Hampshire
+3Breaking Point Solutions, LLC
+1
+The overarching goal of these analyses are to make transparent the need for independent
+verification of capacity limits to the Starlink infrastructure, and the crucial need for de-
+tailed engineering, propagation, and capacity analysis to be conducted for any area where
+Starlink and other satellite broadband solutions are proposed (for example, as recipients
+of BEAD program funding).
+Given the documented capacity limitations to satellite broadband service provisioning
+(and that these limits are driven both by new and pre-existing customer bases), formal
+capacity assessments require data concerning Starlink’s existing user base; and, new user
+base limits must be independently verified prior to funding allocations to avoid harmful
+network congestion that could degrade services to Starlink users within an over-subscribed
+geographic area.
+2 Analytical Appraoch
+2.1 Satellite Characteristics
+This analysis assumes the use of Starlink V2 satellites, which are, as of June 2025, the most
+sophisticated generation of widely-deployed Starlink satellites. However, three major it-
+erations exist among the estimated 7,850 currently operational satellites: V1, V1.5, and
+V2. The current total number of V2 satellites is unknown; but since this analysis assumes
+that all operational satellites are V2 vintage, the estimates are a likely maximum capacity
+ceiling for the existing Starlink system.
+Each V2 satellite offers approximately 96 Gbps of download bandwidth and 6.7 Gbps
+upload capacity (a roughly 14:1 ratio of download to upload capacity). Each satellite has
+beamforming capabilities to support up to 16 beams, with each beam capable of providing
+approximately 6 Gbps download throughput and 0.4 Gbps upload throughput.
+2.2 Beam Coverage Area
+Each beam has an estimated coverage area of approximately 63 square miles assuming a
+1.5-degree beamwidth, as reported in Starlink’s FCC filings. While multiple orbital shells
+exist for Starlink Low Earth Orbit (LEO) and Very Low Earth Orbit (VLEO) constellations,
+to simplify the analysis, we assume Ka/Ku-band, phased-array transceivers operating at
+550 km altitude.
+The Estimated Beam Coverage Area also utilizes the following estimates and formula
+to develop a circular/oval footprint at nadir, and we provide the formulas used to facilitate
+analyses predicated upon different parameters):
+Estimated Beam Coverage Area = π ∗ (tan(1/2 ∗ θ ∗ π/180) ∗ h)2
+Where:
+• h = satellite altitude [we assume 550 km].
+2
+• θ = beamwidth [we assume a 1.5 degree angular beam width].
+• We assume a satellite operating at a right angle to a flat plane to estimate coverage
+area.
+Estimated Beam Coverage Area = π ∗ (tan(1/2 ∗ 1.5 ∗ π/180) ∗ 550km)2
+Assumption 1: Beamwidth Assumption
+• We assume a beamwidth of 1.5 degrees, which is typical for Ka/Ku-band phased-
+array systems used in LEO constellations like Starlink. This is a reasonable midpoint
+between 1° (narrower, high-gain beams) and 2° (wider, lower-gain beams).
+• This yields a half-angle for the beam of 0.75 degrees (0.013091 radians).
+Assumption 2: Altitude
+• We assume an altitude of 550 km. NOTE: While 550 km was the initial planned orbit
+height for Starlink’s constellations in their 2019 FCC filings, shells as low as 340 km
+above the earth have subsequently been deployed.
+Assumption 3: Footprint Area
+• Assumptions 1 & 2 yields a circular footprint [i..e., assuming a 90 degree beam on a
+flat plane] of 162.8554 square kilometers (roughly 63 square miles)
+Additional Known & Excluded Adjustments for Real-World Factors
+• Off-Nadir Beams: Beams directed away from nadir create elliptical footprints, which
+can increase the coverage area but reduce signal strength and throughput due to slant
+range. For a beam steered at, say, 30° from nadir, the footprint becomes elliptical,
+potentially covering 200–300 km², depending on the angle.
+• Overlap and Cell Size: Starlink’s network design uses overlapping beams to ensure
+continuous coverage. Each beam’s effective service area (or “cell”) is likely smaller,
+around 100–150 km², to manage capacity and avoid interference. Engineering dis-
+cussions and analyses suggest Starlink operationalizes cells using a hexagonal grid,
+with effective diameters of roughly 15 km. However, the actual beam footprint is
+likely smaller, with cells dynamically assigned to optimize capacity.
+• Topology: Topography creates perturbations to the coverage ovals, while hills and
+mountains (and trees, buildings, etc.) cause “shadows” whereby coverage within a
+satellite’s beam coverage oval can become disrupted.
+• Self-Interference, Weather Attenuation, Harmful Interference, etc.: These real-world
+constraints all detrimentally affect wireless systems though, for simplicity’s sake, are
+excluded from these analyses. All would further lower expected throughput/network
+capacity.
+3
+2.3 Oversubscription Limits
+For a given beam within that footprint, we have two distinct cases to consider:
+• USE CASE 1: A dedicated bandwidth use case where all Broadband-Serviceable Lo-
+cations (BSLs) are simultaneously provided an allocated maximum amount; and,
+• USE CASE 2: A more industry-standard, contention ratio use case where the over-
+subscription rate is 20:1 (i.e., meaning only 1 in 20 BSLs is actually using Satellite
+capacity at any given point in time).
+For the analyses below, 6 Gbps is the beam download capacity, 0.419 Gbps is the beam
+upload capacity (and 0.1Gbps is the 100 Mbps Federal requirement for broadband down-
+load speed, and 0.02 Gbps is federal requirement to meet baseline broadband upload
+speed). Given federal minimum speed requirements to qualify as a “broadband” service,
+these two use cases would yield two distinct saturation points for the download and up-
+load capacities of the Starlink network:
+Per Beam BSL Limit (Download Speed):
+• USE CASE 1: If all BSLs are simultaneously downloading, then the maximum # of
+BSLs per beam is 6 Gbps/0.1 Gbps, or 60 BSLs.
+• USE CASE 2: If only 1 in 20 BSLs are downloading at any given time, then each beam
+could serve 60 X 20, or 1,200 BSLs.
+Per Beam BSL Limit (Upload Speed):
+• USE CASE 1: If all BSLs are uploading simultaneously, then the maximum # of BSLs
+per beam is 0.419 Gbps / 0.02Gbps, or roughly 21 BSLs.
+• USE CASE 2: If only 1 in 20 BSLs are uploading at any given time, then each beam
+could serve 20.95 X 20, or 419 BSLs.
+A contention ratio of 20:1 is within industry standards, and because the limiting factor
+for meeting Federal minimum speed requirement to qualify as a “broadband” connection
+is the upload capacity limit, we use the upload-capacity BSL-limit for subsequent analysis.
+3 Findings
+Given the upload capacity limit of Use Case 2 (with a maximum of 419 BSLs per beam)
+and the above assumptions leading to a beam coverage area of 62.9 square miles area, one
+can derive the following maximum average Broadband Service Location (BSL) density:
+# of BSLs / Beam Coverage Area = Maximum BSLs per Square Mile
+Where:
+4
+• # of BSLs = Maximum Number of BSLs that would saturate the throughput of each
+satellite beam [we assume 419 based upon the uplink BSL limit above].
+• Beam Coverage Area = 62.9 square miles, as per the above analysis.
+419/62.9 = 6.66 BSLs per square mile
+Meaning, that a BSL density of more than 6.66 BSLs per square mile within any given
+starlink beam coverage area would saturate the network to the point that Starlink could be
+unable to provide the minimal upload speed threshold to meet the definition of a “broad-
+band” service. Exceeding this 6.66 BSLs per square mile threshold would yield a likely
+outcome where Starlink services would consistently fail to meet the NTIA’s minimal per-
+formance requirements to receive Federal grant funding from initiatives such as the BEAD
+Program.
+3.1 A Note on Beam Overlap
+Starlink’s design permits multiple beams to partially or totally overlap each other. And
+both a tighter beam coverage angle (creating a smaller beam coverage area) and/or polar-
+ized overlapping beams could increase the maximum permissible density. However, even
+with two overlapping 1 degree beams and no self-interference, one would anticipate over-
+subscription to occur with roughly 30 BSLs per square mile, which would still make large
+swaths of rural America untenable for Starlink broadband service. Under real world con-
+ditions, the risk of network congestion, hidden nodes, and self-interference would likely
+put a strain on the Starlink infrastructure before reaching this density level. However,
+there is inadequate public data documenting Starlink’s congestion and self-interference
+thresholds to include such impact in this analysis.
+3.2 Real World Observations
+Currently available data indicate that, as of June 2025, only 17% of U.S. speedtest users
+with Starlink met the 100 Mbps down, 20 Mbps up speed requirement, according to the
+following:
+• “Starlink’s U.S. Performance is on the Rise, Making it a Viable Broadband Option
+in Some States” (June 10, 2024) https://www.ookla.com/articles/starlink
+-us-performance-2025
+• “Starlink Shows Gains in Speed Test Report” Telecompetitor Article (June
+11, 2025) https://www.telecompetitor.com/starlink-shows-gains-in
+-speed-test-report/
+These longitudinal data suggest persistent challenges with the satellite coverage span-
+ning years. Our analysis on BSL congestion levels also excludes a range of other limiting
+5
+factors worthy of further documentation (and that would further lower the density thresh-
+old), including weather attenuation, hand-off latency spikes (and micro-outages), potential
+congestion of ground terminal uplink bands, and others.
+Furthermore, preliminary findings by Meinrath and Karl document additional reliabil-
+ity concerns, including diurnal Starlink network congestion (of both upload and download
+throughput) across the country and across a longitudinal data collection window spanning
+from 2022 to 2025. These longitudinal data suggest persistent challenges with the satellite
+coverage spanning years, with data documenting consistent periodic latency spikes above
+100ms and severe speed degradation during peak broadband usage hours – mirroring
+Ookla’s 100+ms latency measurements of the Starlink network.
+4 National Implications
+Under the NTIA’s latest Notice of Funding Opportunity (NOFO), State Broadband Offices
+are required to be technology independent. Further, they are required to take the lowest
+qualified bid and only consider secondary factors if the next highest bid is within 15% of
+the lowest bid.
+Many State Offices are concerned that Starlink proposals may be the lowest bid and
+alternative proposals may not be within the 15% window for consideration.
+What this analysis presents is that across many geographic areas Starlink may not be a
+qualified bidder as it may be unable to attain the required 100/20 Mbps service level (and,
+in deploying Starlink services, may actually degrade pre-existing users’ services to the
+point that they no longer receive minimal broadband speeds). Even in lower population
+density regions, whenever the number of un- and underserved BSLs subscribing to the
+service is greater than 6 households per square mile within a beam’s coverage area, further
+due diligence is essential prior to funding allocations.
+5 Contact Information
+Sascha Meinrath
+Director, X-Lab
+Palmer Chair in Telecommunications
+Penn State University
+sascha@thexlab.org
+6

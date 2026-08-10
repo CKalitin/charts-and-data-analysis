@@ -1,0 +1,7 @@
+generation,as_of_date,mass_kg,unit_cost_usd,cost_per_kg_usd,confidence,source
+v1.0,2024-05-09,260,200000,769,analyst_estimate,Quilty Space (Caleb Henry) via SpaceNews
+v1.5,2024-05-09,305,250000,820,interpolated_no_primary_source,Reflect Orbital sourcing file (interpolated between v1.0 and v2 Mini; mass from Teslarati/Wikipedia)
+v2_mini,2024-05-09,730,800000,1096,analyst_estimate,Quilty Space (Caleb Henry) via SpaceNews
+v2_mini,2026-04-13,730,400000,548,single_source_estimate_not_cross_confirmed,New Space Economy (unattributed further upstream)
+v2_full,2024-05-09,1250,1000000,800,estimate_no_primary_source,Reflect Orbital sourcing file (scaled from v2 Mini; mass from Musk statement via Teslarati)
+v3,2024-05-09,1500,1200000,800,analyst_projection_unbuilt_at_time_of_estimate,Quilty Space (Caleb Henry) via SpaceNews

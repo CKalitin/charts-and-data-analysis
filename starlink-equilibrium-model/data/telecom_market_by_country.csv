@@ -1,0 +1,218 @@
+iso3,country,region,income_level,population,internet_user_pct,unconnected_population_est,unconnected_population_est_coverage_corrected,fixed_broadband_subs_per_100,mobile_subs_per_100,cellular_dominant_market,fixed_broadband_usd_per_month,fixed_broadband_usd_per_gb_illustrative,mobile_usd_per_gb,mobile_usd_per_month_illustrative,gni_per_capita_ppp_usd,gdp_per_capita_ppp_usd,connectivity_cost_pct_of_gni,legacy_satellite_isp_present
+ABW,Aruba,Latin America & Caribbean,High income,108785,97.2,3079,3079,17.49,130.6,False,80.56,0.2685,1.8546,18.55,48900,51712,1.98,False
+AFG,Afghanistan,"Middle East, North Africa, Afghanistan & Pakistan",Low income,43844111,16.1,36787402,36787402,0.08,60.1,True,48.88,0.1629,1.0205,10.21,2250,2236,26.07,False
+AGO,Angola,Sub-Saharan Africa,Lower middle income,39040039,40.7,23148869,23148869,0.36,69.7,True,49.1,0.1637,1.007,10.07,9840,10251,5.99,False
+ALB,Albania,Europe & Central Asia,Upper middle income,2349580,85.9,332139,332139,24.88,89.1,False,23.46,0.0782,1.5528,15.53,28170,28221,1.0,False
+AND,Andorra,Europe & Central Asia,High income,82904,94.4,4645,2487,52.36,155.7,False,48.84,0.1628,4.8221,48.22,80950,79567,0.72,False
+ARE,United Arab Emirates,"Middle East, North Africa, Afghanistan & Pakistan",High income,11513149,100,0,0,40.84,203.2,False,105.92,0.3531,4.6074,46.07,81640,79344,1.56,False
+ARG,Argentina,Latin America & Caribbean,Upper middle income,45851378,89.7,4737753,4737753,26.1,140.2,False,18.14,0.0605,1.1072,11.07,31920,32587,0.68,False
+ARM,Armenia,Europe & Central Asia,Upper middle income,3086700,81.3,576000,576000,20.31,134.9,False,18.71,0.0624,0.9768,9.77,24020,24754,0.93,False
+ASM,American Samoa,East Asia & Pacific,High income,46029,0,46029,1381,,4.0,,85.0,0.2833,1.5,15.0,,,,False
+ATG,Antigua and Barbuda,Latin America & Caribbean,High income,94209,72.7,25690,2826,10.68,200.5,True,87.14,0.2905,3.2032,32.03,34670,35832,3.02,False
+AUS,Australia,East Asia & Pacific,High income,27614411,96.1,1068291,828432,36.48,112.6,False,56.24,0.1875,0.4392,4.39,69930,71934,0.97,True
+AUT,Austria,Europe & Central Asia,High income,9208163,91.9,743492,276245,30.13,124.5,False,35.62,0.1187,0.5063,5.06,77010,76778,0.56,False
+AZE,Azerbaijan,Europe & Central Asia,Upper middle income,10246996,90.8,942723,942723,21.75,109.5,False,21.18,0.0706,1.7647,17.65,25430,26113,1.0,False
+BDI,Burundi,Sub-Saharan Africa,Low income,14390003,8.6,13153038,13153038,0.02,63.2,True,186.46,0.6215,1.1021,11.02,1250,1248,179.0,False
+BEL,Belgium,Europe & Central Asia,High income,11941781,95.8,504446,358253,44.23,103.9,False,50.03,0.1668,2.2324,22.32,75620,74676,0.79,False
+BEN,Benin,Sub-Saharan Africa,Lower middle income,14814460,34.0,9779944,9779944,0.28,125.9,True,27.23,0.0908,2.3667,23.67,4760,4817,6.86,False
+BFA,Burkina Faso,Sub-Saharan Africa,Low income,24074580,28.3,17272861,17272861,0.85,116.6,True,45.19,0.1506,3.2692,32.69,2890,3072,18.76,False
+BGD,Bangladesh,South Asia,Lower middle income,175686899,53.4,81831948,81831948,8.09,108.1,True,7.38,0.0246,0.231,2.31,10710,10154,0.83,False
+BGR,Bulgaria,Europe & Central Asia,High income,6433302,82.4,1129755,192999,37.02,118.1,False,17.87,0.0596,,,42170,44451,0.51,False
+BHR,Bahrain,"Middle East, North Africa, Afghanistan & Pakistan",High income,1600366,100,0,0,16.99,159.5,False,48.14,0.1605,1.313,13.13,65500,70997,0.88,False
+BHS,"Bahamas, The",Latin America & Caribbean,High income,403033,92.5,30337,12091,25.27,96.7,False,85.27,0.2842,4.9922,49.92,39610,41258,2.58,False
+BIH,Bosnia and Herzegovina,Europe & Central Asia,Upper middle income,3140095,86.1,436445,436445,29.39,121.2,False,21.31,0.071,1.0279,10.28,25810,25814,0.99,False
+BLR,Belarus,Europe & Central Asia,Upper middle income,9085991,94.3,521370,521370,36.26,131.1,False,15.66,0.0522,0.6695,6.7,34310,34716,0.55,False
+BLZ,Belize,Latin America & Caribbean,Upper middle income,422924,80.0,84560,84560,9.75,67.2,False,38.42,0.1281,2.9153,29.15,14230,14966,3.24,False
+BMU,Bermuda,North America,High income,64555,98.4,1052,1052,51.3,96.7,False,150.0,0.5,3.4167,34.17,122530,118728,1.47,False
+BOL,Bolivia,Latin America & Caribbean,Lower middle income,12581843,79.7,2553523,2553523,12.07,98.0,False,36.89,0.123,1.8659,18.66,12530,12873,3.53,False
+BRA,Brazil,Latin America & Caribbean,Upper middle income,212812405,84.5,33063658,33063658,24.08,101.9,False,23.08,0.0769,0.4016,4.02,22670,23433,1.22,True
+BRB,Barbados,Latin America & Caribbean,High income,282623,70.4,83756,8479,37.48,114.6,False,88.44,0.2948,2.7461,27.46,24840,25894,4.27,False
+BRN,Brunei Darussalam,East Asia & Pacific,High income,466330,96.3,17262,13990,21.18,118.1,False,63.25,0.2108,1.8948,18.95,95420,92430,0.8,False
+BTN,Bhutan,South Asia,Lower middle income,796682,91.3,69491,69491,2.92,99.8,True,37.5,0.125,0.7051,7.05,18520,19594,2.43,False
+BWA,Botswana,Sub-Saharan Africa,Upper middle income,2562122,57.5,1089940,1089940,7.44,164.0,True,59.38,0.1979,1.9899,19.9,19960,20698,3.57,False
+CAF,Central African Republic,Sub-Saharan Africa,Low income,5513282,13.8,4753414,4753414,0.02,38.8,True,,,10.8973,108.97,1390,1314,,False
+CAN,Canada,North America,High income,41651653,94.4,2351943,1249550,42.52,94.1,False,55.26,0.1842,5.3666,53.67,66820,66746,0.99,True
+CHE,Switzerland,Europe & Central Asia,High income,9092436,97.3,243583,243583,47.02,129.5,False,65.13,0.2171,7.2903,72.9,101690,102513,0.77,False
+CHI,Channel Islands,Europe & Central Asia,High income,168466,,,,,,,,,,,,,,False
+CHL,Chile,Latin America & Caribbean,High income,19859921,95.6,875774,595798,23.73,132.7,False,18.74,0.0625,0.6389,6.39,35730,37774,0.63,False
+CHN,China,East Asia & Pacific,Upper middle income,1406585000,91.6,118153140,118153140,47.19,131.8,False,14.3,0.0477,0.3753,3.75,29160,29333,0.59,False
+CIV,Cote d'Ivoire,Sub-Saharan Africa,Lower middle income,32711547,41.4,19158434,19158434,1.6,183.9,True,54.45,0.1815,1.1815,11.82,7750,8209,8.43,False
+CMR,Cameroon,Sub-Saharan Africa,Lower middle income,29879337,46.3,16057514,16057514,2.13,108.2,True,63.53,0.2118,1.6346,16.35,5700,5788,13.37,False
+COD,"Congo, Dem. Rep.",Sub-Saharan Africa,Low income,112832473,19.7,90634376,90634376,0.03,58.5,True,,,0.5203,5.2,1850,1920,,False
+COG,"Congo, Rep.",Sub-Saharan Africa,Lower middle income,6484437,47.3,3420437,3420437,1.27,95.5,True,136.54,0.4551,0.6834,6.83,6490,7248,25.25,False
+COL,Colombia,Latin America & Caribbean,Upper middle income,53425635,79.3,11034834,11034834,17.22,174.1,False,21.84,0.0728,0.1982,1.98,22250,22640,1.18,False
+COM,Comoros,Sub-Saharan Africa,Lower middle income,882847,32.5,595767,595767,0.39,109.9,True,175.12,0.5837,2.1779,21.78,4260,4238,49.33,False
+CPV,Cabo Verde,Sub-Saharan Africa,Upper middle income,527326,74.7,133228,133228,8.31,111.8,True,,,3.2414,32.41,12010,12165,,False
+CRI,Costa Rica,Latin America & Caribbean,High income,5152950,87.2,661113,154589,23.29,136.0,False,53.85,0.1795,1.8635,18.64,30760,33815,2.1,False
+CUB,Cuba,Latin America & Caribbean,Upper middle income,10937203,70.5,3228991,3228991,3.08,72.9,True,,,2.7146,27.15,,,,False
+CUW,Curacao,Latin America & Caribbean,High income,156263,68.1,49805,4688,31.51,93.8,False,121.96,0.4065,2.6796,26.8,33330,32741,4.39,False
+CYM,Cayman Islands,Latin America & Caribbean,High income,75844,81.1,14359,2275,56.36,139.3,False,167.39,0.558,8.3912,83.91,74470,92201,2.7,False
+CYP,Cyprus,Europe & Central Asia,High income,1370754,89.6,142545,41123,37.56,156.2,False,47.65,0.1588,2.409,24.09,57390,64575,1.0,False
+CZE,Czechia,Europe & Central Asia,High income,10886878,87.7,1340419,326606,38.87,126.6,False,19.6,0.0653,3.1211,31.21,57870,60487,0.41,False
+DEU,Germany,Europe & Central Asia,High income,83491249,93.5,5426935,2504737,45.61,129.2,False,47.59,0.1586,2.1405,21.4,78140,75407,0.73,True
+DJI,Djibouti,"Middle East, North Africa, Afghanistan & Pakistan",Lower middle income,1184076,65.3,410887,410887,1.47,48.5,True,,,1.2625,12.62,8660,8452,,False
+DMA,Dominica,Latin America & Caribbean,Upper middle income,65871,82.0,11826,11826,20.86,85.2,False,49.95,0.1665,1.1101,11.1,22130,22713,2.71,False
+DNK,Denmark,Europe & Central Asia,High income,6009169,99.8,13872,13872,43.39,126.7,False,46.08,0.1536,0.6921,6.92,85460,83218,0.65,False
+DOM,Dominican Republic,Latin America & Caribbean,Upper middle income,11520487,91.0,1036585,1036585,11.2,93.7,False,28.61,0.0954,0.7924,7.92,26980,28721,1.27,False
+DZA,Algeria,"Middle East, North Africa, Afghanistan & Pakistan",Upper middle income,47435312,77.4,10711937,10711937,13.32,115.5,False,18.54,0.0618,0.7291,7.29,18240,18586,1.22,False
+ECU,Ecuador,Latin America & Caribbean,Upper middle income,18289896,77.2,4175084,4175084,17.25,101.6,False,23.0,0.0767,1.0,10.0,16290,16757,1.69,False
+EGY,"Egypt, Arab Rep.","Middle East, North Africa, Afghanistan & Pakistan",Lower middle income,118365995,74.6,30007674,30007674,11.69,97.1,False,7.91,0.0264,0.6471,6.47,19330,20204,0.49,False
+ERI,Eritrea,Sub-Saharan Africa,Low income,3607003,14.3,3089420,3089420,0.17,59.1,True,,,,,1720,1742,,False
+ESP,Spain,Europe & Central Asia,High income,49355143,95.8,2093916,1480654,39.23,130.3,False,30.32,0.1011,0.4836,4.84,59830,59868,0.61,True
+EST,Estonia,Europe & Central Asia,High income,1366475,92.2,106066,40994,35.35,151.1,False,28.94,0.0965,1.1485,11.48,51370,52106,0.68,False
+ETH,Ethiopia,Sub-Saharan Africa,Low income,135472051,21.9,105747723,105747723,0.59,65.1,True,6.46,0.0215,0.6847,6.85,3620,3622,2.14,False
+FIN,Finland,Europe & Central Asia,High income,5646436,93.7,354367,169393,36.48,125.9,False,57.18,0.1906,0.5194,5.19,66300,65884,1.03,False
+FJI,Fiji,East Asia & Pacific,Upper middle income,933154,74.7,236039,236039,1.8,574.2,True,55.03,0.1834,0.088,0.88,15360,16338,4.3,False
+FRA,France,Europe & Central Asia,High income,68720337,88.7,7797136,2061610,48.93,116.7,False,29.77,0.0992,0.1977,1.98,65110,63975,0.55,True
+FRO,Faroe Islands,Europe & Central Asia,High income,54900,97.6,1328,1328,34.59,105.8,False,79.56,0.2652,2.2361,22.36,83480,82089,1.14,False
+FSM,"Micronesia, Fed. Sts.",East Asia & Pacific,Upper middle income,113683,39.5,68751,68751,5.82,20.0,False,89.5,0.2983,7.1081,71.08,5080,4604,21.14,False
+GAB,Gabon,Sub-Saharan Africa,Upper middle income,2593130,68.7,811108,811108,4.69,125.3,True,70.79,0.236,4.0865,40.86,21660,22218,3.92,False
+GBR,United Kingdom,Europe & Central Asia,High income,69487000,95.5,3146302,2084610,42.16,121.6,False,31.43,0.1048,0.6243,6.24,64210,64606,0.59,True
+GEO,Georgia,Europe & Central Asia,Upper middle income,3935766,83.8,637651,637651,30.42,161.2,False,14.87,0.0496,1.9085,19.09,27570,29414,0.65,False
+GHA,Ghana,Sub-Saharan Africa,Lower middle income,35064272,72.2,9756389,9756389,0.66,113.6,True,43.3,0.1443,0.4032,4.03,8080,8610,6.43,False
+GIB,Gibraltar,Europe & Central Asia,High income,40126,94.4,2229,1204,60.97,97.6,False,61.49,0.205,0.6709,6.71,,,,False
+GIN,Guinea,Sub-Saharan Africa,Lower middle income,15099727,33.3,10070808,10070808,0.01,97.9,True,,,1.5124,15.12,4730,4935,,False
+GMB,"Gambia, The",Sub-Saharan Africa,Low income,2822093,49.5,1425318,1425318,0.52,126.2,True,71.43,0.2381,3.5565,35.56,3660,3706,23.42,False
+GNB,Guinea-Bissau,Sub-Saharan Africa,Low income,2249515,29.8,1579668,1579668,0.39,147.2,True,,,2.7243,27.24,3320,3293,,False
+GNQ,Equatorial Guinea,Sub-Saharan Africa,Upper middle income,1938431,63.3,711418,711418,0.1,49.5,True,54.91,0.183,1.5892,15.89,14610,16133,4.51,False
+GRC,Greece,Europe & Central Asia,High income,10413962,86.3,1429869,312419,44.68,113.6,False,39.19,0.1306,2.7861,27.86,44310,45264,1.06,True
+GRD,Grenada,Latin America & Caribbean,Upper middle income,117303,70.2,35001,35001,29.77,95.8,False,46.25,0.1542,1.8093,18.09,20170,21346,2.75,False
+GRL,Greenland,Europe & Central Asia,High income,56831,69.5,17343,1705,31.98,118.6,False,111.45,0.3715,3.5844,35.84,40270,78906,3.32,False
+GTM,Guatemala,Latin America & Caribbean,Upper middle income,18687881,60.2,7433777,7433777,5.34,112.5,True,41.73,0.1391,1.1743,11.74,15020,15197,3.33,False
+GUM,Guam,East Asia & Pacific,High income,168999,80.5,32946,5070,1.84,59.8,True,115.0,0.3833,2.5,25.0,,,,False
+GUY,Guyana,Latin America & Caribbean,High income,835986,83.0,142111,25080,12.94,112.6,False,58.58,0.1953,2.3592,23.59,80300,97899,0.88,False
+HKG,"Hong Kong SAR, China",East Asia & Pacific,High income,7498900,95.8,318301,224967,40.27,364.8,False,56.67,0.1889,0.8154,8.15,88500,80423,0.77,False
+HND,Honduras,Latin America & Caribbean,Lower middle income,11005850,58.6,4553924,4553924,4.58,70.9,True,28.58,0.0953,0.7842,7.84,7270,7871,4.72,False
+HRV,Croatia,Europe & Central Asia,High income,3876200,83.6,634441,116286,29.6,121.7,False,32.16,0.1072,1.187,11.87,50410,50946,0.77,False
+HTI,Haiti,Latin America & Caribbean,Lower middle income,11906095,47.9,6207671,6207671,0.31,65.2,True,76.5,0.255,0.2195,2.19,3130,3134,29.33,False
+HUN,Hungary,Europe & Central Asia,High income,9514251,93.8,591883,285428,37.54,104.6,False,25.28,0.0843,1.7146,17.15,48630,49838,0.62,False
+IDN,Indonesia,East Asia & Pacific,Upper middle income,285721236,72.8,77771162,77771162,4.92,122.5,True,10.66,0.0355,0.2758,2.76,17190,17660,0.74,False
+IMN,Isle of Man,Europe & Central Asia,High income,84118,,,,,,,91.43,0.3048,1.4416,14.42,,,,False
+IND,India,South Asia,Lower middle income,1463865525,70,439159658,439159658,3.15,79.4,True,8.82,0.0294,0.1601,1.6,11600,11748,0.91,True
+IRL,Ireland,Europe & Central Asia,High income,5484367,97.2,154237,154237,32.3,112.6,False,47.65,0.1588,1.4981,14.98,106310,155089,0.54,True
+IRN,"Iran, Islamic Rep.","Middle East, North Africa, Afghanistan & Pakistan",Upper middle income,92417681,85.3,13548062,13548062,12.06,174.1,True,2.61,0.0087,1.4985,14.98,19660,19699,0.16,False
+IRQ,Iraq,"Middle East, North Africa, Afghanistan & Pakistan",Upper middle income,47020774,81.5,8710832,8710832,17.63,100.1,False,34.47,0.1149,1.0679,10.68,14290,14267,2.89,False
+ISL,Iceland,Europe & Central Asia,High income,392404,98.2,7027,7027,37.52,120.9,False,105.08,0.3503,1.0816,10.82,83250,83431,1.51,False
+ISR,Israel,"Middle East, North Africa, Afghanistan & Pakistan",High income,10122800,88.2,1196270,303684,29.18,177.4,False,32.08,0.1069,0.0219,0.22,58870,59717,0.65,False
+ITA,Italy,Europe & Central Asia,High income,58915656,89.2,6350683,1767470,31.78,132.6,False,29.77,0.0992,0.0856,0.86,62870,62803,0.57,True
+JAM,Jamaica,Latin America & Caribbean,Upper middle income,2837077,90.1,280624,280624,15.98,117.7,False,48.1,0.1603,0.6974,6.97,13090,13291,4.41,False
+JOR,Jordan,"Middle East, North Africa, Afghanistan & Pakistan",Upper middle income,11520684,95.6,504324,504324,7.02,69.6,False,32.44,0.1081,0.7573,7.57,12440,12632,3.13,False
+JPN,Japan,East Asia & Pacific,High income,123366734,85.5,17836941,3701002,38.63,178.4,False,32.62,0.1087,3.4816,34.82,58920,55422,0.66,False
+KAZ,Kazakhstan,Europe & Central Asia,Upper middle income,20843754,93.4,1377424,1377424,15.32,127.1,False,15.23,0.0508,0.41,4.1,41090,44293,0.44,False
+KEN,Kenya,Sub-Saharan Africa,Lower middle income,57532493,35.0,37409799,37409799,3.04,126.5,True,38.75,0.1292,0.5894,5.89,6910,7016,6.73,False
+KGZ,Kyrgyz Republic,Europe & Central Asia,Lower middle income,7343064,92.0,585345,585345,7.8,107.5,True,13.95,0.0465,0.1745,1.74,9120,9220,1.84,False
+KHM,Cambodia,East Asia & Pacific,Lower middle income,17847982,68.5,5626522,5626522,4.15,116.1,True,30.0,0.1,0.12,1.2,8390,8543,4.29,False
+KIR,Kiribati,East Asia & Pacific,Lower middle income,136488,89.4,14413,14413,0.03,53.5,True,,,3.1945,31.95,6080,3937,,False
+KNA,St. Kitts and Nevis,Latin America & Caribbean,High income,46922,76.9,10846,1408,46.74,118.9,False,77.8,0.2593,1.5418,15.42,36430,36777,2.56,False
+KOR,"Korea, Rep.",East Asia & Pacific,High income,51684564,97.9,1087630,1087630,47.8,172.5,False,26.92,0.0897,5.0128,50.13,64210,63125,0.5,False
+KWT,Kuwait,"Middle East, North Africa, Afghanistan & Pakistan",High income,4865298,100,0,0,1.01,167.7,True,81.42,0.2714,0.5187,5.19,64040,56468,1.53,False
+LAO,Lao PDR,East Asia & Pacific,Lower middle income,7873046,65.6,2708903,2708903,2.72,64.8,True,41.08,0.1369,0.2524,2.52,9800,10383,5.03,False
+LBN,Lebanon,"Middle East, North Africa, Afghanistan & Pakistan",Lower middle income,5849421,80.6,1132799,1132799,7.29,74.0,False,14.23,0.0474,1.9143,19.14,11790,11917,1.45,False
+LBR,Liberia,Sub-Saharan Africa,Low income,5731206,32.2,3883832,3883832,0.27,32.1,True,93.51,0.3117,2.5,25.0,1840,1981,60.98,False
+LBY,Libya,"Middle East, North Africa, Afghanistan & Pakistan",Upper middle income,7458555,82.0,1345934,1345934,4.52,193.0,True,14.68,0.0489,0.8247,8.25,17150,16521,1.03,False
+LCA,St. Lucia,Latin America & Caribbean,Upper middle income,180149,68.2,57278,57278,13.57,98.7,False,57.35,0.1912,1.5757,15.76,26180,28674,2.63,False
+LIE,Liechtenstein,Europe & Central Asia,High income,41024,98.3,712,712,50.01,128.9,False,77.6,0.2587,1.1897,11.9,,,,False
+LKA,Sri Lanka,South Asia,Upper middle income,21756000,54.6,9879400,9879400,8.47,132.5,True,48.29,0.161,0.2491,2.49,16750,17065,3.46,False
+LSO,Lesotho,Sub-Saharan Africa,Lower middle income,2363325,51.8,1139203,1139203,0.38,70.3,True,62.53,0.2084,1.9562,19.56,3900,3184,19.24,False
+LTU,Lithuania,Europe & Central Asia,High income,2888774,89.2,313110,86663,27.85,138.7,False,17.75,0.0592,1.2623,12.62,55010,56838,0.39,False
+LUX,Luxembourg,Europe & Central Asia,High income,686970,99.1,5983,5983,40.32,144.5,False,59.55,0.1985,1.7034,17.03,106640,156542,0.67,False
+LVA,Latvia,Europe & Central Asia,High income,1847785,92.7,134748,55434,25.75,121.3,False,23.81,0.0794,3.2094,32.09,45740,46137,0.62,False
+MAC,"Macao SAR, China",East Asia & Pacific,High income,685900,89.8,69781,20577,29.86,201.1,False,79.78,0.2659,1.4361,14.36,125630,137031,0.76,False
+MAF,St. Martin (French part),Latin America & Caribbean,High income,24941,,,,,,,,,1.5779,15.78,,,,False
+MAR,Morocco,"Middle East, North Africa, Afghanistan & Pakistan",Lower middle income,38430770,91.2,3381908,3381908,7.3,153.1,True,43.91,0.1464,0.6317,6.32,10960,11112,4.81,False
+MCO,Monaco,Europe & Central Asia,High income,38341,99.0,366,366,55.68,107.4,False,77.41,0.258,0.417,4.17,,,,False
+MDA,Moldova,Europe & Central Asia,Upper middle income,2360527,77.4,534216,534216,29.63,120.1,False,15.66,0.0522,0.2789,2.79,19990,19996,0.94,False
+MDG,Madagascar,Sub-Saharan Africa,Low income,32740678,18.7,26625407,26625407,0.12,75.5,True,22.62,0.0754,1.1205,11.21,1910,1952,14.21,False
+MDV,Maldives,South Asia,Upper middle income,529676,85.2,78180,78180,19.65,148.1,False,80.8,0.2693,2.1559,21.56,25600,28555,3.79,False
+MEX,Mexico,Latin America & Caribbean,Upper middle income,131946900,83.1,22269552,22269552,21.74,116.5,False,37.74,0.1258,2.0343,20.34,25070,25868,1.81,True
+MHL,Marshall Islands,East Asia & Pacific,Upper middle income,36282,65.9,12366,12366,2.35,39.7,True,89.95,0.2998,6.0833,60.83,10590,8964,10.19,False
+MKD,North Macedonia,Europe & Central Asia,Upper middle income,1820909,93.1,125643,125643,29.89,108.4,False,19.23,0.0641,0.8609,8.61,26680,28029,0.86,False
+MLI,Mali,Sub-Saharan Africa,Low income,25198821,36.8,15925277,15925277,0.77,112.1,True,35.39,0.118,4.558,45.58,3400,3503,12.49,False
+MLT,Malta,"Middle East, North Africa, Afghanistan & Pakistan",High income,579704,93.9,35592,17391,44.51,142.1,False,35.72,0.1191,2.3564,23.56,64900,72210,0.66,False
+MMR,Myanmar,East Asia & Pacific,Lower middle income,54850648,45.4,29922290,29922290,2.87,114.3,True,20.12,0.0671,0.9897,9.9,5890,6012,4.1,False
+MNE,Montenegro,Europe & Central Asia,Upper middle income,623129,88.9,69276,69276,32.31,221.7,False,23.73,0.0791,0.3215,3.21,35700,35423,0.8,False
+MNG,Mongolia,East Asia & Pacific,Upper middle income,3568978,85.1,530939,530939,15.78,140.7,False,7.41,0.0247,0.3838,3.84,18460,20798,0.48,False
+MNP,Northern Mariana Islands,East Asia & Pacific,High income,43541,0,43541,1306,,32.0,,104.99,0.35,2.6667,26.67,,,,False
+MOZ,Mozambique,Sub-Saharan Africa,Low income,35631653,20.5,28317437,28317437,0.14,49.5,True,108.22,0.3607,0.7826,7.83,1540,1698,84.33,False
+MRT,Mauritania,Sub-Saharan Africa,Lower middle income,5315065,45.8,2881860,2881860,0.95,92.1,True,63.15,0.2105,1.3158,13.16,7640,7676,9.92,False
+MUS,Mauritius,Sub-Saharan Africa,Upper middle income,1243741,73.3,331980,331980,27.97,172.7,False,35.04,0.1168,0.6691,6.69,37000,33667,1.14,False
+MWI,Malawi,Sub-Saharan Africa,Low income,22216120,19.0,18003588,18003588,0.09,69.3,True,54.23,0.1808,0.3808,3.81,1880,1899,34.61,False
+MYS,Malaysia,East Asia & Pacific,Upper middle income,35977838,98.0,712143,712143,13.55,139.7,False,37.98,0.1266,0.285,2.85,40070,41498,1.14,False
+NAM,Namibia,Sub-Saharan Africa,Lower middle income,3092816,64.9,1086364,1086364,2.83,85.2,True,50.83,0.1694,1.1967,11.97,11260,11986,5.42,False
+NCL,New Caledonia,East Asia & Pacific,High income,295333,82.0,53143,8860,19.37,91.7,False,31.95,0.1065,3.7618,37.62,,,,False
+NER,Niger,Sub-Saharan Africa,Low income,27917831,15.6,23574487,23574487,0.11,60.6,True,,,1.6346,16.35,2150,2177,,False
+NGA,Nigeria,Sub-Saharan Africa,Lower middle income,237527782,41.2,139639260,139639260,0.08,70.8,True,23.52,0.0784,0.3936,3.94,9230,9532,3.06,False
+NIC,Nicaragua,Latin America & Caribbean,Lower middle income,7007502,61.4,2705211,2705211,5.78,106.0,True,27.53,0.0918,0.5459,5.46,8780,9284,3.76,False
+NLD,Netherlands,Europe & Central Asia,High income,18087633,97.0,541399,541399,42.98,128.5,False,58.04,0.1935,1.6074,16.07,85480,87320,0.81,False
+NOR,Norway,Europe & Central Asia,High income,5610870,99,56109,56109,45.16,109.3,False,85.96,0.2865,4.0678,40.68,107770,104044,0.96,False
+NPL,Nepal,South Asia,Lower middle income,29618118,46.3,15898443,15898443,10.07,99.8,False,9.22,0.0307,0.4307,4.31,6250,6175,1.77,False
+NRU,Naoero,East Asia & Pacific,High income,12025,83.0,2043,361,9.96,87.2,False,,,3.088,30.88,20200,14200,,False
+NZL,New Zealand,East Asia & Pacific,High income,5324700,93.5,345078,159741,38.05,130.1,False,60.43,0.2014,5.8895,58.89,53600,57350,1.35,True
+OMN,Oman,"Middle East, North Africa, Afghanistan & Pakistan",High income,5494691,95.3,260902,164841,11.06,120.6,False,84.53,0.2818,1.9481,19.48,39390,42295,2.58,False
+PAK,Pakistan,"Middle East, North Africa, Afghanistan & Pakistan",Lower middle income,255219554,57.3,109098703,109098703,1.47,76.9,True,15.96,0.0532,0.1237,1.24,6430,6573,2.98,False
+PAN,Panama,Latin America & Caribbean,High income,4571189,72.8,1244666,137136,18.13,156.6,False,31.0,0.1033,1.6318,16.32,41770,43902,0.89,False
+PER,Peru,Latin America & Caribbean,Upper middle income,34576665,82.0,6238647,6238647,11.68,124.6,False,20.76,0.0692,0.4456,4.46,17540,18816,1.42,False
+PHL,Philippines,East Asia & Pacific,Upper middle income,116786962,67.3,38232537,38232537,7.14,115.3,True,34.16,0.1139,0.587,5.87,14460,12577,2.83,False
+PLW,Palau,East Asia & Pacific,High income,17663,83.9,2839,530,7.33,135.4,True,63.61,0.212,2.25,22.5,23480,23052,3.25,False
+PNG,Papua New Guinea,East Asia & Pacific,Lower middle income,10762817,18.8,8738159,8738159,0.23,38.8,True,17.3,0.0577,1.3643,13.64,4840,5215,4.29,False
+POL,Poland,Europe & Central Asia,High income,36435861,88.6,4159167,1093076,25.36,138.0,False,21.2,0.0707,0.3697,3.7,52290,54262,0.49,True
+PRI,Puerto Rico (US),Latin America & Caribbean,High income,3184835,87.3,404736,95545,27.99,126.4,False,75.0,0.25,2.5833,25.83,35330,52196,2.55,False
+PRK,"Korea, Dem. People's Rep.",East Asia & Pacific,Low income,26571036,0,26571036,26571036,,24.1,,,,,,,,,False
+PRT,Portugal,Europe & Central Asia,High income,10804871,88.5,1243960,324146,45.24,124.1,False,32.16,0.1072,1.7859,17.86,52240,53146,0.74,True
+PRY,Paraguay,Latin America & Caribbean,Upper middle income,7013078,81.6,1291944,1291944,12.88,126.6,False,23.59,0.0786,1.0383,10.38,19390,20181,1.46,False
+PSE,West Bank and Gaza,"Middle East, North Africa, Afghanistan & Pakistan",Lower middle income,5413596,86.6,723383,723383,8.16,76.7,False,,,1.0828,10.83,5310,5000,,False
+PYF,French Polynesia,East Asia & Pacific,High income,282465,72.7,77102,8474,35.55,118.8,False,89.85,0.2995,0.7464,7.46,,,,False
+QAT,Qatar,"Middle East, North Africa, Afghanistan & Pakistan",High income,2972215,98.1,56906,56906,11.82,153.6,True,104.43,0.3481,2.4032,24.03,126290,128883,0.99,False
+ROU,Romania,Europe & Central Asia,High income,19020271,91.3,1656573,570608,35.8,119.8,False,8.19,0.0273,0.5358,5.36,49550,50895,0.2,True
+RUS,Russian Federation,Europe & Central Asia,High income,143513328,94.4,8087043,4305400,27.13,186.1,False,9.71,0.0324,0.2539,2.54,49220,49568,0.24,False
+RWA,Rwanda,Sub-Saharan Africa,Low income,14569341,31.7,9950379,9950379,0.6,93.2,True,22.33,0.0744,0.5533,5.53,4070,4164,6.58,False
+SAU,Saudi Arabia,"Middle East, North Africa, Afghanistan & Pakistan",High income,36973555,100,0,0,44.07,159.5,False,97.85,0.3262,1.4947,14.95,74400,73784,1.58,False
+SDN,Sudan,Sub-Saharan Africa,Low income,51662147,18.6,42052987,42052987,0.06,70.2,True,,,1.16,11.6,2140,2192,,False
+SEN,Senegal,Sub-Saharan Africa,Lower middle income,18931966,60.1,7550484,7550484,4.04,123.9,True,47.01,0.1567,1.6346,16.35,5100,5463,11.06,False
+SGP,Singapore,East Asia & Pacific,High income,6111175,94.4,343596,183335,27.81,170.8,False,30.74,0.1025,0.6254,6.25,135750,163354,0.27,False
+SLB,Solomon Islands,East Asia & Pacific,Lower middle income,838645,29.0,595097,595097,0.11,62.1,True,61.95,0.2065,6.9647,69.65,2790,2788,26.65,False
+SLE,Sierra Leone,Sub-Saharan Africa,Low income,8819794,25.1,6605585,6605585,0.0,107.9,True,59.99,0.2,0.6695,6.69,3690,3717,19.51,False
+SLV,El Salvador,Latin America & Caribbean,Upper middle income,6365503,66.5,2133863,2133863,12.46,176.5,True,31.0,0.1033,1.0796,10.8,13140,14101,2.83,False
+SMR,San Marino,Europe & Central Asia,High income,34109,97.4,903,903,35.79,120.3,False,44.61,0.1487,0.096,0.96,71920,78810,0.74,False
+SOM,"Somalia, Fed. Rep.",Sub-Saharan Africa,Low income,19654739,27.9,14163165,14163165,0.72,54.0,True,45.14,0.1505,0.5,5.0,1640,1643,33.03,False
+SRB,Serbia,Europe & Central Asia,Upper middle income,6549143,87.7,806153,806153,33.37,123.8,False,30.43,0.1014,0.5783,5.78,31780,33910,1.15,False
+SSD,South Sudan,Sub-Saharan Africa,Low income,12188788,6.7,11375674,11375674,0.0,46.6,True,18.99,0.0633,23.7015,237.01,1010,1155,22.56,False
+STP,Sao Tome and Principe,Sub-Saharan Africa,Lower middle income,240254,59.1,98222,98222,2.99,62.4,True,,,2.4085,24.09,6920,6388,,False
+SUR,Suriname,Latin America & Caribbean,Upper middle income,639850,87.4,80621,80621,18.75,142.1,False,33.55,0.1118,0.9496,9.5,21000,22652,1.92,False
+SVK,Slovak Republic,Europe & Central Asia,High income,5413813,89.8,550852,162414,33.81,140.0,False,19.06,0.0635,2.6789,26.79,47920,49309,0.48,False
+SVN,Slovenia,Europe & Central Asia,High income,2130986,90.8,196827,63930,34.23,130.9,False,40.43,0.1348,0.8423,8.42,58880,59245,0.82,False
+SWE,Sweden,Europe & Central Asia,High income,10596620,95.8,448629,317899,40.62,140.7,False,50.3,0.1677,2.334,23.34,76090,72529,0.79,False
+SWZ,Eswatini,Sub-Saharan Africa,Lower middle income,1256174,63.4,459721,459721,2.51,139.8,True,193.31,0.6444,1.2571,12.57,11390,12529,20.37,False
+SXM,Sint Maarten (Dutch part),Latin America & Caribbean,High income,43923,,,,,205.4,,53.74,0.1791,2.772,27.72,52060,56491,1.24,False
+SYC,Seychelles,Sub-Saharan Africa,High income,122730,87.8,14951,3682,31.6,125.6,False,134.3,0.4477,5.4342,54.34,34930,35854,4.61,False
+SYR,Syrian Arab Republic,"Middle East, North Africa, Afghanistan & Pakistan",Low income,25620427,33.8,16968409,16968409,6.86,71.2,False,189.92,0.6331,0.6666,6.67,4740,4905,48.08,False
+TCA,Turks and Caicos Islands,Latin America & Caribbean,High income,46855,0,46855,1406,,109.8,,252.0,0.84,0.589,5.89,37500,38010,8.06,False
+TCD,Chad,Sub-Saharan Africa,Low income,21003705,12.6,18351588,18351588,0,72.9,True,,,4.0865,40.86,2770,2903,,False
+TGO,Togo,Sub-Saharan Africa,Lower middle income,8591626,39.5,5199377,5199377,1.42,80.8,True,49.91,0.1664,1.4473,14.47,4090,4079,14.64,False
+THA,Thailand,East Asia & Pacific,Upper middle income,71619863,90.9,6540908,6540908,14.89,160.6,False,22.3,0.0743,0.4063,4.06,25570,26250,1.05,False
+TJK,Tajikistan,Europe & Central Asia,Lower middle income,10786734,55.8,4768448,4768448,0.98,76.2,True,24.91,0.083,1.6516,16.52,8240,5923,3.63,False
+TKM,Turkmenistan,Europe & Central Asia,Upper middle income,7618847,18.0,6248194,6248194,5.22,88.2,True,286.24,0.9541,11.4169,114.17,22830,22602,15.05,False
+TLS,Timor-Leste,East Asia & Pacific,Lower middle income,1418517,35.0,921440,921440,0.01,116.4,True,124.5,0.415,1.9231,19.23,5120,4809,29.18,False
+TON,Tonga,East Asia & Pacific,Upper middle income,103742,67.4,33777,33777,8.17,61.7,False,83.05,0.2768,1.1927,11.93,9240,8675,10.79,False
+TTO,Trinidad and Tobago,Latin America & Caribbean,High income,1367764,82.2,244011,41033,27.03,118.8,False,66.65,0.2222,0.3196,3.2,36080,37121,2.22,False
+TUN,Tunisia,"Middle East, North Africa, Afghanistan & Pakistan",Lower middle income,12348573,76.5,2901915,2901915,14.97,117.6,False,19.1,0.0637,1.278,12.78,14870,15233,1.54,False
+TUR,Turkiye,Europe & Central Asia,Upper middle income,85878556,89.8,8785170,8785170,23.43,107.8,False,17.76,0.0592,0.4362,4.36,44630,45288,0.48,False
+TUV,Tuvalu,East Asia & Pacific,Upper middle income,9492,35.2,6151,6151,4.52,98.9,True,,,6.0848,60.85,11000,6759,,False
+TZA,Tanzania,Sub-Saharan Africa,Lower middle income,70545865,31.2,48562292,48562292,0.25,126.6,True,44.28,0.1476,0.8394,8.39,4370,4471,12.16,False
+UGA,Uganda,Sub-Saharan Africa,Low income,51384894,8.9,46786033,46786033,0.21,83.2,True,49.32,0.1644,1.1067,11.07,3410,3488,17.36,False
+UKR,Ukraine,Europe & Central Asia,Upper middle income,38980376,82.5,6831350,6831350,21.65,133.4,False,5.35,0.0178,0.2702,2.7,18750,18905,0.34,False
+URY,Uruguay,Latin America & Caribbean,High income,3384688,92.0,271077,101541,33.04,145.5,False,61.68,0.2056,0.2771,2.77,36330,38315,2.04,False
+USA,United States,North America,High income,341784857,94.7,18135782,10253546,38.86,113.2,False,80.0,0.2667,6.0,60.0,89490,90027,1.07,True
+UZB,Uzbekistan,Europe & Central Asia,Lower middle income,37053428,89.5,3888572,3888572,34.74,110.5,False,12.03,0.0401,0.3013,3.01,13640,13601,1.06,False
+VCT,St. Vincent and the Grenadines,Latin America & Caribbean,Upper middle income,99924,76.2,23792,23792,29.46,108.4,False,70.3,0.2343,1.0536,10.54,22340,22799,3.78,False
+VEN,"Venezuela, RB",Latin America & Caribbean,Lower middle income,28516896,76.7,6650453,6650453,12.94,71.0,False,45.37,0.1512,1.0536,10.54,20840,21283,2.61,False
+VGB,British Virgin Islands,Latin America & Caribbean,High income,39732,77.7,8859,1192,24.91,93.1,False,155.0,0.5167,5.2429,52.43,,,,False
+VIR,Virgin Islands (U.S.),Latin America & Caribbean,High income,103792,64.4,36973,3114,10.07,91.5,False,110.0,0.3667,4.3312,43.31,,49785,,False
+VNM,Viet Nam,East Asia & Pacific,Upper middle income,101598527,84.2,16103367,16103367,23.71,127.6,False,10.24,0.0341,0.2911,2.91,17580,18088,0.7,False
+VUT,Vanuatu,East Asia & Pacific,Lower middle income,335169,22.4,260254,260254,1.16,89.3,True,117.38,0.3913,1.5428,15.43,4970,4525,28.34,False
+WSM,Samoa,East Asia & Pacific,Upper middle income,219306,21.2,172813,172813,0.88,62.4,True,54.91,0.183,0.3624,3.62,9300,9319,7.09,False
+XKX,Kosovo,Europe & Central Asia,Upper middle income,1576876,89.4,166470,166470,,34.5,,,,1.2502,12.5,19650,19263,,False
+YEM,"Yemen, Rep.","Middle East, North Africa, Afghanistan & Pakistan",Low income,41773878,17.5,34467209,34467209,1.27,50.9,True,91.46,0.3049,15.6781,156.78,3020,3164,36.34,False
+ZAF,South Africa,Sub-Saharan Africa,Upper middle income,64747319,78.4,14012875,14012875,5.35,179.3,True,50.2,0.1673,1.8069,18.07,15600,15906,3.86,False
+ZMB,Zambia,Sub-Saharan Africa,Lower middle income,21913874,17.1,18166382,18166382,0.79,108.7,True,67.65,0.2255,8.007,80.07,3990,4379,20.35,False
+ZWE,Zimbabwe,Sub-Saharan Africa,Lower middle income,16950795,41.6,9892009,9892009,1.94,94.2,True,94.85,0.3162,43.75,437.5,6390,6470,17.81,False

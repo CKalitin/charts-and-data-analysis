@@ -52,6 +52,7 @@ S = _load_state()
 
 from sim import (
     SolarConfig, ElectrolyzerConfig, SweepConfig, SimConfig,
+    sim_config_from_dict,
     solar_current, array_iph, cell_voltage, cell_overpotentials,
     operating_point, best_operating_point, mpp, evaluate, run_sweep,
     V_REVERSIBLE, V_THERMONEUTRAL,
@@ -141,21 +142,8 @@ if _current_state != {k: S.get(k) for k in _current_state}:
     _save_state(_current_state)
 
 # ─── Build config from sidebar values ────────────────────────────────────────
-sim = SimConfig(
-    solar=SolarConfig(
-        I_sc=I_sc, V_oc=V_oc, N_series=N_series, N_parallel=N_parallel,
-        G_ref=G_ref, T_cell=T_cell_C + 273.15, n_ideality=n_ideality,
-        V_oc_per_cell=V_oc_per_cell,
-    ),
-    elec=ElectrolyzerConfig(
-        N_cells_series=N_cells_series, electrode_area_cm2=electrode_area_cm2,
-        M_strings=M_strings, V_onset=V_onset_cell, R_ohmic_area=R_ohmic_area,
-        A_tafel=A_tafel, j0=j0_mA / 1000.0, j_lim=j_lim_mA / 1000.0,
-        B_mt=B_mt, faradaic_eff=faradaic_eff,
-    ),
-    sweep=SweepConfig(G_min=G_min, G_max=G_max, G_steps=G_steps),
-    G_single=G_single,
-)
+# _current_state has exactly the flat-dict shape sim_config_from_dict expects.
+sim = sim_config_from_dict(_current_state)
 
 # ─── Header + key numbers ────────────────────────────────────────────────────
 st.title("⚡ Solar-Electrolyzer Direct DC Coupling Simulator")

@@ -1,0 +1,16 @@
+shell_id,generation,altitude_km,inclination_deg,orbital_planes,sats_per_plane,total_sats_authorized,status
+gen1_shell1,Gen1 (v1.0/v1.5),550,53.0,72,22,1584,operational
+gen1_shell2,Gen1 (v1.0/v1.5),540,53.2,72,22,1584,operational
+gen1_shell3,Gen1 (v1.0/v1.5),570,70.0,36,20,720,operational
+gen1_shell4a,Gen1 (v1.0/v1.5),560,97.6,6,58,348,operational
+gen1_shell4b,Gen1 (v1.0/v1.5),560,97.6,4,43,172,operational
+gen2_shellA,Gen2 (v2 Mini),530,53.0,,,,operational_partial
+gen2_shellB,Gen2 (v2 Mini),525,43.0,,,,operational_partial
+gen2_shellC,Gen2 (v2 Mini),535,33.0,,,,fcc_authorized_unconfirmed_deployed
+lowered_2026_a,Gen1+Gen2 broadband (2026 relocation),463,53.0,,,,in_progress_2026
+lowered_2026_b,Gen1+Gen2 broadband (2026 relocation),485,43.0,,,,in_progress_2026
+lowered_2026_c,Gen1+Gen2 broadband (2026 relocation),472.5,70.0,,,,in_progress_2026
+lowered_2026_d,Gen1+Gen2 broadband (2026 relocation),462.5,97.3,,,,in_progress_2026
+dtc_2026_a,v1 Direct-to-Cell,360,53.0,,,,operational_partial
+dtc_2026_b,v1 Direct-to-Cell,358.5,43.0,,,,operational_partial
+v3_broadband,v3 Broadband,345,,,,,planned_tbd_inclination
