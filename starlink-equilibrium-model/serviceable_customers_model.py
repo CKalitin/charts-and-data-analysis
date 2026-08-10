@@ -136,12 +136,20 @@ def density_capped_population_by_latitude(grid: pdg.PopulationGrid,
 def density_capped_population_by_latitude_streaming(path,
                                                       scenario: cdm.CapacityScenario = cdm.V2_MINI_BEAD_SCENARIO,
                                                       bin_width_deg: float = BIN_WIDTH_DEG,
-                                                      row_chunk: int = 2048):
+                                                      row_chunk: int = 512, verbose: bool = False):
     """Streaming equivalent of density_capped_population_by_latitude(), for a
     population-COUNT raster too large to load whole (e.g. the 100m 'ppp' product --
     ~101GB uncompressed as float32 for the full USA). Reads row_chunk rows at a time
-    via population_density_grid.open_raster_zarr() (tile-decode-on-demand), never
-    holding more than one chunk in memory."""
+    via population_density_grid.open_raster_zarr() (tile-decode-on-demand).
+
+    Deliberately does NOT call the shared _capped_population_per_row() helper: that
+    version allocates a fresh full-size array at each of divide/fmin/multiply
+    (~4x the chunk's memory footprint), which is fine for the small whole-grid path
+    but OOM-killed this one at row_chunk=2048 x 430,711 cols (a real crash, not a
+    theoretical concern -- caught by the background run actually dying). Every step
+    here mutates `chunk` in place instead, since it's a fresh temporary each
+    iteration (safe to mutate) -- peak memory is ~1x chunk size, not ~4x.
+    row_chunk=512 (one tile-row) keeps each chunk under ~1GB."""
     meta = pdg._read_raster_meta(path)
     h, _w = meta["shape"]
     z = pdg.open_raster_zarr(path)
@@ -151,12 +159,20 @@ def density_capped_population_by_latitude_streaming(path,
 
     for r0 in range(0, h, row_chunk):
         r1 = min(r0 + row_chunk, h)
-        chunk = np.asarray(z[r0:r1, :], dtype=np.float32)
+        chunk = np.asarray(z[r0:r1, :], dtype=np.float32)  # owned temporary -- safe to mutate in place
         chunk[chunk == meta["nodata"]] = np.nan
         lat_centers = meta["lat0"] - (np.arange(r0, r1) + 0.5) * meta["dy"]
-        area_row_km2 = (meta["dy"] * pdg.KM_PER_DEG) * (meta["dx"] * pdg.KM_PER_DEG * np.cos(np.radians(lat_centers)))
-        pop_row = _capped_population_per_row(chunk, area_row_km2, max_density_cap, already_density=False)
+        area_col = ((meta["dy"] * pdg.KM_PER_DEG) * (meta["dx"] * pdg.KM_PER_DEG
+                    * np.cos(np.radians(lat_centers))))[:, None]
+
+        np.divide(chunk, area_col, out=chunk)       # count/pixel -> people/km^2
+        np.fmin(chunk, max_density_cap, out=chunk)  # apply the beam-footprint cap
+        chunk *= area_col                            # back to capped population per cell
+        with np.errstate(invalid="ignore"):
+            pop_row = np.nansum(chunk, axis=1)
         np.add.at(out, _lat_bin_index(lat_centers, bin_width_deg, len(centers)), pop_row)
+        if verbose and (r0 // row_chunk) % 20 == 0:
+            print(f"  row {r0:,}/{h:,} ({100*r0/h:.0f}%)")
     return centers, out
 
 
