@@ -31,7 +31,7 @@ SOURCE_NOTE = "Source: WorldPop pop. density + capacity_density_model.py + orbit
 GEN1_SATS = 4408
 CURRENT_FLEET_SATS = 10_900
 
-SHELL_RATIO_NOTE = "Shells: 45deg x5 : 65deg x1 : 80deg x1 (rough ratio)"
+SHELL_RATIO_NOTE = "Real Gen1 shells: 53.0/53.2/70.0/97.6deg"
 
 
 def _pop_formatter(x, _pos):
@@ -44,9 +44,15 @@ def _pop_formatter(x, _pos):
 
 
 def _add_fleet_reference_lines(ax):
-    for n, label in [(GEN1_SATS, "Gen1 (4,408)"), (CURRENT_FLEET_SATS, "Current fleet (~10,900)")]:
+    # Vertical stagger (-4, -70) so the two labels never overlap even when both lines
+    # sit within a few pixels of each other -- happens on a wide linear axis where
+    # 4,408 and 10,900 are both essentially "at the left edge" (e.g. a multi-million
+    # sat_counts range); a log axis spreads them out enough that this never showed up.
+    offsets = [(4, -4), (4, -70)]
+    for (n, label), xytext in zip([(GEN1_SATS, "Gen1 (4,408)"), (CURRENT_FLEET_SATS, "Current fleet (~10,900)")],
+                                   offsets):
         ax.axvline(n, color="0.5", linestyle=":", linewidth=1.0, zorder=1)
-        ax.annotate(label, xy=(n, 1), xycoords=("data", "axes fraction"), xytext=(4, -4),
+        ax.annotate(label, xy=(n, 1), xycoords=("data", "axes fraction"), xytext=xytext,
                     textcoords="offset points", fontsize=7.5, color="0.4", ha="left", va="top", rotation=90)
 
 
@@ -68,8 +74,11 @@ def _format_log_axes(ax):
 
 
 # --------------------------------------------------------------------------------------
-# Chart 1: global, 1km resolution
+# Chart 1: global, 1km resolution (log-log, then a linear-axis version of the same data)
 # --------------------------------------------------------------------------------------
+GLOBAL_LINEAR_MAX_SATS = 160_000  # covers the real-shell model's rise + knee + saturation (~125K)
+
+
 def fig_serviceable_vs_satellites_global(grid: pdg.PopulationGrid):
     sat_counts = np.geomspace(100, 2_000_000, 40)
     served = scm.sweep_serviceable_customers(sat_counts, grid)
@@ -94,6 +103,37 @@ def fig_serviceable_vs_satellites_global(grid: pdg.PopulationGrid):
         mode="on",
     )
     return fig, OUT_ROOT / "serviceable_customers_vs_satellites_global.png"
+
+
+def fig_serviceable_vs_satellites_global_linear(grid: pdg.PopulationGrid):
+    # Evenly-spaced sat_counts (NOT geomspace) -- a linear axis needs even point density
+    # across the visible range, unlike the log chart above where log-spaced points look
+    # even. Range sized to the real-shell model's own saturation point (see constant).
+    sat_counts = np.linspace(0, GLOBAL_LINEAR_MAX_SATS, 200)
+    sat_counts[0] = 1.0  # 0 satellites is undefined for the orbital-density calc
+    served = scm.sweep_serviceable_customers(sat_counts, grid)
+
+    fig, ax = render.new_figure(figsize=(12, 7.5))
+    _draw_curve(ax, sat_counts, served, "#4575b4", "Serviceable customers (global, 1km data)")
+    _add_fleet_reference_lines(ax)
+
+    ax.set_xlim(0, GLOBAL_LINEAR_MAX_SATS)
+    ax.set_ylim(0, served.max() * 1.08)
+    ax.set_xlabel("Total satellites (linear scale)")
+    ax.set_ylabel("Serviceable customers (linear scale)")
+    ax.set_title("Serviceable customers vs. total satellites -- global (linear)")
+    ax.xaxis.set_major_formatter(mticker.FuncFormatter(lambda v, _: f"{v:,.0f}"))
+    ax.yaxis.set_major_formatter(mticker.FuncFormatter(_pop_formatter))
+    ax.legend(loc="lower right", fontsize=8.5)
+
+    max_lat = scm.max_latitude_covered()
+    info_box.add_info_box(
+        ax, fig,
+        f"Ceiling: {_pop_formatter(served[-1], None)} (density-capped population, {max_lat:.0f}deg coverage).\n"
+        f"{SHELL_RATIO_NOTE}. " + SOURCE_NOTE,
+        mode="on",
+    )
+    return fig, OUT_ROOT / "serviceable_customers_vs_satellites_global_linear.png"
 
 
 # --------------------------------------------------------------------------------------
@@ -135,6 +175,7 @@ def fig_serviceable_vs_satellites_us_resolution(us_grid_1km: pdg.PopulationGrid,
 def figures(grid: pdg.PopulationGrid):
     return [
         ("serviceable_global", lambda: fig_serviceable_vs_satellites_global(grid)),
+        ("serviceable_global_linear", lambda: fig_serviceable_vs_satellites_global_linear(grid)),
     ]
 
 

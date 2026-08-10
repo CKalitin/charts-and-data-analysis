@@ -2,8 +2,8 @@
 project into one curve of servable customers vs. total constellation size N.
 
   1. orbital_geometry.py       -- expected satellites overhead by latitude, for a
-                                   constellation split across shells at given
-                                   inclinations (Phase 2).
+                                   constellation split across REAL Starlink shells
+                                   (Phase 2's well-sourced Gen1 geometry).
   2. capacity_density_model.py -- max customers per satellite (an aggregate capacity
                                    ceiling) AND max customer density per km^2 (an
                                    independent per-area beam-footprint ceiling)
@@ -19,15 +19,18 @@ land area (AG.LND.TOTL.K2). Here the density cap is applied per GRID CELL instea
 a direct fix to that known overstatement, and the point of downloading WorldPop data
 in the first place.
 
-Shell split: the user specified a rough, hand-picked ratio approximating current
-Starlink shell inclinations (NOT starlink_shells.csv's precise Gen1 geometry --
-deliberately simplified here to 3 representative inclinations: mostly ~45deg with
-smaller ~65deg and ~80deg components, ratio 5:1:1), not tied to any specific
-generation's real plane/sats-per-plane counts. Satellites are assumed split across
-these three inclinations in that fixed proportion at every N (including fractional
-N per shell) -- the same "expected value" treatment orbital_geometry.py already uses
-elsewhere in this project, not a claim that Starlink literally launches fractional
-satellites.
+Shell split: REAL Starlink Gen1 shell geometry (data/starlink_shells.csv via
+orbital_geometry.load_shells_with_full_geometry() -- the same well-sourced 5-sub-
+shell table Phase 2/3 use: 550km/53.0deg, 540km/53.2deg, 570km/70.0deg, 560km/97.6deg
+split into two plane-count sub-groups, 4,408 satellites total). An early version of
+this model used a hand-picked rough ratio (45/65/80deg, 5:1:1) as a placeholder --
+the user corrected this ("use the real Starlink satellite plane data"), so
+scale_shells_to_total() now scales the REAL per-shell plane counts (preserving each
+shell's own true altitude/inclination and its real share of the total) to hit any
+target N, rather than inventing a 3-shell stand-in. Fractional satellites per shell
+at N != 4,408 are the same "expected value" treatment orbital_geometry.py already
+uses elsewhere in this project, not a claim that Starlink literally launches
+fractional satellites.
 
 Two constraints combine locally, per 1deg latitude band, then sum -- NOT globally:
 excess satellite capacity at a sparsely-populated latitude (e.g. 80deg) cannot serve
@@ -43,59 +46,62 @@ import capacity_density_model as cdm
 import orbital_geometry as og
 import population_density_grid as pdg
 
-# Rough approximation of current Starlink shell inclinations, per user: mostly ~45deg,
-# with smaller ~65deg and ~80deg components. NOT starlink_shells.csv's precise Gen1
-# figures (53.0/53.2/70.0/97.6deg) -- a deliberately simplified 3-shell stand-in.
-SHELL_RATIOS = [(45.0, 5.0), (65.0, 1.0), (80.0, 1.0)]
 BIN_WIDTH_DEG = 1.0
 
 
-def make_shells(total_sats: float, ratios=SHELL_RATIOS, altitude_km: float = 550.0) -> list[og.Shell]:
-    """Split total_sats across the given (inclination_deg, weight) ratios.
+def real_shells() -> list[og.Shell]:
+    """The well-sourced Gen1 5-sub-shell geometry (data/starlink_shells.csv via
+    orbital_geometry.py) -- REAL altitude/inclination/orbital_planes/sats_per_plane,
+    not a hand-picked ratio. Default base for every function below."""
+    return og.load_shells_with_full_geometry()
 
-    orbital_planes is fixed at 1 and sats_per_plane carries the (possibly fractional)
-    count -- only their product (total_sats) and the shared altitude feed the physics
-    used here (period, latitude density), so the split between the two fields doesn't
-    matter.
-    """
-    total_weight = sum(w for _, w in ratios)
+
+def scale_shells_to_total(total_sats: float, base_shells: list[og.Shell] | None = None) -> list[og.Shell]:
+    """Scale a real shell configuration's plane count proportionally to hit
+    total_sats, preserving each shell's own altitude/inclination and its relative
+    share of the total -- the "expected value" treatment used throughout this
+    project for non-integer satellite counts. orbital_planes is fixed at 1 and
+    sats_per_plane carries the (possibly fractional) count; only their product and
+    the shell's own altitude feed the physics used here (period, latitude density),
+    so the split between the two fields doesn't matter."""
+    base_shells = base_shells if base_shells is not None else real_shells()
+    base_total = sum(s.total_sats for s in base_shells)
     return [
         og.Shell(
-            shell_id=f"rough_{incl:.0f}deg",
-            generation="rough_model",
-            altitude_km=altitude_km,
-            inclination_deg=incl,
-            orbital_planes=1,
-            sats_per_plane=total_sats * w / total_weight,
-            status="model",
+            shell_id=s.shell_id, generation=s.generation, altitude_km=s.altitude_km,
+            inclination_deg=s.inclination_deg, orbital_planes=1,
+            sats_per_plane=total_sats * (s.total_sats / base_total),
+            status="scaled",
         )
-        for incl, w in ratios
+        for s in base_shells
     ]
 
 
-def max_latitude_covered(ratios=SHELL_RATIOS) -> float:
-    return max(og.max_latitude_deg(incl) for incl, _ in ratios)
+def max_latitude_covered(base_shells: list[og.Shell] | None = None) -> float:
+    base_shells = base_shells if base_shells is not None else real_shells()
+    return max(og.max_latitude_deg(s.inclination_deg) for s in base_shells)
 
 
-def sats_overhead_by_latitude(total_sats: float, ratios=SHELL_RATIOS, altitude_km: float = 550.0,
+def sats_overhead_by_latitude(total_sats: float, base_shells: list[og.Shell] | None = None,
                                bin_width_deg: float = BIN_WIDTH_DEG):
     """Expected satellites overhead per latitude band, summed across all shells --
     the raw quantity both capacity_by_latitude() (multiplied by customers/satellite)
     and the per-satellite-cap model below (multiplied by density/satellite) scale
     from. NOT restricted to the covered band here -- callers apply that mask."""
-    shells = make_shells(total_sats, ratios, altitude_km=altitude_km)
+    shells = scale_shells_to_total(total_sats, base_shells)
     centers, by_shell = og.expected_sats_by_latitude(shells, bin_width_deg=bin_width_deg)
     return centers, np.sum(list(by_shell.values()), axis=0)
 
 
 def capacity_by_latitude(total_sats: float, scenario: cdm.CapacityScenario = cdm.V2_MINI_BEAD_SCENARIO,
-                          ratios=SHELL_RATIOS, bin_width_deg: float = BIN_WIDTH_DEG):
+                          base_shells: list[og.Shell] | None = None, bin_width_deg: float = BIN_WIDTH_DEG):
     """Aggregate simultaneous-customer capacity per latitude band, for total_sats
-    split across `ratios`. Zero outside the union of shells' coverage bands."""
-    centers, sats_overhead = sats_overhead_by_latitude(total_sats, ratios, scenario.altitude_km, bin_width_deg)
+    split across the real shell geometry. Zero outside the union of shells'
+    coverage bands."""
+    centers, sats_overhead = sats_overhead_by_latitude(total_sats, base_shells, bin_width_deg)
     customers_per_sat = cdm.max_customers_per_satellite(scenario)
     cap = sats_overhead * customers_per_sat
-    covered = np.abs(centers) <= max_latitude_covered(ratios)
+    covered = np.abs(centers) <= max_latitude_covered(base_shells)
     return centers, np.where(covered, cap, 0.0)
 
 
@@ -289,13 +295,14 @@ def capped_population_from_histogram(area_hist: np.ndarray, density_bin_centers:
 def serviceable_customers_per_satellite_cap(total_sats: float, area_hist: np.ndarray,
                                              density_bin_centers: np.ndarray, lat_centers: np.ndarray,
                                              scenario: cdm.CapacityScenario = cdm.V2_MINI_BEAD_SCENARIO,
-                                             ratios=SHELL_RATIOS, bin_width_deg: float = BIN_WIDTH_DEG) -> float:
+                                             base_shells: list[og.Shell] | None = None,
+                                             bin_width_deg: float = BIN_WIDTH_DEG) -> float:
     """Like serviceable_customers(), but the areal density cap scales with
     satellites overhead per latitude band instead of staying fixed -- see the
     section docstring above for the mechanism and why."""
-    _, sats_overhead = sats_overhead_by_latitude(total_sats, ratios, scenario.altitude_km, bin_width_deg)
+    _, sats_overhead = sats_overhead_by_latitude(total_sats, base_shells, bin_width_deg)
     base_cap = cdm.max_customer_density_per_km2(scenario)
-    covered = np.abs(lat_centers) <= max_latitude_covered(ratios)
+    covered = np.abs(lat_centers) <= max_latitude_covered(base_shells)
 
     effective_cap = np.where(covered, base_cap * sats_overhead, 0.0)
     demand = capped_population_from_histogram(area_hist, density_bin_centers, effective_cap)
@@ -306,46 +313,50 @@ def serviceable_customers_per_satellite_cap(total_sats: float, area_hist: np.nda
 
 def sweep_per_satellite_cap(sat_counts, area_hist: np.ndarray, density_bin_centers: np.ndarray,
                              lat_centers: np.ndarray, scenario: cdm.CapacityScenario = cdm.V2_MINI_BEAD_SCENARIO,
-                             ratios=SHELL_RATIOS, bin_width_deg: float = BIN_WIDTH_DEG) -> np.ndarray:
+                             base_shells: list[og.Shell] | None = None,
+                             bin_width_deg: float = BIN_WIDTH_DEG) -> np.ndarray:
     """Servable-customer count at each N in sat_counts, per-satellite-cap variant.
     Cheap per N -- only capped_population_from_histogram() and a few small array ops
     run per iteration, the expensive raw-data pass already happened once, upstream."""
     return np.array([
         serviceable_customers_per_satellite_cap(n, area_hist, density_bin_centers, lat_centers,
-                                                 scenario, ratios, bin_width_deg)
+                                                 scenario, base_shells, bin_width_deg)
         for n in sat_counts
     ])
 
 
 def serviceable_customers(total_sats: float, pop_cap_by_lat: tuple[np.ndarray, np.ndarray],
                            scenario: cdm.CapacityScenario = cdm.V2_MINI_BEAD_SCENARIO,
-                           ratios=SHELL_RATIOS, bin_width_deg: float = BIN_WIDTH_DEG) -> float:
+                           base_shells: list[og.Shell] | None = None,
+                           bin_width_deg: float = BIN_WIDTH_DEG) -> float:
     """Total servable customers for a constellation of total_sats satellites.
     min() is taken PER LATITUDE BAND, then summed -- see module docstring."""
     _, pop_cap = pop_cap_by_lat
-    _, sat_cap = capacity_by_latitude(total_sats, scenario, ratios, bin_width_deg)
+    _, sat_cap = capacity_by_latitude(total_sats, scenario, base_shells, bin_width_deg)
     return float(np.minimum(sat_cap, pop_cap).sum())
 
 
 def sweep_from_pop_cap(sat_counts, pop_cap_by_lat: tuple[np.ndarray, np.ndarray],
                         scenario: cdm.CapacityScenario = cdm.V2_MINI_BEAD_SCENARIO,
-                        ratios=SHELL_RATIOS, bin_width_deg: float = BIN_WIDTH_DEG) -> np.ndarray:
+                        base_shells: list[og.Shell] | None = None,
+                        bin_width_deg: float = BIN_WIDTH_DEG) -> np.ndarray:
     """Servable-customer count at each N in sat_counts, given an already-computed
     (N-independent) demand ceiling -- shared by every sweep_* variant below so the
     ceiling is computed exactly ONCE regardless of how it was produced (whole-grid or
     streaming)."""
     return np.array([
-        serviceable_customers(n, pop_cap_by_lat, scenario, ratios, bin_width_deg)
+        serviceable_customers(n, pop_cap_by_lat, scenario, base_shells, bin_width_deg)
         for n in sat_counts
     ])
 
 
 def sweep_serviceable_customers(sat_counts, grid: pdg.PopulationGrid,
                                  scenario: cdm.CapacityScenario = cdm.V2_MINI_BEAD_SCENARIO,
-                                 ratios=SHELL_RATIOS, bin_width_deg: float = BIN_WIDTH_DEG) -> np.ndarray:
+                                 base_shells: list[og.Shell] | None = None,
+                                 bin_width_deg: float = BIN_WIDTH_DEG) -> np.ndarray:
     """Servable-customer count at each N in sat_counts, from an in-memory grid."""
     pop_cap_by_lat = density_capped_population_by_latitude(grid, scenario, bin_width_deg)
-    return sweep_from_pop_cap(sat_counts, pop_cap_by_lat, scenario, ratios, bin_width_deg)
+    return sweep_from_pop_cap(sat_counts, pop_cap_by_lat, scenario, base_shells, bin_width_deg)
 
 
 if __name__ == "__main__":

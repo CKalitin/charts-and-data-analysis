@@ -1400,3 +1400,81 @@ chart**: an overlong single-line info-box string triggered the same
 squished-plot symptom. Fixed the same way -- shorter, explicitly wrapped lines. Two
 occurrences of the identical bug class now on record; keep info-box text short by
 default rather than rediscovering this a third time.
+
+## Real Starlink shell data (correcting the rough ratio) + linear-axis charts (2026-08-10, same day)
+
+User, on seeing the per-satellite-cap chart: **"I didn't mean use literally my rough
+ratio use the real Starlink satellite plane data."** The earlier "5:1:1 at
+45/65/80deg" shell split (introduced when this whole serviceable-customers model was
+first built) was meant as a rough verbal description of Starlink's shape, NOT a
+literal instruction to invent a 3-shell stand-in -- correctly read now as: use
+`data/starlink_shells.csv`'s real Gen1 geometry, already loaded elsewhere in this
+project via `orbital_geometry.load_shells_with_full_geometry()`.
+
+**Real shells are very different from the rough guess**: 5 sub-shells, NOT evenly
+spread across 45/65/80deg -- 71.8% combined at 53.0/53.2deg, 16.3% at 70.0deg, 11.8%
+at 97.6deg (near-polar), 4,408 satellites total. Max latitude covered by the union
+is 82.4deg (the near-polar shell), vs. the rough model's 80deg -- barely changes the
+fixed-cap ceiling number (still 188.6M at the displayed precision).
+
+**Model refactor in `serviceable_customers_model.py`**: `make_shells()` (rough
+ratio, deleted) -> `real_shells()` (loads the real CSV) + `scale_shells_to_total()`
+(scales EACH real shell's plane count proportionally to hit any target N, preserving
+its own true altitude/inclination -- no longer one shared synthetic altitude for all
+shells). Every function that took a `ratios=SHELL_RATIOS` param now takes
+`base_shells=None` (defaulting to `real_shells()`) instead -- `sats_overhead_by_latitude`,
+`capacity_by_latitude`, `max_latitude_covered`, `serviceable_customers`,
+`sweep_from_pop_cap`, `sweep_serviceable_customers`, `serviceable_customers_per_satellite_cap`,
+`sweep_per_satellite_cap`. **All 6 previously-shipped serviceable-customers chart
+PNGs were regenerated** with real shells (this is a correction to a wrong input
+assumption, not a new/additive chart set like the per-satellite-cap variant was --
+the old rough-ratio numbers were simply wrong and are not preserved anywhere).
+
+**User's second question, answered with the actual numbers**: *"I'm surprised by it
+being linear on the log-log graph, I'd expect diminishing returns much faster."*
+Real mechanism, verified by computing `served(N)/N` directly: while EVERY latitude
+band's satellite-derived capacity is still below its own local density-capped demand
+ceiling (the constellation is capacity-bound, not demand-bound, ANYWHERE), total
+capacity(N) = N x customers_per_satellite x (a fixed, N-independent sum of per-shell
+time-fractions) -- an EXACTLY linear function of N, hence a perfectly straight
+log-log line. This held almost exactly with the old rough-ratio model (`served/N`
+was constant at ~6,704, the exact customers-per-satellite figure, from N=100 to
+N~40,000). **With REAL shells the ratio is NOT constant** -- it declines steadily
+from ~6,249 at N=100 down to ~1,622 by N~116,000 -- because the real shells are
+UNEVENLY weighted (72% at 53deg vs. 11.8% near-polar), so different latitude bands'
+demand ceilings get "used up" at very different rates relative to their real
+orbital-driven satellite supply, causing earlier, more gradual visible curvature
+than the toy model showed. **The deeper reason the bend is gradual rather than a
+sharp knee either way**: the model has no mechanism to preferentially route
+additional satellites toward still-undersupplied bands vs. already-saturated ones --
+every additional satellite is distributed across ALL bands in the same fixed
+orbital-mechanics-determined proportions, so the aggregate curve stays dominated by
+the still-capacity-bound majority of bands until MANY individual bands have
+saturated, not just the first one.
+
+**New linear-axis chart variants added** (per user request, following the existing
+`equilibrium.py` precedent of log-log + linear versions of the same chart): for the
+3 chart families most relevant to this discussion --
+`serviceable_customers_vs_satellites_global_linear.png`,
+`serviceable_customers_vs_satellites_global_per_satellite_cap_linear.png`,
+`serviceable_customers_vs_satellites_us_per_satellite_cap_linear.png`. **NOT** simply
+reusing the log chart's `geomspace` sample points on a linear axis -- that would put
+almost all 40 points in a dense cluster near zero and leave the visually-important
+knee/saturation region sparse; each linear chart uses its own `np.linspace(0, MAX,
+200)`, with `MAX` sized to that specific curve's own saturation point (looked up
+numerically first, not guessed): 160K for the global fixed-cap-only chart, 7M for
+the global fixed-vs-per-satellite comparison (per-satellite's own ceiling is far
+later than fixed-cap's), 1.2M for the US comparison. Did NOT add a linear version of
+the plain US 1km-vs-100m fixed-cap-only chart (`serviceable_customers_chart.py`) --
+not requested, add if wanted.
+
+**Cosmetic bug caught while reviewing the new linear charts, fixed at the shared
+level**: `_add_fleet_reference_lines()` (Gen1 4,408 / current fleet ~10,900) used the
+same vertical text offset for both labels, which worked fine on log-axis charts
+(the two lines are visually far apart there) but overlapped into unreadable garbled
+text on the wide-range linear charts (7M/1.2M axis, where 4,408 and 10,900 are both
+essentially "at the left edge"). Fixed with a per-label vertical stagger
+`[(4,-4), (4,-70)]` so the two labels never collide regardless of how close the
+lines are in x -- applies to every chart using this helper, not just the ones that
+showed the symptom, per this project's now well-established "fix shared helpers
+once" convention.
