@@ -1138,3 +1138,97 @@ picks up the integration" note above, `population_density_grid.py`'s per-country
 block-reduced arrays (before global-mosaic accumulation) are the natural building
 block for a per-country "populated area above threshold X" function — don't
 re-parse the GeoTIFFs a second time with a different approach.
+
+## Serviceable-customers model: the actual density-cap integration (2026-08-10, same session)
+
+Same session as the heatmap above. User asked for the integration step flagged as
+"not yet done" just above -- immediately, same day -- plus a population-vs-latitude
+refresh, population-vs-density histograms, and a data-resolution sensitivity check
+(1km vs 100m). Built in this order:
+
+**New module: `serviceable_customers_model.py`** (root) -- the actual integration.
+Combines three previously-separate pieces for the first time:
+`orbital_geometry.expected_sats_by_latitude()` (Phase 2), `capacity_density_model.py`'s
+TWO Phase 3 caps (max customers/satellite -- an aggregate SUPPLY ceiling that grows
+with satellite count N; max customers/km2 -- a per-area DEMAND ceiling, independent
+of N), and `population_density_grid.py`'s real gridded population (replacing Phase
+5/6's whole-country-land-area approximation with actual per-cell density).
+
+Key modeling choices, all deliberate:
+- **Shell split is a rough 3-inclination stand-in (45/65/80deg, ratio 5:1:1), per
+  the user's explicit instruction** -- NOT `starlink_shells.csv`'s precise Gen1
+  geometry (53.0/53.2/70.0/97.6deg). Fractional satellites per shell at any N (the
+  same "expected value" treatment `orbital_geometry.py` already uses elsewhere), all
+  three shells share one fixed altitude (`scenario.altitude_km`, 550km) for
+  consistency with the Phase 3 capacity scenario, not real per-generation altitudes.
+- **The min() of supply vs. demand is taken PER 1deg LATITUDE BAND, then summed --
+  NOT on the two global totals.** Applying it globally would let satellite-capacity
+  surplus at a sparse latitude (e.g. 80deg) silently "cover" a shortfall at a dense
+  one (e.g. 30deg), which satellites can't actually do. This is the same
+  finest-available-granularity principle as Phase 5's per-country min(), just at
+  latitude-band granularity here (grid-cell granularity isn't possible since the
+  orbital model only resolves latitude, not longitude).
+- **The demand-side ceiling (density-capped population by latitude) is
+  N-INDEPENDENT** (coverage extent is fixed by the widest shell, 80deg, regardless of
+  N) **and is computed ONCE per sweep**, not per N -- `sweep_serviceable_customers()`
+  relies on this for speed (a handful of seconds for a 40-point sweep, ~215-country
+  grid).
+
+**Real bug caught and fixed before shipping, in BOTH `population_density_grid.py`
+and `serviceable_customers_model.py`**: the latitude-to-bin-index formula was
+`(90 - lat) / bin_width`, which MIRRORS north and south (maps the north pole to
+bin 0, which is actually the array's southernmost bin). Caught by eye: the first
+`population_by_latitude_gridded.png` draft showed the huge India/China population
+peak in the SOUTHERN hemisphere at -26deg, which is obviously wrong (real peak
+~26-30deg NORTH). Fixed to `(lat + 90) / bin_width` in both files. **Important
+downstream finding**: this bug did NOT change `serviceable_customers_model.py`'s
+actual totals, because satellite capacity-by-latitude is symmetric around the
+equator (pure orbital mechanics, no hemisphere preference) -- mirroring which
+population value pairs with which (symmetric) capacity value doesn't change the sum.
+Only the standalone latitude chart's display was actually wrong. Don't assume that
+generalizes to a future asymmetric capacity model, though -- re-check this
+invariant if shell altitudes/inclinations ever become hemisphere-asymmetric.
+
+**New shared functions added to `population_density_grid.py`** (not duplicated
+per-caller, per the skill's rule #1): `row_areas_km2()` (per-latitude-row cell area,
+cos(lat)-scaled), `cell_population()`, `population_by_latitude()`. Also two new
+single-raster loaders, used for the US-only work below:
+`load_country_density_grid(iso3)` (reads one country's 1km tif directly, own
+lon/lat edges, no global-grid mosaicking/quantization) and
+`load_population_count_raster_as_density(path)` (converts a WorldPop *count* raster
+-- people PER PIXEL, e.g. the 100m "ppp" product -- to density by dividing by each
+pixel's own geographic area; the 1km product is already density, no conversion
+needed there).
+
+**New charts**:
+- `charts/population_stats.py` -> `results/population/`: `population_by_latitude_gridded.png`
+  (replaces the old capital-city-proxy chart with real gridded data -- multi-peaked,
+  matches real geography much more precisely than the single-point-per-country
+  version) and `population_vs_density_histogram_{global,us}.png` (log-x histogram,
+  population summed into log-spaced density bins; global median ~687/km2, US median
+  ~1,081/km2 -- log-spaced `DENSITY_BIN_EDGES` from 0.1 to ~126,000/km2).
+- `charts/serviceable_customers_chart.py` -> `results/population/serviceable_customers_vs_satellites_global.png`:
+  log-log sweep from 100 to 2,000,000 satellites. Shows the expected ramp-then-
+  saturate shape -- linear growth on log-log until satellite capacity exceeds the
+  local density-capped population ceiling, then flattens at **~1.13B customers**
+  globally (density-capped population within the 80deg coverage envelope). Gen1
+  (4,408) and current-fleet (~10,900) marked as vertical reference lines, both still
+  on the steep/linear part of the curve. Cross-check: this model's value at N=4,408
+  (~29.6M) matches Phase 3's original flat-capacity-model finding (~29.6M) almost
+  exactly, despite using a different shell-ratio assumption and per-cell (not
+  per-country) population data -- good agreement between two independently-built
+  approaches.
+
+**In progress, not yet done**: user also asked for a US-only chart comparing this
+same model at 1km vs. 100m population-data resolution, to show how much the
+serviceable-customer curve changes with finer input data. Downloading
+`data/raw/worldpop/usa_ppp_2020_100m.tif` (WorldPop's `wpgp` "Unconstrained
+individual countries 2000-2020, 100m resolution" product, `usa_ppp_2020.tif`,
+**~4.0GB, POPULATION COUNT not density** -- confirmed via the same `hub.worldpop.org`
+REST API used by `download_worldpop.py`, category `pop`, alias `wpgp`; the
+`pop_density` category only exposes 1km products, hence needing a different
+category/alias for 100m). Slow download (~1.3MB/s observed), still running as of
+this note. `load_population_count_raster_as_density()` above is already written and
+ready to consume it once the download completes -- the remaining work is purely the
+comparison chart itself (two curves, `load_country_density_grid("USA")` at 1km vs.
+the 100m file, overlaid on one figure).

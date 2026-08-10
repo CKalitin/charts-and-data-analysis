@@ -54,7 +54,6 @@ def fig_population_density_heatmap(grid: pdg.PopulationGrid, land_paths):
     ax.set_xlim(-180, 180)
     ax.set_ylim(-60, 85)  # WorldPop has near-zero data in Antarctica; don't render dead space
 
-    n_missing = len(grid.missing_iso3)
     info_box.add_info_box(
         ax, fig,
         f"{grid.n_countries} countries, 0.1deg grid. "

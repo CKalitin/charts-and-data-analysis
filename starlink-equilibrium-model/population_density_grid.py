@@ -27,10 +27,11 @@ import tifffile
 
 DATA = Path(__file__).resolve().parent / "data"
 WORLDPOP_DIR = DATA / "raw" / "worldpop"
-NODATA = -99999.0
+NODATA = -99999.0  # fallback only -- _read_country_raster prefers the file's own GDAL_NODATA tag
 SRC_DEG = 1.0 / 120.0  # WorldPop's native "1km" pixel size, exact
 TARGET_DEG = 0.1  # -> 3600 x 1800 global grid; SRC_DEG * 12 == TARGET_DEG exactly
 BLOCK = round(TARGET_DEG / SRC_DEG)  # 12
+KM_PER_DEG = 111.32  # spherical approximation, used everywhere cell area is derived from degrees
 
 
 @dataclass(frozen=True)
@@ -52,10 +53,47 @@ def _read_country_raster(path: Path):
         arr = page.asarray().astype(np.float32)
         scale = page.tags[33550].value  # (dx, dy, 0)
         tie = page.tags[33922].value  # (i, j, k, lon0, lat0, 0) for pixel (0,0)'s top-left corner
-    arr[arr == NODATA] = np.nan
+        nodata_tag = page.tags.get(42113)  # GDAL_NODATA -- read per-file, don't assume -99999
+        nodata = float(nodata_tag.value) if nodata_tag is not None else NODATA
+    arr[arr == nodata] = np.nan
     lon0, lat0 = tie[3], tie[4]
     dx, dy = scale[0], scale[1]
     return arr, lon0, lat0, dx, dy
+
+
+def _grid_from_raster(arr, lon0, lat0, dx, dy, block: int = 1,
+                       n_countries: int = 1, missing_iso3: list[str] | None = None) -> "PopulationGrid":
+    """Wrap one already-loaded (and already density-valued) raster array into a
+    PopulationGrid using ITS OWN lon/lat edges -- no mosaicking, for callers that
+    want a single country/region in isolation."""
+    reduced = _block_reduce_mean(arr, block)
+    eff_block = block if reduced.shape != arr.shape else 1
+    rh, rw = reduced.shape
+    lon_edges = lon0 + np.arange(rw + 1) * dx * eff_block
+    lat_edges = lat0 - np.arange(rh + 1) * dy * eff_block
+    return PopulationGrid(lon_edges, lat_edges, reduced.astype(np.float32), n_countries, missing_iso3 or [])
+
+
+def load_country_density_grid(iso3: str, block: int = 1) -> "PopulationGrid":
+    """Load one country's own 1km density raster directly (not mosaicked into the
+    shared global grid) -- avoids the global grid's cross-border quantization when a
+    chart wants ONE country in isolation (e.g. a US-only histogram or model run)."""
+    path = WORLDPOP_DIR / f"{iso3.lower()}_pd_1km.tif"
+    arr, lon0, lat0, dx, dy = _read_country_raster(path)
+    return _grid_from_raster(arr, lon0, lat0, dx, dy, block=block)
+
+
+def load_population_count_raster_as_density(path: Path, block: int = 1) -> "PopulationGrid":
+    """Load a WorldPop *population-count* raster (the 100m 'ppp' product -- people
+    PER PIXEL, not density) and convert to people/km^2 by dividing each pixel by its
+    own geographic area (pixel width shrinks with cos(latitude), same convention used
+    everywhere else in this module)."""
+    arr, lon0, lat0, dx, dy = _read_country_raster(path)
+    lat_centers = lat0 - (np.arange(arr.shape[0]) + 0.5) * dy
+    cell_area_km2 = (dy * KM_PER_DEG) * (dx * KM_PER_DEG * np.cos(np.radians(lat_centers)))
+    with np.errstate(invalid="ignore"):
+        density = arr / cell_area_km2[:, None]
+    return _grid_from_raster(density, lon0, lat0, dx, dy, block=block)
 
 
 def _block_reduce_mean(arr: np.ndarray, block: int) -> np.ndarray:
@@ -139,6 +177,39 @@ def load_or_build_grid(target_deg: float = TARGET_DEG, use_cache: bool = True) -
         missing_iso3=",".join(grid.missing_iso3),
     )
     return grid
+
+
+def row_areas_km2(grid: "PopulationGrid") -> np.ndarray:
+    """Per-row cell area (km^2), (nrows,) -- lon-width shrinks with cos(latitude);
+    lat-height is constant. Broadcast against `grid.density` as `area[:, None]`."""
+    lat_centers = (grid.lat_edges[:-1] + grid.lat_edges[1:]) / 2
+    cell_h_km = abs(grid.lat_edges[0] - grid.lat_edges[1]) * KM_PER_DEG
+    cell_w_km = abs(grid.lon_edges[1] - grid.lon_edges[0]) * KM_PER_DEG * np.cos(np.radians(lat_centers))
+    return cell_h_km * cell_w_km
+
+
+def cell_population(grid: "PopulationGrid") -> np.ndarray:
+    """Per-cell population (density x cell area), 2D, NaN where the grid has no data."""
+    return grid.density * row_areas_km2(grid)[:, None]
+
+
+def population_by_latitude(grid: "PopulationGrid", bin_width_deg: float = 1.0):
+    """Total population per bin_width_deg latitude band, from the gridded density.
+    Returns (bin_centers, population_per_bin)."""
+    lat_centers = (grid.lat_edges[:-1] + grid.lat_edges[1:]) / 2
+    pop_row = np.nansum(cell_population(grid), axis=1)
+
+    edges = np.arange(-90, 90 + bin_width_deg, bin_width_deg)
+    centers = (edges[:-1] + edges[1:]) / 2
+    # centers[] runs ASCENDING (-89.5 -> 89.5, from np.arange(-90, 90+w, w)), so the
+    # bin index must ascend with latitude too -- (lat + 90) / w, NOT (90 - lat) / w
+    # (that mirrored version was a real bug, caught by an implausible south-heavy
+    # population-by-latitude chart: India/China's real northern-hemisphere peak was
+    # showing up mirrored into the southern hemisphere).
+    bin_idx = np.clip(((lat_centers + 90.0) / bin_width_deg).astype(np.int64), 0, len(centers) - 1)
+    out = np.zeros(len(centers))
+    np.add.at(out, bin_idx, pop_row)
+    return centers, out
 
 
 if __name__ == "__main__":
