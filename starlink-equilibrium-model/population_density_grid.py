@@ -47,18 +47,36 @@ def _cache_path(target_deg: float) -> Path:
     return WORLDPOP_DIR / f"_grid_cache_{target_deg:g}deg.npz"
 
 
-def _read_country_raster(path: Path):
+def _read_raster_meta(path: Path) -> dict:
+    """Tags only (lon0/lat0/dx/dy/nodata/shape) -- no pixel data. Shared by both the
+    whole-array loader below and the streaming path for rasters too large to load."""
     with tifffile.TiffFile(path) as tf:
         page = tf.pages[0]
-        arr = page.asarray().astype(np.float32)
         scale = page.tags[33550].value  # (dx, dy, 0)
         tie = page.tags[33922].value  # (i, j, k, lon0, lat0, 0) for pixel (0,0)'s top-left corner
         nodata_tag = page.tags.get(42113)  # GDAL_NODATA -- read per-file, don't assume -99999
         nodata = float(nodata_tag.value) if nodata_tag is not None else NODATA
-    arr[arr == nodata] = np.nan
-    lon0, lat0 = tie[3], tie[4]
-    dx, dy = scale[0], scale[1]
-    return arr, lon0, lat0, dx, dy
+        shape = page.shape
+    return {"lon0": tie[3], "lat0": tie[4], "dx": scale[0], "dy": scale[1], "nodata": nodata, "shape": shape}
+
+
+def open_raster_zarr(path: Path):
+    """A lazy, tile-decode-on-demand view of a raster (via tifffile's zarr store) --
+    for files too large to hold whole in memory (e.g. the 100m 'ppp' product, ~101GB
+    uncompressed as float32 for the full USA). Slice it in row-chunks; each slice
+    only decodes the tiles it touches. Requires the `zarr` package."""
+    import zarr
+
+    store = tifffile.imread(path, aszarr=True)
+    return zarr.open(store, mode="r")
+
+
+def _read_country_raster(path: Path):
+    meta = _read_raster_meta(path)
+    with tifffile.TiffFile(path) as tf:
+        arr = tf.pages[0].asarray().astype(np.float32)
+    arr[arr == meta["nodata"]] = np.nan
+    return arr, meta["lon0"], meta["lat0"], meta["dx"], meta["dy"]
 
 
 def _grid_from_raster(arr, lon0, lat0, dx, dy, block: int = 1,

@@ -86,6 +86,44 @@ def fig_serviceable_vs_satellites_global(grid: pdg.PopulationGrid):
     return fig, OUT_ROOT / "serviceable_customers_vs_satellites_global.png"
 
 
+# --------------------------------------------------------------------------------------
+# Chart 2: US only, 1km vs. 100m population data, overlaid -- resolution sensitivity
+# --------------------------------------------------------------------------------------
+US_100M_CACHE = pdg.WORLDPOP_DIR / "_us_100m_pop_cap_by_lat.npz"
+
+
+def fig_serviceable_vs_satellites_us_resolution(us_grid_1km: pdg.PopulationGrid,
+                                                 pop_cap_100m: tuple[np.ndarray, np.ndarray]):
+    sat_counts = np.geomspace(100, 2_000_000, 40)
+    served_1km = scm.sweep_serviceable_customers(sat_counts, us_grid_1km)
+    served_100m = scm.sweep_from_pop_cap(sat_counts, pop_cap_100m)
+
+    fig, ax = render.new_figure(figsize=(12, 7.5))
+    _draw_curve(ax, sat_counts, served_1km, "#4575b4", "Serviceable customers (US, 1km data)")
+    _draw_curve(ax, sat_counts, served_100m, "#d73027", "Serviceable customers (US, 100m data)")
+    _add_fleet_reference_lines(ax)
+
+    ax.set_xscale("log")
+    ax.set_yscale("log")
+    ax.set_xlabel("Total satellites (log scale)")
+    ax.set_ylabel("Serviceable customers (log scale)")
+    ax.set_title("Serviceable customers vs. total satellites -- US, 1km vs. 100m population data")
+    ax.xaxis.set_major_formatter(mticker.FuncFormatter(lambda v, _: f"{v:,.0f}"))
+    ax.yaxis.set_major_formatter(mticker.FuncFormatter(_pop_formatter))
+    ax.legend(loc="lower right", fontsize=8.5)
+
+    ceil_1km, ceil_100m = served_1km[-1], served_100m[-1]
+    pct_diff = 100 * (ceil_100m - ceil_1km) / ceil_1km
+    info_box.add_info_box(
+        ax, fig,
+        f"Ceilings: 1km {_pop_formatter(ceil_1km, None)}, 100m {_pop_formatter(ceil_100m, None)} "
+        f"({pct_diff:+.0f}%).\n{SHELL_RATIO_NOTE}. Satellite capacity is the SAME global curve for both "
+        f"-- only the US demand ceiling differs by resolution. " + SOURCE_NOTE,
+        mode="on",
+    )
+    return fig, OUT_ROOT / "serviceable_customers_vs_satellites_us_1km_vs_100m.png"
+
+
 def figures(grid: pdg.PopulationGrid):
     return [
         ("serviceable_global", lambda: fig_serviceable_vs_satellites_global(grid)),
@@ -100,6 +138,17 @@ def main():
         render.save_fig(fig, path)
         print(f"  wrote {path.relative_to(Path(__file__).resolve().parent.parent)}")
     print(f"wrote {len(plan)} charts")
+
+    if US_100M_CACHE.exists():
+        us_grid_1km = pdg.load_country_density_grid("USA")
+        cached = np.load(US_100M_CACHE)
+        pop_cap_100m = (cached["centers"], cached["pop_cap"])
+        fig, path = fig_serviceable_vs_satellites_us_resolution(us_grid_1km, pop_cap_100m)
+        render.save_fig(fig, path)
+        print(f"  wrote {path.relative_to(Path(__file__).resolve().parent.parent)}")
+    else:
+        print(f"  skipped US 1km-vs-100m chart: {US_100M_CACHE} not found yet "
+              f"(run serviceable_customers_model.density_capped_population_by_latitude_streaming first)")
 
 
 if __name__ == "__main__":

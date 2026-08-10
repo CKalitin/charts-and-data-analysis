@@ -90,30 +90,73 @@ def capacity_by_latitude(total_sats: float, scenario: cdm.CapacityScenario = cdm
     return centers, np.where(covered, cap, 0.0)
 
 
+def _lat_bin_edges(bin_width_deg: float):
+    edges = np.arange(-90, 90 + bin_width_deg, bin_width_deg)
+    centers = (edges[:-1] + edges[1:]) / 2
+    return centers
+
+
+def _lat_bin_index(lat_centers: np.ndarray, bin_width_deg: float, n_bins: int) -> np.ndarray:
+    # ascending bin index to match _lat_bin_edges()'s ascending order -- see the same
+    # fix (and why) in population_density_grid.population_by_latitude().
+    return np.clip(((lat_centers + 90.0) / bin_width_deg).astype(np.int64), 0, n_bins - 1)
+
+
+def _capped_population_per_row(density_or_count_chunk: np.ndarray, area_row_km2: np.ndarray,
+                                max_density_cap: float, already_density: bool) -> np.ndarray:
+    """min(actual population, beam-footprint density cap x cell area), summed across
+    each row -- the per-cell version of Phase 5's min(unconnected_pop, density_ceiling
+    x land_area), applied at the raster's native resolution instead of a
+    whole-country average area. `already_density=False` divides a population-COUNT
+    chunk (people per pixel, e.g. the 100m 'ppp' product) by its own cell area first."""
+    density = density_or_count_chunk if already_density else density_or_count_chunk / area_row_km2[:, None]
+    with np.errstate(invalid="ignore"):
+        return np.nansum(np.fmin(density, max_density_cap) * area_row_km2[:, None], axis=1)
+
+
 def density_capped_population_by_latitude(grid: pdg.PopulationGrid,
                                            scenario: cdm.CapacityScenario = cdm.V2_MINI_BEAD_SCENARIO,
                                            bin_width_deg: float = BIN_WIDTH_DEG):
     """Sum, per 1deg latitude band, of min(actual population, beam-footprint density
-    cap x cell area) over every grid cell in that band -- the per-cell version of
-    Phase 5's min(unconnected_pop, density_ceiling x land_area), applied at the
-    grid's native resolution instead of a whole-country average area. Independent of
-    satellite count N -- this is the fixed DEMAND ceiling; capacity_by_latitude is
-    the SUPPLY curve that grows with N."""
+    cap x cell area) over every grid cell in that band. Independent of satellite
+    count N -- this is the fixed DEMAND ceiling; capacity_by_latitude is the SUPPLY
+    curve that grows with N. Whole-array version -- for a raster too large to hold in
+    memory (the 100m population-count product), see the streaming variant below."""
     max_density_cap = cdm.max_customer_density_per_km2(scenario)
-
-    lat_centers_fine = (grid.lat_edges[:-1] + grid.lat_edges[1:]) / 2  # descending, north -> south
+    lat_centers = (grid.lat_edges[:-1] + grid.lat_edges[1:]) / 2  # descending, north -> south
     area_row_km2 = pdg.row_areas_km2(grid)
+    pop_row = _capped_population_per_row(grid.density, area_row_km2, max_density_cap, already_density=True)
 
-    servable_density = np.fmin(grid.density, max_density_cap)  # NaN (no data) stays NaN
-    servable_pop_row = np.nansum(servable_density * area_row_km2[:, None], axis=1)
-
-    edges = np.arange(-90, 90 + bin_width_deg, bin_width_deg)
-    centers = (edges[:-1] + edges[1:]) / 2
-    # ascending bin index to match centers[]'s ascending order -- see the same fix
-    # (and why) in population_density_grid.population_by_latitude().
-    bin_idx = np.clip(((lat_centers_fine + 90.0) / bin_width_deg).astype(np.int64), 0, len(centers) - 1)
+    centers = _lat_bin_edges(bin_width_deg)
     out = np.zeros(len(centers))
-    np.add.at(out, bin_idx, servable_pop_row)
+    np.add.at(out, _lat_bin_index(lat_centers, bin_width_deg, len(centers)), pop_row)
+    return centers, out
+
+
+def density_capped_population_by_latitude_streaming(path,
+                                                      scenario: cdm.CapacityScenario = cdm.V2_MINI_BEAD_SCENARIO,
+                                                      bin_width_deg: float = BIN_WIDTH_DEG,
+                                                      row_chunk: int = 2048):
+    """Streaming equivalent of density_capped_population_by_latitude(), for a
+    population-COUNT raster too large to load whole (e.g. the 100m 'ppp' product --
+    ~101GB uncompressed as float32 for the full USA). Reads row_chunk rows at a time
+    via population_density_grid.open_raster_zarr() (tile-decode-on-demand), never
+    holding more than one chunk in memory."""
+    meta = pdg._read_raster_meta(path)
+    h, _w = meta["shape"]
+    z = pdg.open_raster_zarr(path)
+    max_density_cap = cdm.max_customer_density_per_km2(scenario)
+    centers = _lat_bin_edges(bin_width_deg)
+    out = np.zeros(len(centers))
+
+    for r0 in range(0, h, row_chunk):
+        r1 = min(r0 + row_chunk, h)
+        chunk = np.asarray(z[r0:r1, :], dtype=np.float32)
+        chunk[chunk == meta["nodata"]] = np.nan
+        lat_centers = meta["lat0"] - (np.arange(r0, r1) + 0.5) * meta["dy"]
+        area_row_km2 = (meta["dy"] * pdg.KM_PER_DEG) * (meta["dx"] * pdg.KM_PER_DEG * np.cos(np.radians(lat_centers)))
+        pop_row = _capped_population_per_row(chunk, area_row_km2, max_density_cap, already_density=False)
+        np.add.at(out, _lat_bin_index(lat_centers, bin_width_deg, len(centers)), pop_row)
     return centers, out
 
 
@@ -127,16 +170,25 @@ def serviceable_customers(total_sats: float, pop_cap_by_lat: tuple[np.ndarray, n
     return float(np.minimum(sat_cap, pop_cap).sum())
 
 
-def sweep_serviceable_customers(sat_counts, grid: pdg.PopulationGrid,
-                                 scenario: cdm.CapacityScenario = cdm.V2_MINI_BEAD_SCENARIO,
-                                 ratios=SHELL_RATIOS, bin_width_deg: float = BIN_WIDTH_DEG) -> np.ndarray:
-    """Servable-customer count at each N in sat_counts. Computes the (N-independent)
-    density-capped population ceiling ONCE and reuses it across the whole sweep."""
-    pop_cap_by_lat = density_capped_population_by_latitude(grid, scenario, bin_width_deg)
+def sweep_from_pop_cap(sat_counts, pop_cap_by_lat: tuple[np.ndarray, np.ndarray],
+                        scenario: cdm.CapacityScenario = cdm.V2_MINI_BEAD_SCENARIO,
+                        ratios=SHELL_RATIOS, bin_width_deg: float = BIN_WIDTH_DEG) -> np.ndarray:
+    """Servable-customer count at each N in sat_counts, given an already-computed
+    (N-independent) demand ceiling -- shared by every sweep_* variant below so the
+    ceiling is computed exactly ONCE regardless of how it was produced (whole-grid or
+    streaming)."""
     return np.array([
         serviceable_customers(n, pop_cap_by_lat, scenario, ratios, bin_width_deg)
         for n in sat_counts
     ])
+
+
+def sweep_serviceable_customers(sat_counts, grid: pdg.PopulationGrid,
+                                 scenario: cdm.CapacityScenario = cdm.V2_MINI_BEAD_SCENARIO,
+                                 ratios=SHELL_RATIOS, bin_width_deg: float = BIN_WIDTH_DEG) -> np.ndarray:
+    """Servable-customer count at each N in sat_counts, from an in-memory grid."""
+    pop_cap_by_lat = density_capped_population_by_latitude(grid, scenario, bin_width_deg)
+    return sweep_from_pop_cap(sat_counts, pop_cap_by_lat, scenario, ratios, bin_width_deg)
 
 
 if __name__ == "__main__":
