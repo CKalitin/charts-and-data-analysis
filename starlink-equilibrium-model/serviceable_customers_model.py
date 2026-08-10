@@ -77,13 +77,22 @@ def max_latitude_covered(ratios=SHELL_RATIOS) -> float:
     return max(og.max_latitude_deg(incl) for incl, _ in ratios)
 
 
+def sats_overhead_by_latitude(total_sats: float, ratios=SHELL_RATIOS, altitude_km: float = 550.0,
+                               bin_width_deg: float = BIN_WIDTH_DEG):
+    """Expected satellites overhead per latitude band, summed across all shells --
+    the raw quantity both capacity_by_latitude() (multiplied by customers/satellite)
+    and the per-satellite-cap model below (multiplied by density/satellite) scale
+    from. NOT restricted to the covered band here -- callers apply that mask."""
+    shells = make_shells(total_sats, ratios, altitude_km=altitude_km)
+    centers, by_shell = og.expected_sats_by_latitude(shells, bin_width_deg=bin_width_deg)
+    return centers, np.sum(list(by_shell.values()), axis=0)
+
+
 def capacity_by_latitude(total_sats: float, scenario: cdm.CapacityScenario = cdm.V2_MINI_BEAD_SCENARIO,
                           ratios=SHELL_RATIOS, bin_width_deg: float = BIN_WIDTH_DEG):
     """Aggregate simultaneous-customer capacity per latitude band, for total_sats
     split across `ratios`. Zero outside the union of shells' coverage bands."""
-    shells = make_shells(total_sats, ratios, altitude_km=scenario.altitude_km)
-    centers, by_shell = og.expected_sats_by_latitude(shells, bin_width_deg=bin_width_deg)
-    sats_overhead = np.sum(list(by_shell.values()), axis=0)
+    centers, sats_overhead = sats_overhead_by_latitude(total_sats, ratios, scenario.altitude_km, bin_width_deg)
     customers_per_sat = cdm.max_customers_per_satellite(scenario)
     cap = sats_overhead * customers_per_sat
     covered = np.abs(centers) <= max_latitude_covered(ratios)
@@ -181,6 +190,131 @@ def density_capped_population_by_latitude_streaming(path,
         if verbose and (r0 // row_chunk) % 20 == 0:
             print(f"  row {r0:,}/{h:,} ({100*r0/h:.0f}%)")
     return centers, out
+
+
+# ========================================================================================
+# Per-satellite density cap variant (user request, 2026-08-10): the fixed-cap model above
+# treats the areal beam-footprint density cap as constant regardless of satellite count N
+# -- correct per capacity_density_model.py's original documented assumption ("independent
+# of how many satellites are overhead"), but the user asked for a version where the cap
+# scales PER SATELLITE instead: more satellites overhead a given latitude band raises the
+# local areal ceiling proportionally (N x base_cap), not just the aggregate per-satellite
+# capacity ceiling (which already scaled with N). As N grows large enough that the scaled
+# cap exceeds even the densest populated cell, the demand ceiling approaches RAW (uncapped)
+# population -- a materially different curve shape from the fixed-cap model, which sits at
+# a permanent ceiling however large N gets.
+#
+# Because the cap now changes with EVERY N in a sweep (not just once), re-reading the raw
+# raster per N is not an option (the 100m file alone takes ~10 minutes per PASS). Instead,
+# a (latitude band x density bin) AREA histogram is precomputed ONCE (one pass over the
+# data, in-memory or streaming), and the capped sum for any cap value is then a cheap
+# array op against that histogram -- no more raw-data reads needed for the rest of a sweep.
+# ========================================================================================
+
+DENSITY_BIN_EDGES = np.logspace(-2, 5.3, 60)  # ~0.01 to ~200,000 people/km^2, log-spaced
+
+
+def _density_bin_centers(density_bin_edges=DENSITY_BIN_EDGES) -> np.ndarray:
+    return np.sqrt(density_bin_edges[:-1] * density_bin_edges[1:])  # geometric center, correct for log bins
+
+
+def density_area_histogram_by_latitude(grid: pdg.PopulationGrid, bin_width_deg: float = BIN_WIDTH_DEG,
+                                        density_bin_edges: np.ndarray = DENSITY_BIN_EDGES):
+    """2D histogram of AREA (km^2), binned by (latitude band, density bin), from an
+    in-memory grid. See the section docstring above for why this replaces a single
+    scalar "capped population" -- it lets the cap be re-applied at query time for
+    any value, not just the one it was computed with."""
+    lat_centers = (grid.lat_edges[:-1] + grid.lat_edges[1:]) / 2
+    area_row = pdg.row_areas_km2(grid)
+    lat_centers_out = _lat_bin_edges(bin_width_deg)
+    n_lat, n_dens = len(lat_centers_out), len(density_bin_edges) - 1
+
+    lat_bin_idx = _lat_bin_index(lat_centers, bin_width_deg, n_lat).astype(np.int32)
+    valid = ~np.isnan(grid.density)
+    dens_bin_idx = np.clip(np.searchsorted(density_bin_edges, grid.density, side="right") - 1,
+                            0, n_dens - 1).astype(np.int32)
+    area_2d = np.broadcast_to(area_row[:, None], grid.density.shape)
+    lat_idx_2d = np.broadcast_to(lat_bin_idx[:, None], grid.density.shape)
+
+    hist = np.zeros((n_lat, n_dens))
+    np.add.at(hist, (lat_idx_2d[valid], dens_bin_idx[valid]), area_2d[valid])
+    return lat_centers_out, _density_bin_centers(density_bin_edges), hist
+
+
+def density_area_histogram_by_latitude_streaming(path, bin_width_deg: float = BIN_WIDTH_DEG,
+                                                   density_bin_edges: np.ndarray = DENSITY_BIN_EDGES,
+                                                   row_chunk: int = 512, verbose: bool = False):
+    """Streaming equivalent of density_area_histogram_by_latitude(), for a
+    population-COUNT raster too large to load whole (the 100m 'ppp' product). Same
+    row-chunked, in-place-mutation approach as density_capped_population_by_latitude_streaming()
+    (see its docstring for why) -- one extra step here (digitizing into density
+    bins) but still bounded by row_chunk's memory footprint, not the whole file's."""
+    meta = pdg._read_raster_meta(path)
+    h, _w = meta["shape"]
+    z = pdg.open_raster_zarr(path)
+    lat_centers_out = _lat_bin_edges(bin_width_deg)
+    n_lat, n_dens = len(lat_centers_out), len(density_bin_edges) - 1
+    hist = np.zeros((n_lat, n_dens))
+
+    for r0 in range(0, h, row_chunk):
+        r1 = min(r0 + row_chunk, h)
+        chunk = np.asarray(z[r0:r1, :], dtype=np.float32)
+        chunk[chunk == meta["nodata"]] = np.nan
+        lat_centers = meta["lat0"] - (np.arange(r0, r1) + 0.5) * meta["dy"]
+        area_col = ((meta["dy"] * pdg.KM_PER_DEG) * (meta["dx"] * pdg.KM_PER_DEG
+                    * np.cos(np.radians(lat_centers))))[:, None]
+        np.divide(chunk, area_col, out=chunk)  # count/pixel -> people/km^2, in place
+
+        lat_bin_idx = _lat_bin_index(lat_centers, bin_width_deg, n_lat).astype(np.int32)
+        valid = ~np.isnan(chunk)
+        dens_bin_idx = np.clip(np.searchsorted(density_bin_edges, chunk, side="right") - 1,
+                                0, n_dens - 1).astype(np.int32)
+        area_2d = np.broadcast_to(area_col, chunk.shape)
+        lat_idx_2d = np.broadcast_to(lat_bin_idx[:, None], chunk.shape)
+        np.add.at(hist, (lat_idx_2d[valid], dens_bin_idx[valid]), area_2d[valid])
+        del chunk, dens_bin_idx, valid, area_2d, lat_idx_2d
+        if verbose and (r0 // row_chunk) % 20 == 0:
+            print(f"  row {r0:,}/{h:,} ({100*r0/h:.0f}%)")
+    return lat_centers_out, _density_bin_centers(density_bin_edges), hist
+
+
+def capped_population_from_histogram(area_hist: np.ndarray, density_bin_centers: np.ndarray,
+                                      effective_cap_per_lat: np.ndarray) -> np.ndarray:
+    """min(actual population, cap) summed per latitude band, from a precomputed
+    (lat x density) area histogram -- the cheap, repeatable half of the per-satellite
+    -cap model; see the section docstring above."""
+    return np.sum(area_hist * np.minimum(density_bin_centers[None, :], effective_cap_per_lat[:, None]), axis=1)
+
+
+def serviceable_customers_per_satellite_cap(total_sats: float, area_hist: np.ndarray,
+                                             density_bin_centers: np.ndarray, lat_centers: np.ndarray,
+                                             scenario: cdm.CapacityScenario = cdm.V2_MINI_BEAD_SCENARIO,
+                                             ratios=SHELL_RATIOS, bin_width_deg: float = BIN_WIDTH_DEG) -> float:
+    """Like serviceable_customers(), but the areal density cap scales with
+    satellites overhead per latitude band instead of staying fixed -- see the
+    section docstring above for the mechanism and why."""
+    _, sats_overhead = sats_overhead_by_latitude(total_sats, ratios, scenario.altitude_km, bin_width_deg)
+    base_cap = cdm.max_customer_density_per_km2(scenario)
+    covered = np.abs(lat_centers) <= max_latitude_covered(ratios)
+
+    effective_cap = np.where(covered, base_cap * sats_overhead, 0.0)
+    demand = capped_population_from_histogram(area_hist, density_bin_centers, effective_cap)
+    customers_per_sat = cdm.max_customers_per_satellite(scenario)
+    supply = np.where(covered, sats_overhead * customers_per_sat, 0.0)
+    return float(np.minimum(supply, demand).sum())
+
+
+def sweep_per_satellite_cap(sat_counts, area_hist: np.ndarray, density_bin_centers: np.ndarray,
+                             lat_centers: np.ndarray, scenario: cdm.CapacityScenario = cdm.V2_MINI_BEAD_SCENARIO,
+                             ratios=SHELL_RATIOS, bin_width_deg: float = BIN_WIDTH_DEG) -> np.ndarray:
+    """Servable-customer count at each N in sat_counts, per-satellite-cap variant.
+    Cheap per N -- only capped_population_from_histogram() and a few small array ops
+    run per iteration, the expensive raw-data pass already happened once, upstream."""
+    return np.array([
+        serviceable_customers_per_satellite_cap(n, area_hist, density_bin_centers, lat_centers,
+                                                 scenario, ratios, bin_width_deg)
+        for n in sat_counts
+    ])
 
 
 def serviceable_customers(total_sats: float, pop_cap_by_lat: tuple[np.ndarray, np.ndarray],

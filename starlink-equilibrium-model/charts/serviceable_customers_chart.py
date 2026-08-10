@@ -50,8 +50,8 @@ def _add_fleet_reference_lines(ax):
                     textcoords="offset points", fontsize=7.5, color="0.4", ha="left", va="top", rotation=90)
 
 
-def _draw_curve(ax, sat_counts, served, color, label):
-    ax.plot(sat_counts, served, color=color, linewidth=2, label=label, zorder=3)
+def _draw_curve(ax, sat_counts, served, color, label, linestyle="-"):
+    ax.plot(sat_counts, served, color=color, linewidth=2, linestyle=linestyle, label=label, zorder=3)
     ceiling = served[-1]
     ax.axhline(ceiling, color=color, linestyle="--", linewidth=0.9, alpha=0.6, zorder=2)
 

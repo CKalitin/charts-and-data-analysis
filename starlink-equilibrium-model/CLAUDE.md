@@ -1323,16 +1323,80 @@ file, not just the one that showed the symptom) rather than patching the one cha
 formatter on any log-scale numeric axis in this project going forward, and keep
 info-box text to short wrapped lines per the project's existing convention.
 
-**Open question, explicitly NOT resolved, flagged mid-session by the user**: the
-density cap (2.57 customers/km2) is a SINGLE BEAM's footprint limit, and the model
-applies it as a hard per-area ceiling that does NOT grow with satellite count N --
-correctly matching `capacity_density_model.py`'s original explicit Phase 3
-assumption ("independent of how many satellites are overhead"), but this is a real,
-acknowledged simplification: multiple satellites' beams reaching the same ground
-patch (frequency reuse, polarization diversity, time-multiplexing across passes)
-could plausibly loosen the effective per-area ceiling as N grows, and nothing in
-this model captures that. The source paper itself notes overlapping beams on a
-SINGLE satellite with a tighter beamwidth could already loosen the ceiling ~4.5x
-(6.66 -> ~30 subscribers/sq mi). Do not add N-dependent density-cap scaling without
-the user picking a concrete reuse-factor assumption first -- flagged to them, not
-yet answered as of this note.
+**Open question flagged mid-session, since answered**: the density cap (2.57
+customers/km2) is a SINGLE BEAM's footprint limit; the fixed-cap model applies it as
+a hard per-area ceiling independent of satellite count N, correctly matching
+`capacity_density_model.py`'s original documented Phase 3 assumption. User's answer:
+**"make it so that the density limit is only per satellite, make this another set of
+charts (not replacing the old ones)."** Built as a genuinely separate model variant,
+not a change to the existing one -- see the next section.
+
+## Per-satellite density cap: a SECOND model variant, new charts (2026-08-10, same day)
+
+New, separate curve family answering the open question above: instead of a FIXED
+areal density cap, the cap now scales PER SATELLITE -- `effective_cap(lat, N) =
+base_cap x sats_overhead(lat, N)`, i.e. each satellite overhead a latitude band
+independently contributes its own beam-footprint allowance, so more satellites
+raises the local areal ceiling too, not just the aggregate per-satellite capacity
+ceiling (which already scaled with N in the original model). **The original
+fixed-cap model and its charts are UNCHANGED** -- this is purely additive, per the
+user's explicit instruction not to replace the old charts.
+
+**New model code, all in `serviceable_customers_model.py`** (not a separate file --
+shares `make_shells`/`max_latitude_covered`/etc. with the fixed-cap model, so it
+lives alongside it under a clearly-marked "Per-satellite density cap variant"
+section):
+- `sats_overhead_by_latitude()` -- extracted from `capacity_by_latitude()` (a
+  behavior-preserving refactor, verified: N=4,408/10,900 give byte-identical results
+  to before) so both the aggregate-capacity supply curve AND the new per-satellite
+  cap scaling read the same underlying satellites-overhead-by-latitude quantity.
+- **Why a histogram, not a direct recompute**: the fixed-cap model could compute its
+  (N-independent) demand ceiling ONCE per sweep, since the cap never changed. Here
+  the cap changes at EVERY N, and re-reading the raw raster per N is not an option
+  (the 100m file alone takes ~10 min per PASS, x46 sweep points would be ~7.5
+  hours). Instead, `density_area_histogram_by_latitude()` (in-memory) and
+  `..._streaming()` (100m, same row-chunked/in-place-mutation pattern as the
+  existing streaming aggregator) build a (latitude band x density bin) AREA
+  histogram ONCE -- `DENSITY_BIN_EDGES`, 59 log-spaced bins, 0.01 to ~200,000/km2.
+  `capped_population_from_histogram()` then re-applies ANY cap value against that
+  histogram as a cheap array op, no raw-data re-reads needed for the rest of a sweep.
+  Cross-checked: summing the histogram's own (bin_center x area) reproduces the
+  known raw population totals closely (global: 8.89B from the histogram vs. 8.85B
+  from the exact grid sum, US 1km: consistent within the same small binning-
+  approximation error) -- confirms the histogram isn't silently losing population.
+- `serviceable_customers_per_satellite_cap()` / `sweep_per_satellite_cap()` mirror
+  the fixed-cap model's `serviceable_customers()` / `sweep_from_pop_cap()` signature
+  shape, taking a precomputed histogram instead of a precomputed scalar ceiling.
+
+**Real, expected finding**: at low N the two models are nearly identical (both
+dominated by the aggregate capacity constraint, not the density cap, at low
+satellite counts). They diverge sharply once satellites overhead a band exceed ~1
+-- the fixed-cap curve saturates at 188.6M (unchanged from before) while the
+per-satellite curve keeps climbing, approaching **~8.9B (raw population)** by
+N~5-10M satellites. This is the direct, correct answer to the earlier "why doesn't
+the ceiling go to 8B" question **under this new assumption** -- with a per-satellite
+cap, given enough satellites the areal constraint stops binding anywhere and the
+model becomes purely population-limited, same as the user originally expected
+before the fixed-cap assumption was explained.
+
+**New charts, `charts/serviceable_customers_per_satellite_chart.py`** (imports
+shared helpers -- `_draw_curve`, `_format_log_axes`, `_pop_formatter`,
+`_add_fleet_reference_lines`, `SOURCE_NOTE`, `SHELL_RATIO_NOTE` -- directly from
+`charts/serviceable_customers_chart.py` rather than duplicating them; `_draw_curve`
+gained an optional `linestyle` param, default `"-"`, so the OLD chart file's calls
+are behavior-unchanged):
+- `serviceable_customers_vs_satellites_global_per_satellite_cap.png` -- fixed cap
+  (dashed) vs. per-satellite cap (solid) overlaid, global, 1km data.
+- `serviceable_customers_vs_satellites_us_per_satellite_cap.png` -- 4 curves:
+  {1km, 100m} x {fixed, per-satellite}, US only. Needs a SECOND streaming pass over
+  the 100m US raster (`density_area_histogram_by_latitude_streaming()`, cached to
+  `data/raw/worldpop/_us_100m_density_area_hist.npz`) -- the earlier streaming cache
+  (`_us_100m_pop_cap_by_lat.npz`, a single scalar-per-latitude-band ceiling) isn't
+  enough for this variant since the cap now needs re-applying at every N.
+
+**Layout bug hit a second time, same root cause as the earlier US 1km-vs-100m
+chart**: an overlong single-line info-box string triggered the same
+`constrained_layout not applied because axes sizes collapsed to zero` /
+squished-plot symptom. Fixed the same way -- shorter, explicitly wrapped lines. Two
+occurrences of the identical bug class now on record; keep info-box text short by
+default rather than rediscovering this a third time.
