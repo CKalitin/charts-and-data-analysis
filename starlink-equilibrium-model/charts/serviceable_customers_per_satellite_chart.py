@@ -26,6 +26,7 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+import capacity_density_model as cdm
 import population_density_grid as pdg
 import serviceable_customers_model as scm
 from serviceable_customers_chart import (
@@ -39,6 +40,23 @@ US_100M_POP_CAP_CACHE = pdg.WORLDPOP_DIR / "_us_100m_pop_cap_by_lat.npz"
 US_100M_DENSITY_HIST_CACHE = pdg.WORLDPOP_DIR / "_us_100m_density_area_hist.npz"
 
 CAP_NOTE = "Dashed = fixed cap. Solid = cap scales per satellite.\n" + SHELL_RATIO_NOTE + ". " + SOURCE_NOTE
+
+# Representative latitudes for the density-vs-N chart: 53deg is where Starlink's real
+# Gen1 shells concentrate (72% of satellites, see CLAUDE.md), 70/80deg are progressively
+# thinner coverage, 0/30deg are far from any shell's turning point (low time-density).
+DENSITY_REFERENCE_LATITUDES = (0.0, 30.0, 53.0, 70.0, 80.0)
+DENSITY_LAT_COLORS = ("#4575b4", "#74add1", "#d73027", "#fdae61", "#66301c")
+
+
+def _density_formatter(x, _pos):
+    if x <= 0:
+        return "0"
+    if x < 10:
+        return f"{x:.2g}"
+    for div, suf in ((1e9, "B"), (1e6, "M"), (1e3, "K")):
+        if x >= div:
+            return f"{x / div:.1f}{suf}"
+    return f"{x:.0f}"
 
 
 # --------------------------------------------------------------------------------------
@@ -192,11 +210,50 @@ def fig_serviceable_vs_satellites_us_per_satellite_cap_linear(us_grid_1km: pdg.P
     return fig, OUT_ROOT / "serviceable_customers_vs_satellites_us_per_satellite_cap_linear.png"
 
 
+# --------------------------------------------------------------------------------------
+# Chart 3: servable population DENSITY (not customer count) vs. total satellites,
+# per-satellite cap, at a few representative latitudes
+# --------------------------------------------------------------------------------------
+def fig_servable_density_vs_satellites(latitudes_deg=DENSITY_REFERENCE_LATITUDES):
+    sat_counts = np.geomspace(100, 2_000_000, 40)
+    caps = np.array([scm.effective_density_cap_at_latitudes(n, latitudes_deg) for n in sat_counts])
+
+    fig, ax = render.new_figure(figsize=(12, 7.5))
+    for i, lat in enumerate(latitudes_deg):
+        color = DENSITY_LAT_COLORS[i % len(DENSITY_LAT_COLORS)]
+        ax.plot(sat_counts, caps[:, i], color=color, linewidth=2, label=f"{lat:.0f}deg latitude")
+
+    base_cap = cdm.max_customer_density_per_km2(cdm.V2_MINI_BEAD_SCENARIO)
+    ax.axhline(base_cap, color="0.3", linestyle="--", linewidth=1.3,
+              label=f"Fixed cap ({base_cap:.2f}/km2)")
+    _add_fleet_reference_lines(ax)
+
+    ax.set_xscale("log")
+    ax.set_yscale("log")
+    ax.set_xlabel("Total satellites (log scale)")
+    ax.set_ylabel("Servable population density (people/km2, log scale)")
+    ax.set_title("Servable population density vs. total satellites, per-satellite cap, by latitude")
+    ax.xaxis.set_major_formatter(mticker.FuncFormatter(lambda v, _: f"{v:,.0f}"))
+    ax.yaxis.set_major_formatter(mticker.FuncFormatter(_density_formatter))
+    ax.yaxis.set_minor_formatter(mticker.NullFormatter())
+    ax.legend(loc="lower right", fontsize=8.5)
+
+    info_box.add_info_box(
+        ax, fig,
+        "Density ceiling = base cap x satellites overhead that latitude band --\n"
+        "grows with N (per-satellite model), unlike the flat fixed-cap line.\n"
+        + SHELL_RATIO_NOTE + ". " + SOURCE_NOTE,
+        mode="on",
+    )
+    return fig, OUT_ROOT / "servable_density_vs_satellites.png"
+
+
 def figures(grid: pdg.PopulationGrid):
     return [
         ("serviceable_global_per_sat", lambda: fig_serviceable_vs_satellites_global_per_satellite_cap(grid)),
         ("serviceable_global_per_sat_linear",
          lambda: fig_serviceable_vs_satellites_global_per_satellite_cap_linear(grid)),
+        ("servable_density_vs_satellites", fig_servable_density_vs_satellites),
     ]
 
 

@@ -105,6 +105,34 @@ def capacity_by_latitude(total_sats: float, scenario: cdm.CapacityScenario = cdm
     return centers, np.where(covered, cap, 0.0)
 
 
+def effective_density_cap_by_latitude(total_sats: float, scenario: cdm.CapacityScenario = cdm.V2_MINI_BEAD_SCENARIO,
+                                       base_shells: list[og.Shell] | None = None,
+                                       bin_width_deg: float = BIN_WIDTH_DEG):
+    """Effective per-area density ceiling (people/km^2) per latitude band, under the
+    per-satellite-cap model: base_cap x satellites overhead that band -- the
+    density-counterpart of capacity_by_latitude() above (which does the same for
+    the aggregate per-satellite capacity cap instead). See the "Per-satellite
+    density cap variant" section below for the full mechanism. Zero outside the
+    union of shells' coverage bands."""
+    centers, sats_overhead = sats_overhead_by_latitude(total_sats, base_shells, bin_width_deg)
+    base_cap = cdm.max_customer_density_per_km2(scenario)
+    covered = np.abs(centers) <= max_latitude_covered(base_shells)
+    return centers, np.where(covered, base_cap * sats_overhead, 0.0)
+
+
+def effective_density_cap_at_latitudes(total_sats: float, latitudes_deg,
+                                        scenario: cdm.CapacityScenario = cdm.V2_MINI_BEAD_SCENARIO,
+                                        base_shells: list[og.Shell] | None = None,
+                                        bin_width_deg: float = BIN_WIDTH_DEG) -> np.ndarray:
+    """effective_density_cap_by_latitude(), sampled at specific latitudes (nearest
+    bin) -- for a chart plotting the density ceiling at a few representative
+    latitudes as a function of N, rather than the full per-latitude-band array."""
+    centers, cap_by_lat = effective_density_cap_by_latitude(total_sats, scenario, base_shells, bin_width_deg)
+    idx = np.clip(np.round((np.asarray(latitudes_deg, dtype=float) - centers[0]) / bin_width_deg).astype(int),
+                  0, len(centers) - 1)
+    return cap_by_lat[idx]
+
+
 def _lat_bin_edges(bin_width_deg: float):
     edges = np.arange(-90, 90 + bin_width_deg, bin_width_deg)
     centers = (edges[:-1] + edges[1:]) / 2

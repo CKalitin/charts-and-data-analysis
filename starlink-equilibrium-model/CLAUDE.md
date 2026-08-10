@@ -1478,3 +1478,38 @@ essentially "at the left edge"). Fixed with a per-label vertical stagger
 lines are in x -- applies to every chart using this helper, not just the ones that
 showed the symptom, per this project's now well-established "fix shared helpers
 once" convention.
+
+## Servable population DENSITY vs. satellite count (2026-08-10, same day)
+
+User: "Give me servable population density vs sat count." Distinct metric from
+everything built so far in this file's model -- not a customer COUNT, but the
+per-area density CEILING (people/km2) itself, as a function of N. Read as: extend
+the per-satellite-cap mechanism (`effective_cap(lat, N) = base_cap x satellites
+overhead that band`) into its own chart, showing the ceiling's growth directly
+rather than folding it into a customer total.
+
+**New model functions in `serviceable_customers_model.py`**:
+`effective_density_cap_by_latitude()` -- the density-counterpart of
+`capacity_by_latitude()` (which does the same thing for the aggregate capacity cap);
+factors out the `base_cap x sats_overhead` line that was previously inlined only
+inside `serviceable_customers_per_satellite_cap()`. `effective_density_cap_at_latitudes()`
+samples that array at specific latitudes (nearest 1deg bin) -- for a chart that
+tracks a handful of representative latitudes across a satellite-count sweep, rather
+than the full per-band array at one N.
+
+**New chart**: `charts/serviceable_customers_per_satellite_chart.py` gained a third
+figure, `fig_servable_density_vs_satellites()` -> `results/population/servable_density_vs_satellites.png`.
+5 representative latitudes (0/30/53/70/80deg), log-log, plus the flat fixed-cap
+value (2.57/km2) as a dashed reference line. **Real finding, directly visible**: the
+53deg line (where Starlink's real Gen1 shells concentrate 72% of satellites) crosses
+the fixed-cap reference line far earlier than any other latitude -- already ~369/km2
+at just Gen1's 4,408 satellites, ~150x the fixed cap, while 70deg/80deg are still
+BELOW the fixed cap at that same N (8.6 and 12.3/km2 respectively, vs. 2.57).
+Directly shows WHY the per-satellite model's aggregate ceiling can climb so much
+higher than the fixed model's: the real constellation's shell concentration means
+the density ceiling loosens dramatically faster at the latitudes with the most real
+population (temperate, ~30-55deg) than at the sparse near-polar latitudes.
+
+Also re-sent (not regenerated -- unchanged since Phase/session that built them)
+`population_vs_density_histogram_global.png` and `_us.png`
+(`charts/population_stats.py`) per the user's request to see them again.
