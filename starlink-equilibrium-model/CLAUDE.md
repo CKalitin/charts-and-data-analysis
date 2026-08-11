@@ -1624,3 +1624,54 @@ explicitly-`\n`-wrapped lines (2-4 words each is safest) rather than letting a
 line's length depend on how wide happens to be convenient at the call site --
 narrower figures (portrait charts, multi-panel, etc.) shrink the safe margin
 further than the landscape charts most of this project's history was built with.
+
+## Satellite ground-coverage RANGE geometry + two new charts (2026-08-11)
+
+User: satellite-density-by-latitude only counted satellites whose SUB-SATELLITE
+POINT sits exactly at a given latitude -- asked for how far a satellite can
+actually SERVE to the sides ("horizontal field of view"), researched from real
+Starlink analyses, applied to that chart, then overlaid on population-by-latitude.
+
+**Researched, not guessed** (WebSearch): Starlink's long-standing minimum user-
+terminal elevation angle is **25 degrees**. Checked whether the FCC's 2026-04 STA
+ruling (lowers the minimum to 10deg <400km, 20deg 400-500km, 5deg above 62N)
+changes this for this project -- it doesn't: Gen1's real shells are all >=540km,
+above every lowered tier, so 25deg remains the applicable figure. New
+`ASSUMPTIONS.md` #11 entry.
+
+**New geometry in `orbital_geometry.py`** (standard LEO visibility geometry, law of
+sines on the Earth-center/satellite/ground-station triangle -- not a beam-footprint
+calculation, a DIFFERENT concept from `capacity_density_model.py`'s ~163 km2 single
+-beam footprint): `off_nadir_angle_deg()`, `ground_range_angular_radius_deg()`,
+`ground_range_km()`. **Self-derived formula cross-validated against two
+independently published figures for the 550km shell**: 25deg -> 941km computed vs.
+"~900km" cited; 40deg (kept as `ALT_MIN_ELEVATION_DEG`, a stricter alternative from
+a different source) -> 574km computed vs. "~580km" cited -- both matched closely,
+confirming the derivation before it fed any chart.
+
+**`expected_sats_reaching_latitude()`**: the range-extended satellite-density
+function -- a satellite at latitude L covers [L-R, L+R] where R is ITS OWN shell's
+coverage radius (real shells differ 540-570km, so R differs slightly per shell,
+~927-968km / ~8.3-8.7deg). Implemented as a boxcar convolution (sum, not average)
+of each shell's `expected_sats_by_latitude()` histogram -- deliberately NOT a
+2D (lat x lon) treatment, a stated 1D latitude-marginal simplification consistent
+with this module's other latitude-only treatments (documented in the function's
+own docstring, not hidden). Total across all bins is no longer conserved at 4,408
+(by design -- each satellite now counts toward every bin it can reach, ~17x the
+raw total summed).
+
+**New chart file `charts/satellite_range_coverage.py`** (2 figures, NOT replacing
+`coverage_map.py`'s original overhead-only satellite-density chart):
+1. `satellite_density_by_latitude_with_range.png` -- overhead-only (the original
+   Phase 2 metric) vs. range-extended, same axes, both visible. **~6x difference at
+   peak** (144 overhead vs. 870 range-extended at ~46-52deg) -- and the
+   range-extended curve is visibly SMOOTHED/BROADENED relative to the sharp
+   overhead-only spikes, exactly as expected from convolving with an ~8.5deg-wide
+   window.
+2. `satellite_range_vs_population_by_latitude.png` -- range-extended satellite
+   density overlaid on population-by-latitude, twin y-axis, shared latitude x-axis.
+   **Confirms and sharpens the same finding from the saturation-heatmap section
+   above, from a completely different angle**: population peaks at 26deg (South
+   Asia), satellite reach peaks at 46deg -- a 20-degree gap between where people are
+   and where satellites concentrate, visible directly as two non-aligned peaks on
+   one chart, no model math required to see it.

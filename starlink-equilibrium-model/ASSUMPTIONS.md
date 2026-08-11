@@ -140,6 +140,23 @@ live risk.
 not a navigation system; the cross-check against real orbital period suggests the
 error is small for this project's purposes.
 
+### 11. Minimum elevation angle = 25° (ground coverage radius geometry)
+**Where**: `orbital_geometry.py`, `MIN_ELEVATION_DEG = 25.0`
+**Why it exists**: user asked for satellite coverage RADIUS ("how far to the sides
+can you see"), which requires a minimum usable elevation angle — a user terminal
+can't use a satellite too close to the horizon. 25° is the long-standing, widely-
+cited Starlink minimum. Checked whether the FCC's 2026-04 STA ruling (which lowers
+the minimum to 10-20° for satellites below 500km) supersedes this: it doesn't for
+THIS project's real shells, since Gen1's shells are all ≥540km, above every lowered
+tier. Cross-validated the resulting geometry against two independently published
+figures for the 550km shell (25° → ~941km computed vs. ~900km cited; 40°, kept as
+`ALT_MIN_ELEVATION_DEG`, → ~574km computed vs. ~580km cited) — both matched closely.
+**Impact if wrong**: directly rescales the coverage radius (and therefore the
+range-extended satellite density charts) — a lower elevation angle (as the 2026
+ruling allows for lower shells) would give a LARGER radius; a stricter figure like
+40° gives a ~40% smaller radius. Does not affect any other chart in this project —
+only `charts/satellite_range_coverage.py`'s outputs depend on this constant.
+
 ---
 
 ## Confirmed by the user (locked in, listed for completeness only)
