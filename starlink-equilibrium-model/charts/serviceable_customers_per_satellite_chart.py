@@ -241,12 +241,51 @@ def fig_servable_density_vs_satellites():
     return fig, OUT_ROOT / "servable_density_vs_satellites.png"
 
 
+DENSITY_LINEAR_MAX_SATS = 2_000_000  # same range as the log-log version, for direct comparison
+
+
+def fig_servable_density_vs_satellites_linear():
+    # This curve is a straight proportional line in N (no saturation to size the axis
+    # around, unlike the serviceable-CUSTOMERS charts) -- evenly-spaced points still
+    # matter for a clean linear render, so linspace, not geomspace.
+    sat_counts = np.linspace(0, DENSITY_LINEAR_MAX_SATS, 200)
+    sat_counts[0] = 1.0
+    caps = np.array([scm.effective_density_cap_profile_average(n) for n in sat_counts])
+
+    fig, ax = render.new_figure(figsize=(12, 7.5))
+    ax.plot(sat_counts, caps, color="#d73027", linewidth=2, label="Servable density (Starlink shell profile)")
+
+    base_cap = cdm.max_customer_density_per_km2(cdm.V2_MINI_BEAD_SCENARIO)
+    ax.axhline(base_cap, color="0.3", linestyle="--", linewidth=1.3,
+              label=f"Fixed cap ({base_cap:.2f}/km2)")
+    _add_fleet_reference_lines(ax)
+
+    ax.set_xlim(0, DENSITY_LINEAR_MAX_SATS)
+    ax.set_ylim(0, caps.max() * 1.05)
+    ax.set_xlabel("Total satellites (linear scale)")
+    ax.set_ylabel("Servable population density (people/km2, linear scale)")
+    ax.set_title("Servable population density vs. total satellites, per-satellite cap (Starlink shell profile, linear)")
+    ax.xaxis.set_major_formatter(mticker.FuncFormatter(lambda v, _: f"{v:,.0f}"))
+    ax.yaxis.set_major_formatter(mticker.FuncFormatter(_density_formatter))
+    ax.legend(loc="lower right", fontsize=8.5)
+
+    info_box.add_info_box(
+        ax, fig,
+        "Satellites-overhead-weighted average density ceiling across the real\n"
+        "shell profile (dominated by the 53deg shells, 72% of satellites).\n"
+        + SHELL_RATIO_NOTE + ". " + SOURCE_NOTE,
+        mode="on",
+    )
+    return fig, OUT_ROOT / "servable_density_vs_satellites_linear.png"
+
+
 def figures(grid: pdg.PopulationGrid):
     return [
         ("serviceable_global_per_sat", lambda: fig_serviceable_vs_satellites_global_per_satellite_cap(grid)),
         ("serviceable_global_per_sat_linear",
          lambda: fig_serviceable_vs_satellites_global_per_satellite_cap_linear(grid)),
         ("servable_density_vs_satellites", fig_servable_density_vs_satellites),
+        ("servable_density_vs_satellites_linear", fig_servable_density_vs_satellites_linear),
     ]
 
 

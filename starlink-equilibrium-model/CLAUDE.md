@@ -1517,3 +1517,15 @@ instead of 5 arbitrary ones. `effective_density_cap_at_latitudes()` (the samplin
 helper the first version used) was deleted along with it -- no longer had a caller,
 and per this project's "no dead code" convention, an unused sampling helper doesn't
 get kept around "in case it's useful later."
+
+**Linear version added right after** (user: "Linear version please"):
+`fig_servable_density_vs_satellites_linear()` -> `servable_density_vs_satellites_linear.png`.
+Same x-range as the log-log version (0-2,000,000, for direct comparability) via
+`np.linspace` (not `geomspace` -- this curve has no saturation point to size a
+tighter range around, unlike every other linear chart in this project so far; it's
+an exactly-proportional straight line in N by construction, since it's a weighted
+sum of quantities each proportional to N). Legend placed `loc="lower right"` --
+`"upper left"` collided with the Gen1 reference-line label, which sits right at the
+y-axis on a chart where the line rises from the origin (unlike the serviceable-
+customer charts, where "upper left" is genuinely empty because those curves start
+near zero and only rise slowly at first).
