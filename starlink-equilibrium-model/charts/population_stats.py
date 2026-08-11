@@ -39,7 +39,7 @@ def fig_population_by_latitude(grid: pdg.PopulationGrid):
     centers, pop = pdg.population_by_latitude(grid, bin_width_deg=1.0)
 
     fig, ax = render.new_figure(figsize=(11, 6.5))
-    ax.fill_between(centers, 0, pop, color="#4575b4", alpha=0.85, linewidth=0)
+    ax.bar(centers, pop, width=1.0, align="center", color="#4575b4", alpha=0.85, linewidth=0)
     ax.set_xlabel("Latitude (degrees)")
     ax.set_ylabel("Population")
     ax.set_title("Population vs. latitude")
@@ -66,7 +66,7 @@ def fig_population_by_latitude_horizontal(grid: pdg.PopulationGrid):
     centers, pop = pdg.population_by_latitude(grid, bin_width_deg=1.0)
 
     fig, ax = render.new_figure(figsize=(8.5, 10.5))
-    ax.fill_betweenx(centers, 0, pop, color="#4575b4", alpha=0.85, linewidth=0)
+    ax.barh(centers, pop, height=1.0, align="center", color="#4575b4", alpha=0.85, linewidth=0)
     ax.set_ylabel("Latitude (degrees)")
     ax.set_xlabel("Population")
     ax.set_title("Population vs. latitude (north up)")

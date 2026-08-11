@@ -52,10 +52,10 @@ def fig_satellite_density_with_range(shells: list[og.Shell]):
     ext_total = np.sum(list(ext_by_shell.values()), axis=0)
 
     fig, ax = render.new_figure(figsize=(12, 7))
-    ax.fill_between(centers, 0, ext_total, color="#fdae61", alpha=0.75, linewidth=0,
-                    label="Range-extended (satellites that can REACH this latitude)")
-    ax.fill_between(centers, 0, raw_total, color="#4575b4", alpha=0.9, linewidth=0,
-                    label="Overhead only (sub-satellite point exactly here)")
+    ax.bar(centers, ext_total, width=1.0, align="center", color="#fdae61", alpha=0.75, linewidth=0,
+          label="Range-extended (satellites that can REACH this latitude)")
+    ax.bar(centers, raw_total, width=1.0, align="center", color="#4575b4", alpha=0.9, linewidth=0,
+          label="Overhead only (sub-satellite point exactly here)")
 
     ax.set_xlabel("Latitude (degrees)")
     ax.set_ylabel("Expected satellite count")
@@ -86,7 +86,8 @@ def fig_satellite_range_vs_population(shells: list[og.Shell], grid: pdg.Populati
     pop_centers, pop = pdg.population_by_latitude(grid, bin_width_deg=1.0)
 
     fig, ax1 = render.new_figure(figsize=(12, 7))
-    ax1.fill_between(pop_centers, 0, pop, color="#74add1", alpha=0.6, linewidth=0, label="Population")
+    ax1.bar(pop_centers, pop, width=1.0, align="center", color="#74add1", alpha=0.6, linewidth=0,
+           label="Population")
     ax1.set_xlabel("Latitude (degrees)")
     ax1.set_ylabel("Population")
     ax1.set_xlim(-90, 90)

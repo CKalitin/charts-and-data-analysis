@@ -1675,3 +1675,18 @@ raw total summed).
    Asia), satellite reach peaks at 46deg -- a 20-degree gap between where people are
    and where satellites concentrate, visible directly as two non-aligned peaks on
    one chart, no model math required to see it.
+
+**Follow-up, same day: area fills -> bar charts.** User: the underlying data is
+discretely binned by 1deg latitude (`BIN_WIDTH_DEG = 1.0`, unchanged since Phase 2),
+so a smooth `fill_between`/`fill_betweenx` visually implies continuous
+interpolation between bins that isn't real. Converted to `ax.bar()`/`ax.barh()`
+(`width`/`height=1.0`, `align="center"`) in all 4 charts using this pattern:
+`fig_population_by_latitude()`, `fig_population_by_latitude_horizontal()` (both
+`charts/population_stats.py`), and both figures in
+`charts/satellite_range_coverage.py`. Twin-axis chart 2's satellite curve stays a
+LINE, not bars -- it's the range-EXTENDED (convolved/smoothed) series, and
+bars-on-bars on a twin axis reads worse than bars+line. **Also answered**: 1deg
+binning itself is NOT a listed `ASSUMPTIONS.md` entry -- it's a computational
+resolution choice (`BIN_WIDTH_DEG`), not a real-world numeric assumption the user
+needs to confirm/override, and nothing in this project has tested sensitivity to a
+coarser/finer bin width.
