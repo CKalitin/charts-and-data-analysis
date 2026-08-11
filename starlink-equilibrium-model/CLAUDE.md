@@ -1584,3 +1584,43 @@ One small but correct edge-case surfaced by the chart itself: a thin dark band r
 at ~82.5-83N (just outside the 82.4deg coverage limit) has some population but stays
 permanently at 0% served -- never colored grey (which would wrongly imply zero
 population there) nor yellow (since it's outside every shell's coverage).
+
+## Two follow-ups, same day: log-color heatmap + north-up population chart (2026-08-11)
+
+**1. Log-color heatmap version** ("Make another version of that heatmap with log
+Color map"). The linear 0-100% color scale crushes almost all of the interesting
+low-%-served structure into uniform dark purple -- most of the heatmap's real
+story (0.01% vs 1% vs 10% served) is invisible on a linear scale. Refactored
+`charts/latitude_saturation_heatmap.py` to share a `_draw_saturation_heatmap()`
+helper between two thin figure functions (`log_color=False`/`True`), rather than
+duplicating the pcolormesh/annotation/axis code -- only the norm and colorbar
+ticks/formatter actually differ. `LogNorm` can't take exact 0, so 0%-served cells
+are clipped up to a `LOG_COLOR_FLOOR = 1e-4` (0.01%) before plotting; NaN
+(no-population) cells are masked BEFORE the clip so they stay grey, not
+misrepresented as "0.01% served". Colorbar ticks are explicit + `FuncFormatter`,
+not LogNorm's default formatter -- the same `$\mathdefault{...}$` bug from the
+`charting-and-modeling` skill's edge-case catalog, now hit a second time on a
+colorbar (first time was `population_density_map.py`'s heatmap). **Hit the
+established "overlong info-box line" layout bug a third time** while building this
+-- one line concatenated `SHELL_RATIO_NOTE + SOURCE_NOTE` onto an already-long
+line with no separating `\n`; fixed by giving it its own line, per the same pattern
+now documented twice already above. Output: `latitude_saturation_heatmap_log.png`.
+
+**2. North-up population-by-latitude chart** ("population as the x axis and
+latitude as y axis... humans usually see north as up"). Added
+`fig_population_by_latitude_horizontal()` to `charts/population_stats.py` --
+literally the same data as `fig_population_by_latitude()` (same
+`pdg.population_by_latitude()` call), just `fill_betweenx` instead of
+`fill_between` and the axes swapped; y-axis is latitude ascending (-90 at bottom,
++90 at top) with NO inversion needed, since "north up" is naturally satisfied by
+plain ascending order once latitude is the y-axis (unlike this project's other
+latitude-on-x charts, which all need `invert_xaxis()` to put north on the left).
+**Hit the SAME overlong-info-box-line bug a 4th time**, this time triggered by the
+narrower portrait `figsize=(8.5, 10.5)` (a line that fit fine in the usual
+11-12in-wide landscape figures didn't fit here) -- fixed the same way, explicit
+`\n` per line. Output: `population_by_latitude_horizontal.png`. **Lesson now
+recorded 4 times in this file**: always default new info-box calls to short,
+explicitly-`\n`-wrapped lines (2-4 words each is safest) rather than letting a
+line's length depend on how wide happens to be convenient at the call site --
+narrower figures (portrait charts, multi-panel, etc.) shrink the safe margin
+further than the landscape charts most of this project's history was built with.

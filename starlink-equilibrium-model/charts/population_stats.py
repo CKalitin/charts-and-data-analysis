@@ -59,6 +59,32 @@ def fig_population_by_latitude(grid: pdg.PopulationGrid):
 
 
 # --------------------------------------------------------------------------------------
+# Chart 1b: same data, population on x / latitude on y, north-up -- easier to read at a
+# glance since humans default to "north = up" (a map orientation), not "north = left".
+# --------------------------------------------------------------------------------------
+def fig_population_by_latitude_horizontal(grid: pdg.PopulationGrid):
+    centers, pop = pdg.population_by_latitude(grid, bin_width_deg=1.0)
+
+    fig, ax = render.new_figure(figsize=(8.5, 10.5))
+    ax.fill_betweenx(centers, 0, pop, color="#4575b4", alpha=0.85, linewidth=0)
+    ax.set_ylabel("Latitude (degrees)")
+    ax.set_xlabel("Population")
+    ax.set_title("Population vs. latitude (north up)")
+    ax.set_ylim(-90, 90)  # ascending, north at the top -- no inversion needed (map convention)
+    ax.yaxis.set_major_locator(mticker.MultipleLocator(15))
+    ax.xaxis.set_major_formatter(mticker.FuncFormatter(_pop_formatter))
+
+    peak_lat = centers[pop.argmax()]
+    info_box.add_info_box(
+        ax, fig,
+        f"Peak: {_pop_formatter(pop.max(), None)} at {peak_lat:.0f}deg.\n"
+        f"{grid.n_countries} countries, gridded.\n" + SOURCE_NOTE,
+        mode="on",
+    )
+    return fig, OUT_ROOT / "population_by_latitude_horizontal.png"
+
+
+# --------------------------------------------------------------------------------------
 # Chart 2: population vs. population density, histogram (one figure per region)
 # --------------------------------------------------------------------------------------
 DENSITY_BIN_EDGES = np.logspace(-1, 5.1, 32)  # 0.1 to ~126,000 people/km^2, log-spaced
@@ -109,6 +135,7 @@ def _weighted_median(values: np.ndarray, weights: np.ndarray) -> float:
 def figures(global_grid: pdg.PopulationGrid, us_grid: pdg.PopulationGrid):
     return [
         ("population_by_latitude", lambda: fig_population_by_latitude(global_grid)),
+        ("population_by_latitude_horizontal", lambda: fig_population_by_latitude_horizontal(global_grid)),
         ("density_histogram_global", lambda: fig_population_vs_density_histogram(
             global_grid, "global", "population_vs_density_histogram_global.png")),
         ("density_histogram_us", lambda: fig_population_vs_density_histogram(
