@@ -328,6 +328,47 @@ def capped_population_from_histogram(area_hist: np.ndarray, density_bin_centers:
     return np.sum(area_hist * np.minimum(density_bin_centers[None, :], effective_cap_per_lat[:, None]), axis=1)
 
 
+def served_fraction_by_latitude(total_sats: float, area_hist: np.ndarray, density_bin_centers: np.ndarray,
+                                 lat_centers: np.ndarray, scenario: cdm.CapacityScenario = cdm.V2_MINI_BEAD_SCENARIO,
+                                 base_shells: list[og.Shell] | None = None,
+                                 bin_width_deg: float = BIN_WIDTH_DEG) -> np.ndarray:
+    """Served population as a FRACTION of each latitude band's own raw (uncapped)
+    population, at one N -- the per-band "how saturated is this band" diagnostic
+    behind serviceable_customers_per_satellite_cap()'s aggregate total. NaN (not 0)
+    where a band has zero population, so it reads as "no data" rather than
+    "unserved" in a heatmap. Also returns which constraint bound each band
+    ("supply", "demand", or "" where raw pop is zero) -- useful for diagnosing
+    WHERE the aggregate-capacity bottleneck bites vs. the density-cap one; see the
+    "supply-bound South Asia" finding in CLAUDE.md, found by exactly this split."""
+    base_cap = cdm.max_customer_density_per_km2(scenario)
+    customers_per_sat = cdm.max_customers_per_satellite(scenario)
+    raw_by_band = np.sum(area_hist * density_bin_centers[None, :], axis=1)
+    covered = np.abs(lat_centers) <= max_latitude_covered(base_shells)
+
+    _, sats_overhead = sats_overhead_by_latitude(total_sats, base_shells, bin_width_deg)
+    effective_cap = np.where(covered, base_cap * sats_overhead, 0.0)
+    demand = capped_population_from_histogram(area_hist, density_bin_centers, effective_cap)
+    supply = np.where(covered, sats_overhead * customers_per_sat, 0.0)
+    served = np.minimum(supply, demand)
+    with np.errstate(invalid="ignore", divide="ignore"):
+        return np.where(raw_by_band > 0, served / raw_by_band, np.nan)
+
+
+def sweep_served_fraction_by_latitude(sat_counts, area_hist: np.ndarray, density_bin_centers: np.ndarray,
+                                       lat_centers: np.ndarray,
+                                       scenario: cdm.CapacityScenario = cdm.V2_MINI_BEAD_SCENARIO,
+                                       base_shells: list[og.Shell] | None = None,
+                                       bin_width_deg: float = BIN_WIDTH_DEG) -> np.ndarray:
+    """served_fraction_by_latitude() at each N in sat_counts. Returns shape
+    (len(sat_counts), len(lat_centers)) -- the (N x latitude) grid a saturation
+    heatmap plots directly."""
+    return np.array([
+        served_fraction_by_latitude(n, area_hist, density_bin_centers, lat_centers, scenario, base_shells,
+                                     bin_width_deg)
+        for n in sat_counts
+    ])
+
+
 def serviceable_customers_per_satellite_cap(total_sats: float, area_hist: np.ndarray,
                                              density_bin_centers: np.ndarray, lat_centers: np.ndarray,
                                              scenario: cdm.CapacityScenario = cdm.V2_MINI_BEAD_SCENARIO,

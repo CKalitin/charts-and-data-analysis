@@ -1529,3 +1529,58 @@ sum of quantities each proportional to N). Legend placed `loc="lower right"` --
 y-axis on a chart where the line rises from the origin (unlike the serviceable-
 customer charts, where "upper left" is genuinely empty because those curves start
 near zero and only rise slowly at first).
+
+## Why the serviceable-customers derivative doesn't match the density histogram, and the latitude saturation heatmap (2026-08-11)
+
+User asked why d(serviceable customers)/dN isn't the same shape as the population-
+vs-density histogram, given the servable-density curve is exactly proportional to N.
+Investigated by splitting the per-latitude-band shortfall (`raw pop - served`) by
+WHICH constraint binds, at several N (quick ad hoc script, not saved as a chart):
+
+| N | total shortfall | supply-bound | density-cap-bound |
+|---|---|---|---|
+| 2,000,000 | 2,961M | 2,960M | 1.2M |
+| 3,000,000 | 1,453M | 1,453M | 0M |
+| 5,000,000 | 137M | 137M | 0M |
+
+**Real finding: the density cap stops binding almost everywhere by ~N=2M.** From
+there to full saturation (~N=6M), essentially 100% of the remaining shortfall is
+AGGREGATE-CAPACITY-bound (`customers_per_satellite x satellites_overhead`), which
+has NOTHING to do with per-cell density. The servable-density chart (a single
+satellite-weighted-average number) was never the right quantity to explain this
+tail -- it only describes the density-cap side, and that side stopped mattering long
+before saturation.
+
+**The actual mechanism**: the single most populous 1-degree latitude band on Earth
+is **26.5N** (South Asia -- India/Bangladesh, ~279M people, matches the peak in
+`population_by_latitude_gridded.png` exactly). Real Starlink shells concentrate 72%
+of satellites at **53N**, for reasons unrelated to population. Checked directly:
+aggregate supply at 26.5N reaches only 17% of that band's population at N=1M, 51% at
+N=3M, 98.5% at N=5.8M -- **it takes ~5.8-6M satellites for aggregate capacity over
+ONE latitude band to catch up with its own population**, and that's essentially the
+whole tail of the global curve. Not "spread out," not really "density" either --
+a mismatch between where satellites concentrate (orbital-mechanics-driven) and
+where people actually live (demographics-driven).
+
+**New model functions**: `served_fraction_by_latitude()` / `sweep_served_fraction_by_latitude()`
+in `serviceable_customers_model.py` -- served population as a FRACTION of each
+band's own raw population, at one N (or swept across many N into an (N x latitude)
+grid). NaN (not 0) where a band has zero population, so it reads as "no data" in a
+heatmap rather than "0% served."
+
+**New chart, brainstormed with the user then built on request ("Heat map!")**:
+`charts/latitude_saturation_heatmap.py` -> `results/population/latitude_saturation_heatmap.png`.
+y=latitude, x=satellite count (log), color=% of that band's population served
+(viridis, grey=no population in that band). This is the chart that finally answers
+"why doesn't a map show this" -- it isn't a spatial story, it's a latitude x N
+story. **Visually striking and immediately legible**: near-polar bands (~75-82deg,
+sparse population) turn yellow almost instantly; a slow diagonal "wave" sweeps down
+through the temperate latitudes as N grows; the ~20-30deg band (both hemispheres,
+especially +26N/South Asia) is the very last sliver to turn yellow, right at the
+edge of the plot (~N=6-8M) -- a direct visual match to the numbers above. Annotated
+directly on the chart: dashed reference lines at 53N (shell concentration) and
+26.5N (South Asia peak), plus the existing Gen1/current-fleet vertical lines.
+One small but correct edge-case surfaced by the chart itself: a thin dark band right
+at ~82.5-83N (just outside the 82.4deg coverage limit) has some population but stays
+permanently at 0% served -- never colored grey (which would wrongly imply zero
+population there) nor yellow (since it's outside every shell's coverage).
