@@ -1690,3 +1690,19 @@ binning itself is NOT a listed `ASSUMPTIONS.md` entry -- it's a computational
 resolution choice (`BIN_WIDTH_DEG`), not a real-world numeric assumption the user
 needs to confirm/override, and nothing in this project has tested sensitivity to a
 coarser/finer bin width.
+
+**Second follow-up, same day: orientation fix.** User: "These graphs have flipped
+axis to what I want / North = highest latitude = y axis top." Both
+`charts/satellite_range_coverage.py` figures still used the OLDER latitude-on-x
+(`invert_xaxis()`) convention from Phase 2, unlike `population_by_latitude_horizontal.png`
+which already had it right (built two follow-ups ago). Flipped both to match:
+`ax.bar()` -> `ax.barh()` (portrait `figsize=(9, 11)`, `ax.set_ylim(-90, 90)`, no
+inversion needed -- ascending order already puts north at the top). The twin-axis
+chart needed `ax1.twiny()` instead of `ax1.twinx()` since latitude is now the
+SHARED axis (y) and each series gets its own independent x-axis instead of y --
+satellite series plotted as `ax2.plot(ext_total, sat_centers, ...)` (values first,
+latitude second, matching twiny's x-varies/y-shared convention). Left
+`population_by_latitude_gridded.png` (the original vertical, latitude-on-x chart)
+unchanged -- it already has a correctly-oriented sibling
+(`population_by_latitude_horizontal.png`), so "fixing" it would just create a
+duplicate of that chart under a different name.

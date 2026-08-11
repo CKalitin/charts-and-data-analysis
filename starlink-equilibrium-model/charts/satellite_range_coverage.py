@@ -51,25 +51,24 @@ def fig_satellite_density_with_range(shells: list[og.Shell]):
     raw_total = np.sum(list(raw_by_shell.values()), axis=0)
     ext_total = np.sum(list(ext_by_shell.values()), axis=0)
 
-    fig, ax = render.new_figure(figsize=(12, 7))
-    ax.bar(centers, ext_total, width=1.0, align="center", color="#fdae61", alpha=0.75, linewidth=0,
-          label="Range-extended (satellites that can REACH this latitude)")
-    ax.bar(centers, raw_total, width=1.0, align="center", color="#4575b4", alpha=0.9, linewidth=0,
-          label="Overhead only (sub-satellite point exactly here)")
+    fig, ax = render.new_figure(figsize=(9, 11))
+    ax.barh(centers, ext_total, height=1.0, align="center", color="#fdae61", alpha=0.75, linewidth=0,
+           label="Range-extended (satellites that can REACH this latitude)")
+    ax.barh(centers, raw_total, height=1.0, align="center", color="#4575b4", alpha=0.9, linewidth=0,
+           label="Overhead only (sub-satellite point exactly here)")
 
-    ax.set_xlabel("Latitude (degrees)")
-    ax.set_ylabel("Expected satellite count")
-    ax.set_title("Satellite density by latitude, overhead-only vs. range-extended")
-    ax.set_xlim(-90, 90)
-    ax.invert_xaxis()
-    ax.xaxis.set_major_locator(mticker.MultipleLocator(15))
-    ax.legend(loc="upper left", fontsize=8.5)
+    ax.set_ylabel("Latitude (degrees)")
+    ax.set_xlabel("Expected satellite count")
+    ax.set_title("Satellite density by latitude,\noverhead-only vs. range-extended")
+    ax.set_ylim(-90, 90)  # ascending, north at the top
+    ax.yaxis.set_major_locator(mticker.MultipleLocator(15))
+    ax.legend(loc="lower right", fontsize=8)
 
     info_box.add_info_box(
         ax, fig,
-        f"Coverage radius ~{og.ground_range_km(shells[0].altitude_km):.0f}km per satellite "
+        f"Coverage radius ~{og.ground_range_km(shells[0].altitude_km):.0f}km/satellite "
         f"({og.MIN_ELEVATION_DEG:.0f}deg min. elevation).\n"
-        f"Peak overhead: {raw_total.max():.0f} at {centers[raw_total.argmax()]:.0f}deg. "
+        f"Peak overhead: {raw_total.max():.0f} at {centers[raw_total.argmax()]:.0f}deg.\n"
         f"Peak range-extended: {ext_total.max():.0f} at {centers[ext_total.argmax()]:.0f}deg.\n"
         + SOURCE_NOTE,
         mode="on",
@@ -85,32 +84,31 @@ def fig_satellite_range_vs_population(shells: list[og.Shell], grid: pdg.Populati
     ext_total = np.sum(list(ext_by_shell.values()), axis=0)
     pop_centers, pop = pdg.population_by_latitude(grid, bin_width_deg=1.0)
 
-    fig, ax1 = render.new_figure(figsize=(12, 7))
-    ax1.bar(pop_centers, pop, width=1.0, align="center", color="#74add1", alpha=0.6, linewidth=0,
-           label="Population")
-    ax1.set_xlabel("Latitude (degrees)")
-    ax1.set_ylabel("Population")
-    ax1.set_xlim(-90, 90)
-    ax1.invert_xaxis()
-    ax1.xaxis.set_major_locator(mticker.MultipleLocator(15))
-    ax1.yaxis.set_major_formatter(mticker.FuncFormatter(_pop_formatter))
+    fig, ax1 = render.new_figure(figsize=(9, 11))
+    ax1.barh(pop_centers, pop, height=1.0, align="center", color="#74add1", alpha=0.6, linewidth=0,
+            label="Population")
+    ax1.set_ylabel("Latitude (degrees)")
+    ax1.set_xlabel("Population")
+    ax1.set_ylim(-90, 90)  # ascending, north at the top
+    ax1.yaxis.set_major_locator(mticker.MultipleLocator(15))
+    ax1.xaxis.set_major_formatter(mticker.FuncFormatter(_pop_formatter))
 
-    ax2 = ax1.twinx()
-    ax2.plot(sat_centers, ext_total, color="#d73027", linewidth=2.2, label="Range-extended satellite density")
-    ax2.set_ylabel("Expected satellites reaching this latitude")
-    ax2.set_ylim(0, ext_total.max() * 1.15)
+    ax2 = ax1.twiny()  # shares the y-axis (latitude); independent x-axis on top
+    ax2.plot(ext_total, sat_centers, color="#d73027", linewidth=2.2, label="Range-extended satellite density")
+    ax2.set_xlabel("Expected satellites reaching this latitude")
+    ax2.set_xlim(0, ext_total.max() * 1.15)
 
     h1, lab1 = ax1.get_legend_handles_labels()
     h2, lab2 = ax2.get_legend_handles_labels()
-    ax1.legend(h1 + h2, lab1 + lab2, loc="upper left", fontsize=8.5)
+    ax1.legend(h1 + h2, lab1 + lab2, loc="lower right", fontsize=8)
 
-    ax1.set_title("Population and range-extended satellite density vs. latitude")
+    ax1.set_title("Population and range-extended\nsatellite density vs. latitude")
     peak_pop_lat = pop_centers[pop.argmax()]
     peak_sat_lat = sat_centers[ext_total.argmax()]
     info_box.add_info_box(
         ax1, fig,
-        f"Population peaks at {peak_pop_lat:.0f}deg; satellite reach peaks at {peak_sat_lat:.0f}deg --\n"
-        "different mechanisms (demographics vs. orbital turning points), not correlated.\n"
+        f"Pop. peaks at {peak_pop_lat:.0f}deg; satellite reach peaks at {peak_sat_lat:.0f}deg --\n"
+        "different mechanisms (demographics vs. orbital turning points).\n"
         + SOURCE_NOTE,
         mode="on",
     )
