@@ -93,6 +93,22 @@ def sats_overhead_by_latitude(total_sats: float, base_shells: list[og.Shell] | N
     return centers, np.sum(list(by_shell.values()), axis=0)
 
 
+def sats_reaching_latitude(total_sats: float, base_shells: list[og.Shell] | None = None,
+                            bin_width_deg: float = BIN_WIDTH_DEG):
+    """Like sats_overhead_by_latitude(), but range-extended: counts a satellite
+    toward every latitude band its ground coverage circle reaches (orbital_geometry
+    .expected_sats_reaching_latitude()), not just its own sub-satellite-point band.
+    Valid for the AREAL DENSITY CAP term only -- different satellites reaching the
+    same spot can each independently contribute their own beam allowance, so summing
+    them is correct there. NOT valid for the aggregate per-satellite CAPACITY term
+    (capacity_by_latitude()): a satellite has one finite capacity budget, and
+    counting it toward every latitude it can reach would multiply-count that budget.
+    See CLAUDE.md's "range-extended density cap" section for the full reasoning."""
+    shells = scale_shells_to_total(total_sats, base_shells)
+    centers, by_shell = og.expected_sats_reaching_latitude(shells, bin_width_deg=bin_width_deg)
+    return centers, np.sum(list(by_shell.values()), axis=0)
+
+
 def capacity_by_latitude(total_sats: float, scenario: cdm.CapacityScenario = cdm.V2_MINI_BEAD_SCENARIO,
                           base_shells: list[og.Shell] | None = None, bin_width_deg: float = BIN_WIDTH_DEG):
     """Aggregate simultaneous-customer capacity per latitude band, for total_sats
@@ -109,15 +125,17 @@ def effective_density_cap_by_latitude(total_sats: float, scenario: cdm.CapacityS
                                        base_shells: list[og.Shell] | None = None,
                                        bin_width_deg: float = BIN_WIDTH_DEG):
     """Effective per-area density ceiling (people/km^2) per latitude band, under the
-    per-satellite-cap model: base_cap x satellites overhead that band -- the
-    density-counterpart of capacity_by_latitude() above (which does the same for
-    the aggregate per-satellite capacity cap instead). See the "Per-satellite
-    density cap variant" section below for the full mechanism. Zero outside the
-    union of shells' coverage bands."""
-    centers, sats_overhead = sats_overhead_by_latitude(total_sats, base_shells, bin_width_deg)
+    per-satellite-cap model: base_cap x satellites REACHING that band (range-
+    extended, not overhead-only -- a user can be served by any satellite whose
+    coverage circle reaches them, not just one exactly overhead; see
+    sats_reaching_latitude()'s docstring for why this differs from
+    capacity_by_latitude()'s aggregate term, which stays overhead-only). See the
+    "Per-satellite density cap variant" section below for the full mechanism. Zero
+    outside the union of shells' coverage bands."""
+    centers, sats_reaching = sats_reaching_latitude(total_sats, base_shells, bin_width_deg)
     base_cap = cdm.max_customer_density_per_km2(scenario)
     covered = np.abs(centers) <= max_latitude_covered(base_shells)
-    return centers, np.where(covered, base_cap * sats_overhead, 0.0)
+    return centers, np.where(covered, base_cap * sats_reaching, 0.0)
 
 
 def effective_density_cap_profile_average(total_sats: float,
@@ -126,19 +144,17 @@ def effective_density_cap_profile_average(total_sats: float,
                                            bin_width_deg: float = BIN_WIDTH_DEG) -> float:
     """A single number summarizing effective_density_cap_by_latitude() across the
     WHOLE real shell profile, instead of picking a few representative latitudes:
-    the satellites-overhead-WEIGHTED average density ceiling. Weighting by
-    sats_overhead (not a plain average across latitude bins) means this reflects
-    where the real constellation actually puts its satellites -- dominated by the
-    53deg shells (72% of Gen1), pulled down somewhat by the thinner 70/97.6deg
-    coverage -- "the effective ceiling a typical satellite in this constellation
-    supports," not an arbitrary single-latitude cut."""
-    centers, sats_overhead = sats_overhead_by_latitude(total_sats, base_shells, bin_width_deg)
-    base_cap = cdm.max_customer_density_per_km2(scenario)
-    covered = np.abs(centers) <= max_latitude_covered(base_shells)
-    cap_by_lat = np.where(covered, base_cap * sats_overhead, 0.0)
-    weight = np.where(covered, sats_overhead, 0.0)
-    total_weight = weight.sum()
-    return float((cap_by_lat * weight).sum() / total_weight) if total_weight > 0 else 0.0
+    the cap-WEIGHTED average density ceiling (weighting by cap_by_lat itself, not a
+    separately-recomputed sats_reaching, is equivalent since cap = base_cap x sats --
+    a constant multiple that cancels in the ratio -- and avoids a second, redundant
+    range-extension pass). Weighting this way means the average reflects where the
+    real constellation actually puts its satellites -- dominated by the 53deg shells
+    (72% of Gen1), pulled down somewhat by the thinner 70/97.6deg coverage --
+    "the effective ceiling a typical satellite in this constellation supports," not
+    an arbitrary single-latitude cut."""
+    _, cap_by_lat = effective_density_cap_by_latitude(total_sats, scenario, base_shells, bin_width_deg)
+    total_weight = cap_by_lat.sum()
+    return float((cap_by_lat * cap_by_lat).sum() / total_weight) if total_weight > 0 else 0.0
 
 
 def _lat_bin_edges(bin_width_deg: float):
@@ -340,14 +356,13 @@ def served_fraction_by_latitude(total_sats: float, area_hist: np.ndarray, densit
     ("supply", "demand", or "" where raw pop is zero) -- useful for diagnosing
     WHERE the aggregate-capacity bottleneck bites vs. the density-cap one; see the
     "supply-bound South Asia" finding in CLAUDE.md, found by exactly this split."""
-    base_cap = cdm.max_customer_density_per_km2(scenario)
     customers_per_sat = cdm.max_customers_per_satellite(scenario)
     raw_by_band = np.sum(area_hist * density_bin_centers[None, :], axis=1)
     covered = np.abs(lat_centers) <= max_latitude_covered(base_shells)
 
-    _, sats_overhead = sats_overhead_by_latitude(total_sats, base_shells, bin_width_deg)
-    effective_cap = np.where(covered, base_cap * sats_overhead, 0.0)
+    _, effective_cap = effective_density_cap_by_latitude(total_sats, scenario, base_shells, bin_width_deg)
     demand = capped_population_from_histogram(area_hist, density_bin_centers, effective_cap)
+    _, sats_overhead = sats_overhead_by_latitude(total_sats, base_shells, bin_width_deg)
     supply = np.where(covered, sats_overhead * customers_per_sat, 0.0)
     served = np.minimum(supply, demand)
     with np.errstate(invalid="ignore", divide="ignore"):
@@ -375,14 +390,15 @@ def serviceable_customers_per_satellite_cap(total_sats: float, area_hist: np.nda
                                              base_shells: list[og.Shell] | None = None,
                                              bin_width_deg: float = BIN_WIDTH_DEG) -> float:
     """Like serviceable_customers(), but the areal density cap scales with
-    satellites overhead per latitude band instead of staying fixed -- see the
-    section docstring above for the mechanism and why."""
-    _, sats_overhead = sats_overhead_by_latitude(total_sats, base_shells, bin_width_deg)
-    base_cap = cdm.max_customer_density_per_km2(scenario)
+    satellites REACHING per latitude band (range-extended) instead of staying
+    fixed, while the aggregate capacity term stays overhead-only -- see
+    sats_reaching_latitude()'s docstring and the section docstring above for the
+    mechanism and why the two terms use different satellite counts."""
     covered = np.abs(lat_centers) <= max_latitude_covered(base_shells)
-
-    effective_cap = np.where(covered, base_cap * sats_overhead, 0.0)
+    _, effective_cap = effective_density_cap_by_latitude(total_sats, scenario, base_shells, bin_width_deg)
     demand = capped_population_from_histogram(area_hist, density_bin_centers, effective_cap)
+
+    _, sats_overhead = sats_overhead_by_latitude(total_sats, base_shells, bin_width_deg)
     customers_per_sat = cdm.max_customers_per_satellite(scenario)
     supply = np.where(covered, sats_overhead * customers_per_sat, 0.0)
     return float(np.minimum(supply, demand).sum())
