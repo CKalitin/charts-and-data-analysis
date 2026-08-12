@@ -3,11 +3,13 @@ variant (user request, 2026-08-10). A SEPARATE chart family from
 charts/serviceable_customers_chart.py, not a replacement for it: that file's model
 holds the areal beam-footprint density cap FIXED regardless of satellite count N
 (capacity_density_model.py's original documented assumption). Here the cap scales
-PER SATELLITE instead -- more satellites overhead a latitude band raises the local
-areal ceiling too (N x base_cap), not just the aggregate per-satellite capacity
-ceiling. See serviceable_customers_model.py's "Per-satellite density cap variant"
-section for the full mechanism and why it changes the curve's shape (approaches raw
-population at high N instead of sitting at a permanent ceiling).
+PER SATELLITE instead -- more satellites able to REACH a latitude band (range-
+extended, not overhead-only -- see serviceable_customers_model.sats_reaching_latitude())
+raises the local areal ceiling too (N x base_cap), not just the aggregate
+per-satellite capacity ceiling (which stays overhead-only, unchanged). See
+serviceable_customers_model.py's "Per-satellite density cap variant" section for
+the full mechanism and why it changes the curve's shape (approaches raw population
+at high N instead of sitting at a permanent ceiling).
 
 Both charts here overlay the FIXED-cap curve (dashed) against the new PER-SATELLITE
 -cap curve (solid, same color) so the difference the assumption makes is visible
@@ -206,8 +208,8 @@ def fig_serviceable_vs_satellites_us_per_satellite_cap_linear(us_grid_1km: pdg.P
 
 # --------------------------------------------------------------------------------------
 # Chart 3: servable population DENSITY (not customer count) vs. total satellites --
-# ONE curve for the real Starlink shell profile (satellites-overhead-weighted average
-# across all covered latitudes), not a per-latitude breakout.
+# ONE curve for the real Starlink shell profile (range-extended-satellites-weighted
+# average across all covered latitudes), not a per-latitude breakout.
 # --------------------------------------------------------------------------------------
 def fig_servable_density_vs_satellites():
     sat_counts = np.geomspace(100, 2_000_000, 40)
@@ -233,7 +235,7 @@ def fig_servable_density_vs_satellites():
 
     info_box.add_info_box(
         ax, fig,
-        "Satellites-overhead-weighted average density ceiling across the real\n"
+        "Range-extended-satellites-weighted average density ceiling across the real\n"
         "shell profile (dominated by the 53deg shells, 72% of satellites).\n"
         + SHELL_RATIO_NOTE + ". " + SOURCE_NOTE,
         mode="on",
@@ -271,7 +273,7 @@ def fig_servable_density_vs_satellites_linear():
 
     info_box.add_info_box(
         ax, fig,
-        "Satellites-overhead-weighted average density ceiling across the real\n"
+        "Range-extended-satellites-weighted average density ceiling across the real\n"
         "shell profile (dominated by the 53deg shells, 72% of satellites).\n"
         + SHELL_RATIO_NOTE + ". " + SOURCE_NOTE,
         mode="on",

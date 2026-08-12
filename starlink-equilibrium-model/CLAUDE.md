@@ -1706,3 +1706,83 @@ latitude second, matching twiny's x-varies/y-shared convention). Left
 unchanged -- it already has a correctly-oriented sibling
 (`population_by_latitude_horizontal.png`), so "fixing" it would just create a
 duplicate of that chart under a different name.
+
+## Range-extended satellite counts for the per-satellite density-cap term (2026-08-12)
+
+User asked: "Do we have to regenerate the heatmaps with the new sat FOV?" -- the
+new range-extended satellite-density geometry from the previous session
+(`orbital_geometry.expected_sats_reaching_latitude()`) existed but the
+per-satellite-cap model (`serviceable_customers_model.py`) still computed its
+areal density cap from OVERHEAD-ONLY satellite counts
+(`sats_overhead_by_latitude()`), not the range-extended ones -- an inconsistency
+between the new geometry and the model that uses it. Before touching anything,
+worked out which of the model's TWO satellite-count terms should actually change:
+
+- **Areal density-cap term** (`base_cap x sats`, in `effective_density_cap_by_latitude()`):
+  range-extension is VALID here. Different satellites reaching the same ground
+  spot can each independently contribute their own beam allowance -- that's the
+  whole premise of the per-satellite-cap model (more satellites overhead/reachable
+  = more simultaneous beam capacity available at that spot).
+- **Aggregate capacity term** (`customers_per_satellite x sats`, in
+  `capacity_by_latitude()` and the supply side of `served_fraction_by_latitude()`
+  / `serviceable_customers_per_satellite_cap()`): range-extension is INVALID here.
+  A satellite has ONE finite customer-capacity budget. Counting it toward every
+  latitude its coverage circle reaches (not just its own sub-satellite point)
+  would multiply-count that budget -- the same satellite serving 6,704 customers
+  claimed simultaneously at both 40deg and 50deg, which isn't physically real (a
+  satellite's total capacity is shared across whichever users it actually talks to
+  at once, not duplicated per latitude band it merely CAN reach).
+
+Presented this distinction to the user via `AskUserQuestion`; they confirmed
+"Yes, use range-extended (recommended)" for the density-cap term specifically,
+leaving the capacity term untouched.
+
+**Changes in `serviceable_customers_model.py`**:
+- New `sats_reaching_latitude()` -- thin wrapper around
+  `og.expected_sats_reaching_latitude()`, the range-extended counterpart to the
+  existing `sats_overhead_by_latitude()`. Docstring states the validity split above
+  so a future reader doesn't "fix" the two terms to match each other.
+- `effective_density_cap_by_latitude()` now calls `sats_reaching_latitude()`
+  instead of `sats_overhead_by_latitude()`.
+- `effective_density_cap_profile_average()` simplified: instead of a second,
+  redundant range-extension pass to build its weight array, it now reuses
+  `effective_density_cap_by_latitude()`'s own output as the weight (mathematically
+  identical, since `cap = base_cap x sats` is a constant multiple that cancels in
+  the weighted-average ratio).
+- `serviceable_customers_per_satellite_cap()` and `served_fraction_by_latitude()`
+  (the function driving the saturation heatmaps) both now call
+  `effective_density_cap_by_latitude()` for the demand/density side and keep their
+  own separate, unchanged `sats_overhead_by_latitude()` call for the
+  supply/capacity side -- previously both functions inlined ONE shared
+  `sats_overhead_by_latitude()` call for both terms, which is exactly the
+  conflation this fix corrects.
+
+**Numeric sanity check at N=4,408 (Gen1)**: peak overhead satellite count is
+~144 (at 52.5deg); peak range-extended (reaching) count is ~870 (at 45.5deg,
+shifted -- a wider window pulls the peak toward the broader mid-latitude mass, not
+just the sharpest overhead spike). Range-extended >= overhead everywhere covered,
+as required. `effective_density_cap_profile_average(4408)` moved from a much
+smaller overhead-weighted figure to **~1,464 people/km2** (base cap 2.57/km2 x
+~570, i.e. roughly the range-extended-to-overhead ratio) -- makes the areal
+density cap dramatically less binding than before, which is the physically
+correct direction: a user can be served by ANY satellite whose coverage circle
+reaches them, not only one exactly overhead, so the true local capacity was being
+understated pre-fix.
+
+**Downstream effect on the saturation heatmaps**: confirms the user's implicit
+question -- yes, they needed regenerating, and the answer to "why" is that the
+model itself (not just a display change) was recomputed. Because the density term
+is now far less binding, the heatmaps show saturation happening EARLIER (lower N)
+across most latitude bands than before -- consistent with, and reinforcing, the
+"aggregate-capacity-bound, not density-bound" finding from the previous session's
+heatmap section: with the density cap loosened further, capacity is left as an
+even more clearly dominant bottleneck for the long tail of the curve.
+
+**Regenerated** (all via their normal chart scripts, not by hand):
+`serviceable_customers_vs_satellites_global_per_satellite_cap.png` (+ `_linear`),
+`serviceable_customers_vs_satellites_us_per_satellite_cap.png` (+ `_linear`),
+`servable_density_vs_satellites.png` (+ `_linear`), `latitude_saturation_heatmap.png`,
+`latitude_saturation_heatmap_log.png`. Also fixed now-stale info-box/docstring
+wording in `charts/serviceable_customers_per_satellite_chart.py` that still said
+"satellites-overhead-weighted" for the servable-density chart's averaging --
+updated to "range-extended-satellites-weighted" to match the actual mechanism.
