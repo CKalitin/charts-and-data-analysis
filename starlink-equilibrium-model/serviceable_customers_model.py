@@ -402,6 +402,91 @@ def sweep_served_fraction_by_latitude(sat_counts, area_hist: np.ndarray, density
     ])
 
 
+def capacity_utilization_by_latitude(total_sats: float, area_hist: np.ndarray, density_bin_centers: np.ndarray,
+                                      lat_centers: np.ndarray, scenario: cdm.CapacityScenario = cdm.V3_SCENARIO,
+                                      base_shells: list[og.Shell] | None = None,
+                                      bin_width_deg: float = BIN_WIDTH_DEG) -> np.ndarray:
+    """% of AVAILABLE satellite capacity actually used to serve customers, per
+    latitude band, at one N -- served/supply. A DIFFERENT question from
+    served_fraction_by_latitude()'s served/population: that asks "how much of the
+    population is served," this asks "how much of the satellites' capacity is
+    being used." A band can be 100% served (everyone who wants service has it)
+    while sitting at low utilization (plenty of spare satellite capacity, just not
+    much population to use it), or vice versa.
+
+    "In high density areas, load is shared across all overhead satellites" (user's
+    own framing, 2026-08-14) is exactly what's already happening here: supply =
+    sats_overhead(band) x customers_per_satellite pools every satellite overhead
+    that band into one shared capacity figure -- the same aggregate-capacity
+    mechanism capacity_by_latitude() already uses, not a new allocation rule.
+
+    NaN where a band has zero supply (uncovered -- 0/0 is undefined, not "0%
+    utilized"; matches served_fraction_by_latitude()'s NaN-for-zero-population
+    convention, just on the other side of the ratio)."""
+    customers_per_sat = cdm.max_customers_per_satellite(scenario)
+    _, effective_cap = effective_density_cap_by_latitude(total_sats, scenario, base_shells, bin_width_deg)
+    demand = capped_population_from_histogram(area_hist, density_bin_centers, effective_cap)
+    _, sats_overhead = sats_overhead_by_latitude(total_sats, base_shells, bin_width_deg)
+    supply = sats_overhead * customers_per_sat
+    served = np.minimum(supply, demand)
+    with np.errstate(invalid="ignore", divide="ignore"):
+        return np.where(supply > 0, served / supply, np.nan)
+
+
+def sweep_capacity_utilization_by_latitude(sat_counts, area_hist: np.ndarray, density_bin_centers: np.ndarray,
+                                            lat_centers: np.ndarray,
+                                            scenario: cdm.CapacityScenario = cdm.V3_SCENARIO,
+                                            base_shells: list[og.Shell] | None = None,
+                                            bin_width_deg: float = BIN_WIDTH_DEG) -> np.ndarray:
+    """capacity_utilization_by_latitude() at each N in sat_counts. Returns shape
+    (len(sat_counts), len(lat_centers)) -- same shape convention as
+    sweep_served_fraction_by_latitude(), for a heatmap or a single-N world-map
+    slice."""
+    return np.array([
+        capacity_utilization_by_latitude(n, area_hist, density_bin_centers, lat_centers, scenario, base_shells,
+                                          bin_width_deg)
+        for n in sat_counts
+    ])
+
+
+def capacity_utilization(total_sats: float, area_hist: np.ndarray, density_bin_centers: np.ndarray,
+                          lat_centers: np.ndarray, scenario: cdm.CapacityScenario = cdm.V3_SCENARIO,
+                          base_shells: list[og.Shell] | None = None, bin_width_deg: float = BIN_WIDTH_DEG) -> float:
+    """GLOBAL aggregate utilization at one N: total served / total available
+    capacity. Total supply always equals total_sats x customers_per_satellite
+    EXACTLY -- every satellite is somewhere, and sats_overhead_by_latitude() sums
+    to total_sats across all latitude bands (see its docstring) -- so this reuses
+    serviceable_customers_per_satellite_cap()'s already-tested total-served figure
+    instead of re-summing supply/demand per band from scratch."""
+    served = serviceable_customers_per_satellite_cap(total_sats, area_hist, density_bin_centers, lat_centers,
+                                                       scenario, base_shells, bin_width_deg)
+    total_supply = total_sats * cdm.max_customers_per_satellite(scenario)
+    return served / total_supply if total_supply > 0 else 0.0
+
+
+def sweep_capacity_utilization(sat_counts, area_hist: np.ndarray, density_bin_centers: np.ndarray,
+                                lat_centers: np.ndarray, scenario: cdm.CapacityScenario = cdm.V3_SCENARIO,
+                                base_shells: list[og.Shell] | None = None,
+                                bin_width_deg: float = BIN_WIDTH_DEG) -> np.ndarray:
+    """capacity_utilization() at each N in sat_counts -- the curve for the
+    "utilization vs. total satellites" chart. Verified numerically (2026-08-14,
+    V3_SCENARIO): monotonically DECREASING across the whole practical range, not
+    the rise-then-peak-then-decay hump a first-principles guess might suggest.
+    V3's per-satellite capacity is so large (200,000 customers/satellite) that
+    even N=1 already sits near its highest utilization in this sweep (~95%) --
+    demand is the scarce resource almost everywhere from the very start, not
+    something supply has to "catch up" to. Utilization then decays toward 0% as N
+    grows far past what's needed, since supply grows unbounded and linear in N
+    while demand approaches a bounded ceiling (raw population) as the density cap
+    itself grows with N. Would look different (a genuine rise phase) under a
+    scenario with much smaller per-satellite capacity -- not asserted as universal,
+    just documented as what THIS scenario actually does."""
+    return np.array([
+        capacity_utilization(n, area_hist, density_bin_centers, lat_centers, scenario, base_shells, bin_width_deg)
+        for n in sat_counts
+    ])
+
+
 def serviceable_customers_per_satellite_cap(total_sats: float, area_hist: np.ndarray,
                                              density_bin_centers: np.ndarray, lat_centers: np.ndarray,
                                              scenario: cdm.CapacityScenario = cdm.V3_SCENARIO,

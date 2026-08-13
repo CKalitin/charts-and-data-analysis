@@ -232,6 +232,60 @@ and this project has NOT independently derived which is closer to reality.
 Treat any DENSITY-specific V3 number in this project's output with more caution
 than the AGGREGATE-capacity numbers, until real V3 beam data is published.
 
+### 13. Household size by country — secondary-sourced, 66/217 countries on a regional fallback
+**Where**: `data/household_size_by_country.csv` (built by `build_household_size_dataset.py`),
+used in `country_tam_model.py` to convert addressable population into addressable
+subscriptions (`addressable_subscriptions = addressable_population / household_size`).
+**Why it exists**: TAM is denominated in dollars per SUBSCRIPTION (one per
+household), not per person — the user's own framing ("hence why households /
+subscriptions per person is an important metric"). No such data existed in this
+project before 2026-08-14.
+**Source**: Wikipedia's "List of countries by number of households" (itself a
+compilation of national census/survey figures, one per country, various reference
+years 1994-2023) — 151 of 217 countries matched directly; the other 66 (mostly
+small island states/territories) get a **regional median fallback** computed from
+the region's own directly-sourced countries (same `region` column used throughout
+this project), flagged per-row via a `confidence` column
+(`direct_national_census_or_survey` vs. `regional_median_fallback`) — never
+silently blended. Full detail, including why the UN Population Division's own
+(more authoritative) database wasn't used instead (an interactive portal, not a
+bulk download; a first WebFetch attempt returned an implausible value and was
+caught, not shipped), in `data/household_size_by_country.md`.
+**Not modeled**: businesses, multi-dwelling buildings needing more than one
+connection, or shared/community connections — one household = one subscription,
+uniformly, a real simplification for v1 (the user's own question: "What if it's a
+building/company?" — not yet answered with a separate mechanism).
+**Impact if wrong**: directly, linearly rescales addressable subscriptions (and
+therefore TAM$) for every country — a country using the regional-fallback value
+is more exposed to this than a directly-sourced one. The real range is large
+(regional medians span 2.45-5.24 people/household), so getting this wrong for a
+populous country materially moves that country's TAM.
+
+### 14. TAM pricing rule: existing local price below 20% unconnected, elasticity-derived price above
+**Where**: `country_tam_model.py`, `_country_price()`, `UNCONNECTED_PCT_THRESHOLD = 20.0`.
+**User-specified rule, not derived**: below 20% unconnected, price = the country's
+own existing incumbent price (`_raw_arpu()` — fixed or mobile, same selection logic
+as `equilibrium_model.py`); at/above 20% unconnected, price is instead DERIVED by
+inverting the elasticity curve (`served_population_vs_cost.py`'s
+`cost_pct_from_pct_unconnected()`) using this country's OWN capacity-constrained
+servable-% (from `country_service_model.py`) as the target "% unconnected at this
+price" — i.e., the satellite capacity constraint determines a market-clearing
+price via the demand curve, rather than assuming the existing (presumably
+too-expensive, hence the high unconnected rate) local price would hold.
+**A design choice made, not asked about**: `addressable_population =
+min(unconnected_population, servable_fraction(N) x total_population)` is applied
+identically regardless of which price branch a country falls into — the 20%
+threshold only picks WHICH PRICE to charge, not whether the capacity constraint
+applies. This seemed the only internally-consistent reading, but wasn't a separate
+explicit user decision — worth double-checking if the below-20% branch's numbers
+look off.
+**Impact if wrong**: for elasticity-priced countries specifically, price is only as
+good as the user-specified elasticity anchors themselves (0.75% cost -> 0%
+unconnected, 10% -> 100%, chosen not fit — see `charts/served_population_vs_cost.py`'s
+own docstring) AND this project's own capacity model's servable-% estimate. Errors
+compound: a wrong servable-% feeds a wrong target-%-unconnected, which feeds a
+wrong price via the (already-approximate) elasticity curve.
+
 ---
 
 ## Confirmed by the user (locked in, listed for completeness only)

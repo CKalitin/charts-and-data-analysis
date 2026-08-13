@@ -35,6 +35,37 @@ SOURCE_NOTE = "Source: telecom_market_by_country.md"
 SERVED_COLOR = "#4575b4"
 UNSERVED_COLOR = "#d73027"
 
+# User-specified elasticity anchors (2026-08-09): 0.75% cost -> 0% unconnected, 10%
+# cost -> 100% unconnected, linear in log10(cost%) -- NOT a statistical fit through
+# the scatter data (see fig_pct_unconnected_vs_cost_scatter below for that context).
+# Hoisted to module level (2026-08-14) so country_tam_model.py can invert this SAME
+# curve (cost% -> implied price, given a target %unconnected) without duplicating
+# the anchor values.
+ELASTICITY_X_LO, ELASTICITY_Y_LO = 0.75, 0.0
+ELASTICITY_X_HI, ELASTICITY_Y_HI = 10.0, 100.0
+ELASTICITY_SLOPE = ((ELASTICITY_Y_HI - ELASTICITY_Y_LO)
+                     / (np.log10(ELASTICITY_X_HI) - np.log10(ELASTICITY_X_LO)))
+ELASTICITY_INTERCEPT = ELASTICITY_Y_LO - ELASTICITY_SLOPE * np.log10(ELASTICITY_X_LO)
+
+
+def pct_unconnected_from_cost_pct(cost_pct):
+    """The elasticity curve as originally specified: cost% (of monthly GNI/capita)
+    -> % unconnected. Clipped to [0, 100] -- only meaningful as a 0-100% model
+    between the two anchors."""
+    return np.clip(ELASTICITY_SLOPE * np.log10(cost_pct) + ELASTICITY_INTERCEPT, 0, 100)
+
+
+def cost_pct_from_pct_unconnected(pct_unconnected):
+    """INVERSE of the elasticity curve: given a target % unconnected (e.g. the %
+    of a country's population capacity constraints mean we can't serve), solve for
+    the cost% (of monthly GNI/capita) implied by the SAME log-linear relationship
+    -- "what price would need to prevail for this many people to be priced out."
+    Not separately clipped: pct_unconnected is already in [0, 100] by construction
+    at every call site (100 - a servable fraction in [0, 1]), and the anchors ARE
+    the curve's 0/100 endpoints, so the inverse is well-defined and finite across
+    the whole valid input range with no singularity (log10(0.75) is finite)."""
+    return 10 ** ((np.asarray(pct_unconnected, dtype=float) - ELASTICITY_INTERCEPT) / ELASTICITY_SLOPE)
+
 # Bin edges for cost-as-%-of-monthly-GNI/capita. Irregular/log-ish spacing on
 # purpose -- most countries cluster under 10%, so fine bins there and coarse bins
 # in the long expensive tail keep every bar visually meaningful (a uniform bin width
@@ -158,18 +189,15 @@ def fig_pct_unconnected_vs_cost_scatter(pts):
     # fit: anchored at two chosen points -- 0.75% cost -> 0% unconnected, 10% cost ->
     # 100% unconnected -- linear in log10(cost%), not a regression through the data.
     # Clipped to [0, 100] outside the anchors since the line is only meaningful as a
-    # 0-100% elasticity model between them.
+    # 0-100% elasticity model between them. Constants/formula hoisted to module level
+    # 2026-08-14 (see pct_unconnected_from_cost_pct() above) so country_tam_model.py
+    # can invert this exact curve without duplicating the anchor values.
     log_x = np.log10([p[2] for p in pts])
     y = np.array([p[3] for p in pts])
     r = np.corrcoef(log_x, y)[0, 1]
 
-    ELASTICITY_X_LO, ELASTICITY_Y_LO = 0.75, 0.0
-    ELASTICITY_X_HI, ELASTICITY_Y_HI = 10.0, 100.0
-    e_slope = (ELASTICITY_Y_HI - ELASTICITY_Y_LO) / (np.log10(ELASTICITY_X_HI) - np.log10(ELASTICITY_X_LO))
-    e_intercept = ELASTICITY_Y_LO - e_slope * np.log10(ELASTICITY_X_LO)
-
     x_fit = np.logspace(log_x.min(), log_x.max(), 200)
-    y_fit = np.clip(e_slope * np.log10(x_fit) + e_intercept, 0, 100)
+    y_fit = pct_unconnected_from_cost_pct(x_fit)
     ax.plot(x_fit, y_fit, color="black", linewidth=2, linestyle="--", zorder=5,
            label="Elasticity: 0.75% cost -> 0% unconnected, 10% -> 100%")
 

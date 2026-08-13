@@ -2078,3 +2078,133 @@ edge-case catalog, per the user's explicit "only if 100%, so as to not add
 noise" instruction -- generalized the existing (too-narrow, colorbar-only) skill
 entry to cover ANY log-scaled axis including secondary axes, and added a new
 row for the ordering gotcha.
+
+## Utilization model + charts, per-country servable-%, and a full TAM-in-dollars model (2026-08-14, "the biggest change yet")
+
+User's own framing. Four connected asks in one message, resolved with an
+AskUserQuestion batch (4 questions) before any implementation:
+1. **Household size** -> **real per-country data** (chosen over a global constant
+   or regional tiers).
+2. **Per-country servable-%** -> **full per-country population-by-latitude**
+   weighting (chosen over capital-city or single-average-latitude proxies) --
+   confirmed CHEAP, not expensive, once research showed all 216 per-country
+   WorldPop rasters used to build the global mosaic are already cached locally
+   (`data/raw/worldpop/*_pd_1km.tif`), so no new downloads were needed.
+3. **Utilization world heatmap** -> **accept latitude-striping** (the model is
+   1D/latitude-only; painting the per-band value as horizontal stripes on a world
+   map is an honest rendering of what the model computes, not a simplified 2D
+   result masquerading as one).
+4. **TAM scope** -> user's own custom answer: **price heatmap + a TAM-vs-satellite-
+   count/capacity chart** (not just a single headline $ number).
+
+### New model: capacity UTILIZATION (`serviceable_customers_model.py`)
+Utilization = served/supply (% of available satellite capacity actually used) --
+a DIFFERENT question from the existing served/population "% served." New
+functions: `capacity_utilization_by_latitude()`, `sweep_capacity_utilization_by_latitude()`
+(per-band, for the world-map heatmap), `capacity_utilization()`,
+`sweep_capacity_utilization()` (global aggregate, reuses the already-tested
+`serviceable_customers_per_satellite_cap()` rather than re-deriving supply/demand,
+since total supply always equals `N x customers_per_satellite` exactly).
+
+**Verified numerically before writing a docstring claim about its shape**: guessed
+it would rise-then-peak-then-decay (supply catching up to demand); actual behavior
+under V3 is monotonically DECREASING across the whole practical range -- V3's
+per-satellite capacity (200,000 customers/satellite) is so large that even N=1
+already sits near its highest utilization (~95%) in the sweep. Caught this by
+actually running the sweep before documenting it, not by assuming the
+first-principles guess was right.
+
+**New chart file `charts/satellite_utilization.py`** (3 figures):
+`utilization_vs_satellites.png` (+ `_linear`) -- same "vs. satellite count"
+pattern as the serviceable-customers charts, Tbps secondary axis included.
+`utilization_heatmap_world.png` -- world map, genuine horizontal stripes (see
+decision #3 above), at N=10,900 (today's real fleet size, a concrete default, not
+an arbitrary one) -- reuses `coverage_map.py`'s land-outline basemap + a 1-column
+`pcolormesh` (`lon_edges=[-180,180]`) to render a per-latitude-band value as full-
+width stripes.
+
+### New module: `country_service_model.py` -- per-country servable-%
+`load_all_country_population_by_latitude()` loads each country's own cached
+raster ONCE (a fixed ~217-raster cost, several minutes) and caches its
+population-by-latitude distribution, since that doesn't depend on N.
+`country_servable_fraction()` then weight-averages the already-computed GLOBAL
+`served_fraction_by_latitude(N)` by each country's own distribution -- this
+requires NO new cross-border capacity-allocation logic: the global function
+already reflects capacity shared/competed across every country at a given
+latitude (built from the all-countries-combined population histogram), so a
+country's own number is just a weighted READOUT of that, not a separate
+allocation decision. Verified this lines up correctly (same `_lat_bin_edges()`-
+style bin scheme in both `population_by_latitude()` and
+`served_fraction_by_latitude()`) rather than assuming it.
+
+**Sanity-checked before trusting it**: at every N tested, Australia (sparse,
+concentrated near the 53deg shell band) has the HIGHEST servable-%; India and
+Egypt (dense, competing for the same mid-latitude capacity as everyone else at
+that latitude) have the LOWEST -- exactly matches the "South Asia is supply-
+constrained" finding from the 2026-08-11 saturation-heatmap work, from a
+completely independent code path.
+
+### New dataset: `data/household_size_by_country.csv` / `.md`
+Built by `build_household_size_dataset.py` from Wikipedia's "List of countries by
+number of households" (151/217 countries direct match; 66 on a regional-median
+fallback, flagged per-row via a `confidence` column, region medians span
+2.45-5.24 people/household -- a real, large spread, not a case where a global
+constant would have been fine). Tried the UN Population Division's own database
+first (more authoritative) -- it's an interactive portal, not a bulk download;
+WebFetch returned an implausible value on a first attempt (caught by a sanity
+check, not shipped) and the approach was abandoned in favor of the
+already-compiled Wikipedia table. Full detail, including the ~20 country-name
+mapping overrides needed, in `data/household_size_by_country.md`. New
+**ASSUMPTIONS.md #13**.
+
+### New module: `country_tam_model.py` -- the TAM engine
+Pricing rule (user-specified): **<20% of a country's population unconnected** ->
+price = that country's own existing incumbent price (`charts.affordability._raw_arpu()`,
+reused, not reimplemented -- same fixed/mobile selection `equilibrium_model.py`
+already uses). **>=20% unconnected** -> price is instead DERIVED by inverting the
+elasticity curve: this country's own capacity-constrained servable-% (from
+`country_service_model.py`) becomes the target "% unconnected at this price," fed
+through `cost_pct_from_pct_unconnected()` (see below) to solve for the price that
+would leave exactly that many people priced out. `UNCONNECTED_PCT_THRESHOLD = 20.0`.
+
+`addressable_population = min(unconnected_population, servable_fraction(N) x
+total_population)` -- applied identically regardless of price branch (own design
+decision, flagged in **ASSUMPTIONS.md #14** as not separately confirmed with the
+user). `addressable_subscriptions = addressable_population / household_size`.
+`TAM ($/month) = addressable_subscriptions x price`.
+
+**Hoisted the elasticity curve's anchor constants to module level**
+(`charts/served_population_vs_cost.py`: `ELASTICITY_X_LO/HI`, `ELASTICITY_Y_LO/HI`,
+`pct_unconnected_from_cost_pct()`, and the new inverse `cost_pct_from_pct_unconnected()`)
+instead of duplicating the 0.75%/10% anchor values in the new TAM module -- one
+source of truth for a curve two files now depend on.
+
+**Verified the model produces a sensible, genuinely interesting result, not just
+a number that runs**: at N=4,408 total TAM ~$4.94B/mo; N=10,900 ~$8.35B/mo (RISES,
+more subscribers, prices still high); N=100,000 ~$5.80B/mo (FALLS -- India's
+servable-% jumps to 71%, collapsing its elasticity-derived price from $77.92 to
+$15.20/mo faster than its subscriber count grows). TAM peaking and then declining
+as N grows is a real, economically coherent finding this model can show, not
+something assumed away -- documented in the chart's own info box, not just here.
+
+### New data: `data/raw/ne_110m_admin_0_countries.geojson` + `charts/country_choropleth.py`
+Needed actual per-country BOUNDARY polygons for a choropleth (the existing
+`ne_110m_land.geojson` is land-outline-only, no per-country divisions) --
+downloaded Natural Earth's 110m admin-0 countries file (177 features, MultiPolygon
+geometries, unlike the land file's Polygon-only). New shared loader
+`load_country_paths()` (keyed by `ADM0_A3`, NOT `ISO_A3` -- Natural Earth's
+`ISO_A3` is "-99" for 5 features including Norway and France) + `draw_choropleth()`,
+reusable for any future per-country map. ~50 of 217 telecom-dataset countries have
+no 110m-resolution polygon (small island states, Hong Kong/Macao/Singapore,
+microstates) -- a known, documented limitation of the 110m simplification level,
+shown as grey/missing on the map, not silently dropped from the info box's count.
+
+### New chart file `charts/country_tam_charts.py` (3 figures)
+`subscription_price_by_country_100k.png` -- the requested choropleth, log-color
+by derived monthly USD price, at the user-specified N=100,000.
+`tam_vs_satellites.png` (+ `_linear`) -- total TAM vs. satellite count, Tbps
+secondary axis, explicitly noting the non-monotonic peak in its own info box.
+
+All new/changed model files pass `pyflakes` clean. Regeneration of the
+country-raster-dependent charts takes several minutes (217 raster loads) --
+run once, cached in memory for that process, not re-read per N in a sweep.
