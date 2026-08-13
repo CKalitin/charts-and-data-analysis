@@ -2021,3 +2021,60 @@ verbatim FCC footnote and full reconciled timeline), `ASSUMPTIONS.md` #11
 "directly confirmed from FCC order text"), and `orbital_geometry.py`'s comment
 block. No numeric constants changed -- `MIN_ELEVATION_DEG=25.0` was already
 correct, now on much firmer footing.
+
+## Switched the serviceable-customers model to V3 + added a Tbps secondary axis (2026-08-14)
+
+User: "Let's use V3." New `capacity_density_model.V3_SCENARIO`: real, sourced
+totals (1,024 Gbps downlink / 200 Gbps uplink per satellite, altitude 345km
+midpoint of 330-370km planned) but beam count/beamwidth are NOT publicly
+disclosed for V3 (confirmed absent even in the already-trusted davidveksler.com
+source) -- reused v2 Mini's beam count (16) and beamwidth (1.5deg) as an
+EXPLICIT PLACEHOLDER for the density-cap geometry only. New **ASSUMPTIONS.md
+#12** spells out the asymmetric impact: `max_customers_per_satellite()` (the
+aggregate cap) is UNAFFECTED by the placeholder, since beams-per-satellite and
+Gbps-per-beam only ever appear multiplied together there and that product is
+pinned to V3's real total; `max_customer_density_per_km2()` (the areal cap) IS
+affected, a real flagged uncertainty. All 12 default-parameter sites in
+`serviceable_customers_model.py` switched from `V2_MINI_BEAD_SCENARIO` to
+`V3_SCENARIO`. Explicitly OUT of scope: the earlier Phase 3/5 charts
+(`charts/capacity_density.py`, `charts/population_capacity_overlay.py`) stay on
+v2 Mini -- this switch only touches the serviceable-customers model this
+session has been building.
+
+**Secondary top axis, every "vs. satellite count" chart**: user wants
+satellite count to STAY the bottom (primary) x-axis, with cumulative max
+capacity (Tbps) as a secondary TOP axis on the same chart -- `ax.secondary_xaxis
+("top", functions=(to_tbps, from_tbps))`, added as `_add_capacity_secondary_axis()`
+in the shared helpers module. `gbps_per_sat = downlink_gbps_per_beam x
+beams_per_satellite` is pinned to V3's real 1,024 Gbps total regardless of the
+beam-count placeholder above, so this axis is accurate even where the
+density-cap numbers elsewhere in the same chart carry that caveat. Wired into
+all 6 `serviceable_customers_per_satellite_chart.py` figures and both
+`latitude_saturation_heatmap.py` figures (8 charts total).
+
+**Two-layer bug, both found and fixed the same day (see the charting-and-modeling
+skill's edge-case catalog, updated with both):**
+1. The secondary axis showed literal `$\mathdefault{10^2}$` text -- matplotlib's
+   default log-tick formatter generates mathtext syntax that `viz/render.py`'s
+   project-wide `text.parse_math=False` (set to stop literal `$` in dollar-value
+   labels from being parsed as LaTeX) can't render, so it prints literally
+   instead. Existing project convention (`_format_log_axes()`) already covered
+   this for primary axes; extended the same explicit-FuncFormatter treatment to
+   the new secondary axis.
+2. That fix didn't stick on first regeneration -- traced to a SECOND, previously
+   undocumented cause via a minimal standalone repro: calling `ax.set_xscale
+   ("log")` on the PARENT axis AFTER creating the secondary axis and setting its
+   formatter silently RESETS the secondary axis's formatter back to the broken
+   default (confirmed: identical code with the two calls reordered either
+   reproduces or avoids the bug, nothing else changed). Fixed by moving
+   `_add_capacity_secondary_axis()` to after `ax.set_xscale()`/`set_yscale()` in
+   all 3 affected log-chart functions (the 3 linear-chart functions never call
+   set_xscale, so order didn't matter there).
+
+Both findings were narrowed down to 100% certainty (root cause traced to an
+exact rcParams line + reproduced/toggled with a minimal standalone script, not
+just observed once) before updating the shared charting-and-modeling skill's
+edge-case catalog, per the user's explicit "only if 100%, so as to not add
+noise" instruction -- generalized the existing (too-narrow, colorbar-only) skill
+entry to cover ANY log-scaled axis including secondary axes, and added a new
+row for the ordering gotcha.

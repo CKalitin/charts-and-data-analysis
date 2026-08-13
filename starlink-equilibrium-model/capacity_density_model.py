@@ -51,6 +51,36 @@ V2_MINI_BEAD_SCENARIO = CapacityScenario(
 )
 
 
+# V3 Broadband scenario (2026-08-14, per user request to switch the model to V3). SpaceX's own
+# stated design targets for an UNBUILT generation (see data/satellite_capacity.md): 1,024 Gbps
+# downlink / 200 Gbps uplink PER SATELLITE, altitude 330-370km planned (345km midpoint used).
+# Beam count and beamwidth are NOT publicly disclosed for V3 -- confirmed absent even in
+# cheatsheets.davidveksler.com's detailed V1-V3 comparison (an already-cross-validated source in
+# this project), which explicitly flags beam-level V3 specs as undisclosed. A single tweet-sourced
+# claim of "2,048 beams" surfaced in research but conflicts with this project's own cross-confirmed
+# v2 Mini beam count (16) by more than 100x depending on interpretation, and isn't independently
+# corroborated -- not used here.
+#
+# REUSES v2 Mini's own beam count (16) and beamwidth (1.5deg) as an EXPLICIT, FLAGGED PLACEHOLDER
+# for the density-cap geometry only -- see ASSUMPTIONS.md #12. This placeholder does NOT affect
+# max_customers_per_satellite() (the aggregate cap): beams_per_satellite and downlink_gbps_per_beam
+# only ever appear multiplied together in that calculation, and their product is pinned to V3's REAL
+# total (1,024 Gbps), so the aggregate cap is correct regardless of the true beam count. It DOES
+# affect max_customer_density_per_km2() (the areal cap), which needs one INDIVIDUAL beam's footprint
+# and per-beam capacity -- this is a real, flagged uncertainty for that constraint specifically.
+V3_SCENARIO = CapacityScenario(
+    label="v3_broadband_345km_1.5deg-PLACEHOLDER_20to1_100-20mbps",
+    downlink_gbps_per_beam=1024.0 / 16,  # = 64.0 -- DERIVED (real total / placeholder beam count)
+    uplink_gbps_per_beam=200.0 / 16,     # = 12.5 -- same caveat
+    beams_per_satellite=16,              # PLACEHOLDER -- V3's real beam count is undisclosed
+    altitude_km=345.0,                   # real V3 figure (330-370km planned, midpoint used)
+    beamwidth_deg=1.5,                   # PLACEHOLDER -- V3's real beamwidth is undisclosed
+    contention_ratio=20.0,               # service-side assumption, unchanged across generations
+    min_download_gbps=0.1,
+    min_upload_gbps=0.02,
+)
+
+
 def beam_footprint_area_km2(altitude_km: float, beamwidth_deg: float) -> float:
     """Circular nadir footprint area. A = pi * (tan(beamwidth/2) * altitude)^2."""
     half_angle = np.radians(beamwidth_deg / 2)

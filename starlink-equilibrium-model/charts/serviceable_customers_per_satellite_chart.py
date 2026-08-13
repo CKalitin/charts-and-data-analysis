@@ -36,7 +36,7 @@ import population_density_grid as pdg
 import serviceable_customers_model as scm
 from serviceable_customers_chart import (
     SHELL_RATIO_NOTE, SOURCE_NOTE,
-    _add_fleet_reference_lines, _draw_curve, _format_log_axes, _pop_formatter,
+    _add_capacity_secondary_axis, _add_fleet_reference_lines, _draw_curve, _format_log_axes, _pop_formatter,
 )
 from viz import render, info_box
 
@@ -70,6 +70,8 @@ def fig_servable_density_vs_satellites():
 
     ax.set_xscale("log")
     ax.set_yscale("log")
+    _add_capacity_secondary_axis(ax)  # AFTER set_xscale -- see its docstring: creating this
+    # before the parent's scale is set gets silently reset back to the broken default formatter
     ax.set_xlabel("Total satellites (log scale)")
     ax.set_ylabel("Servable population density (people/km2, log scale)")
     ax.set_title("Servable population density vs. total satellites (Starlink shell profile)")
@@ -103,6 +105,7 @@ def fig_servable_density_vs_satellites_linear():
     fig, ax = render.new_figure(figsize=(12, 7.5))
     ax.plot(sat_counts, caps, color="#d73027", linewidth=2, label="Servable density (Starlink shell profile)")
     _add_fleet_reference_lines(ax)
+    _add_capacity_secondary_axis(ax)
 
     ax.set_xlim(0, DENSITY_LINEAR_MAX_SATS)
     ax.set_ylim(0, caps.max() * 1.05)
@@ -138,6 +141,7 @@ def fig_serviceable_vs_satellites_global(grid: pdg.PopulationGrid):
 
     ax.set_xscale("log")
     ax.set_yscale("log")
+    _add_capacity_secondary_axis(ax)  # AFTER set_xscale -- see its docstring
     ax.set_xlabel("Total satellites (log scale)")
     ax.set_ylabel("Serviceable customers (log scale)")
     ax.set_title("Serviceable customers vs. total satellites -- global")
@@ -167,6 +171,7 @@ def fig_serviceable_vs_satellites_global_linear(grid: pdg.PopulationGrid):
     fig, ax = render.new_figure(figsize=(12, 7.5))
     _draw_curve(ax, sat_counts, served, "#4575b4", "Serviceable customers (global, 1km data)")
     _add_fleet_reference_lines(ax)
+    _add_capacity_secondary_axis(ax)
 
     ax.set_xlim(0, GLOBAL_LINEAR_MAX_SATS)
     ax.set_ylim(0, served.max() * 1.08)
@@ -208,6 +213,7 @@ def fig_serviceable_vs_satellites_us_resolution(us_grid_1km: pdg.PopulationGrid,
 
     ax.set_xscale("log")
     ax.set_yscale("log")
+    _add_capacity_secondary_axis(ax)  # AFTER set_xscale -- see its docstring
     ax.set_xlabel("Total satellites (log scale)")
     ax.set_ylabel("Serviceable customers (log scale)")
     ax.set_title("Serviceable customers vs. total satellites -- US, 1km vs. 100m population data")
@@ -245,6 +251,7 @@ def fig_serviceable_vs_satellites_us_resolution_linear(us_grid_1km: pdg.Populati
     _draw_curve(ax, sat_counts, served_1km, "#4575b4", "Serviceable customers (US, 1km data)")
     _draw_curve(ax, sat_counts, served_100m, "#d73027", "Serviceable customers (US, 100m data)")
     _add_fleet_reference_lines(ax)
+    _add_capacity_secondary_axis(ax)
 
     ax.set_xlim(0, US_LINEAR_MAX_SATS)
     ax.set_ylim(0, max(served_1km.max(), served_100m.max()) * 1.08)

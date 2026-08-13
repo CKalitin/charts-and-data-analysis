@@ -37,6 +37,16 @@ excess satellite capacity at a sparsely-populated latitude (e.g. 80deg) cannot s
 demand at a different, densely-populated latitude (e.g. 30deg), so the min() must be
 taken band-by-band before summing, not on the two global totals (which would let one
 band's surplus paper over another's shortfall).
+
+Capacity scenario: V3 Broadband (`cdm.V3_SCENARIO`), switched from v2 Mini 2026-08-14
+per user request. Every function below defaults to it. V3's TOTAL per-satellite
+capacity (1,024 Gbps downlink) is real, sourced SpaceX data; its beam count and
+beamwidth are NOT publicly disclosed and are placeholdered from v2 Mini's own
+figures -- this affects the DENSITY cap specifically, not the aggregate capacity
+cap (whose result depends only on the real total, not the beam decomposition).
+See ASSUMPTIONS.md #12 for the full caveat. The earlier Phase 3/5 charts
+(`charts/capacity_density.py`, `charts/population_capacity_overlay.py`) are
+UNCHANGED -- still v2 Mini, out of scope for this switch.
 """
 from __future__ import annotations
 
@@ -114,7 +124,7 @@ def sats_reaching_latitude(total_sats: float, base_shells: list[og.Shell] | None
     return centers, np.sum(list(by_shell.values()), axis=0)
 
 
-def capacity_by_latitude(total_sats: float, scenario: cdm.CapacityScenario = cdm.V2_MINI_BEAD_SCENARIO,
+def capacity_by_latitude(total_sats: float, scenario: cdm.CapacityScenario = cdm.V3_SCENARIO,
                           base_shells: list[og.Shell] | None = None, bin_width_deg: float = BIN_WIDTH_DEG):
     """Aggregate simultaneous-customer capacity per latitude band, for total_sats
     split across the real shell geometry. Naturally zero outside the union of
@@ -125,7 +135,7 @@ def capacity_by_latitude(total_sats: float, scenario: cdm.CapacityScenario = cdm
     return centers, sats_overhead * customers_per_sat
 
 
-def effective_density_cap_by_latitude(total_sats: float, scenario: cdm.CapacityScenario = cdm.V2_MINI_BEAD_SCENARIO,
+def effective_density_cap_by_latitude(total_sats: float, scenario: cdm.CapacityScenario = cdm.V3_SCENARIO,
                                        base_shells: list[og.Shell] | None = None,
                                        bin_width_deg: float = BIN_WIDTH_DEG):
     """Effective per-area density ceiling (people/km^2) per latitude band, under the
@@ -144,7 +154,7 @@ def effective_density_cap_by_latitude(total_sats: float, scenario: cdm.CapacityS
 
 
 def effective_density_cap_profile_average(total_sats: float,
-                                           scenario: cdm.CapacityScenario = cdm.V2_MINI_BEAD_SCENARIO,
+                                           scenario: cdm.CapacityScenario = cdm.V3_SCENARIO,
                                            base_shells: list[og.Shell] | None = None,
                                            bin_width_deg: float = BIN_WIDTH_DEG) -> float:
     """A single number summarizing effective_density_cap_by_latitude() across the
@@ -191,7 +201,7 @@ def _capped_population_per_row(density_or_count_chunk: np.ndarray, area_row_km2:
 
 
 def density_capped_population_by_latitude(grid: pdg.PopulationGrid,
-                                           scenario: cdm.CapacityScenario = cdm.V2_MINI_BEAD_SCENARIO,
+                                           scenario: cdm.CapacityScenario = cdm.V3_SCENARIO,
                                            bin_width_deg: float = BIN_WIDTH_DEG):
     """Sum, per 1deg latitude band, of min(actual population, beam-footprint density
     cap x cell area) over every grid cell in that band. Independent of satellite
@@ -210,7 +220,7 @@ def density_capped_population_by_latitude(grid: pdg.PopulationGrid,
 
 
 def density_capped_population_by_latitude_streaming(path,
-                                                      scenario: cdm.CapacityScenario = cdm.V2_MINI_BEAD_SCENARIO,
+                                                      scenario: cdm.CapacityScenario = cdm.V3_SCENARIO,
                                                       bin_width_deg: float = BIN_WIDTH_DEG,
                                                       row_chunk: int = 512, verbose: bool = False):
     """Streaming equivalent of density_capped_population_by_latitude(), for a
@@ -350,7 +360,7 @@ def capped_population_from_histogram(area_hist: np.ndarray, density_bin_centers:
 
 
 def served_fraction_by_latitude(total_sats: float, area_hist: np.ndarray, density_bin_centers: np.ndarray,
-                                 lat_centers: np.ndarray, scenario: cdm.CapacityScenario = cdm.V2_MINI_BEAD_SCENARIO,
+                                 lat_centers: np.ndarray, scenario: cdm.CapacityScenario = cdm.V3_SCENARIO,
                                  base_shells: list[og.Shell] | None = None,
                                  bin_width_deg: float = BIN_WIDTH_DEG) -> np.ndarray:
     """Served population as a FRACTION of each latitude band's own raw (uncapped)
@@ -379,7 +389,7 @@ def served_fraction_by_latitude(total_sats: float, area_hist: np.ndarray, densit
 
 def sweep_served_fraction_by_latitude(sat_counts, area_hist: np.ndarray, density_bin_centers: np.ndarray,
                                        lat_centers: np.ndarray,
-                                       scenario: cdm.CapacityScenario = cdm.V2_MINI_BEAD_SCENARIO,
+                                       scenario: cdm.CapacityScenario = cdm.V3_SCENARIO,
                                        base_shells: list[og.Shell] | None = None,
                                        bin_width_deg: float = BIN_WIDTH_DEG) -> np.ndarray:
     """served_fraction_by_latitude() at each N in sat_counts. Returns shape
@@ -394,7 +404,7 @@ def sweep_served_fraction_by_latitude(sat_counts, area_hist: np.ndarray, density
 
 def serviceable_customers_per_satellite_cap(total_sats: float, area_hist: np.ndarray,
                                              density_bin_centers: np.ndarray, lat_centers: np.ndarray,
-                                             scenario: cdm.CapacityScenario = cdm.V2_MINI_BEAD_SCENARIO,
+                                             scenario: cdm.CapacityScenario = cdm.V3_SCENARIO,
                                              base_shells: list[og.Shell] | None = None,
                                              bin_width_deg: float = BIN_WIDTH_DEG) -> float:
     """Like serviceable_customers(), but the areal density cap scales with
@@ -414,7 +424,7 @@ def serviceable_customers_per_satellite_cap(total_sats: float, area_hist: np.nda
 
 
 def sweep_per_satellite_cap(sat_counts, area_hist: np.ndarray, density_bin_centers: np.ndarray,
-                             lat_centers: np.ndarray, scenario: cdm.CapacityScenario = cdm.V2_MINI_BEAD_SCENARIO,
+                             lat_centers: np.ndarray, scenario: cdm.CapacityScenario = cdm.V3_SCENARIO,
                              base_shells: list[og.Shell] | None = None,
                              bin_width_deg: float = BIN_WIDTH_DEG) -> np.ndarray:
     """Servable-customer count at each N in sat_counts, per-satellite-cap variant.
@@ -428,7 +438,7 @@ def sweep_per_satellite_cap(sat_counts, area_hist: np.ndarray, density_bin_cente
 
 
 def serviceable_customers(total_sats: float, pop_cap_by_lat: tuple[np.ndarray, np.ndarray],
-                           scenario: cdm.CapacityScenario = cdm.V2_MINI_BEAD_SCENARIO,
+                           scenario: cdm.CapacityScenario = cdm.V3_SCENARIO,
                            base_shells: list[og.Shell] | None = None,
                            bin_width_deg: float = BIN_WIDTH_DEG) -> float:
     """Total servable customers for a constellation of total_sats satellites.
@@ -439,7 +449,7 @@ def serviceable_customers(total_sats: float, pop_cap_by_lat: tuple[np.ndarray, n
 
 
 def sweep_from_pop_cap(sat_counts, pop_cap_by_lat: tuple[np.ndarray, np.ndarray],
-                        scenario: cdm.CapacityScenario = cdm.V2_MINI_BEAD_SCENARIO,
+                        scenario: cdm.CapacityScenario = cdm.V3_SCENARIO,
                         base_shells: list[og.Shell] | None = None,
                         bin_width_deg: float = BIN_WIDTH_DEG) -> np.ndarray:
     """Servable-customer count at each N in sat_counts, given an already-computed
@@ -453,7 +463,7 @@ def sweep_from_pop_cap(sat_counts, pop_cap_by_lat: tuple[np.ndarray, np.ndarray]
 
 
 def sweep_serviceable_customers(sat_counts, grid: pdg.PopulationGrid,
-                                 scenario: cdm.CapacityScenario = cdm.V2_MINI_BEAD_SCENARIO,
+                                 scenario: cdm.CapacityScenario = cdm.V3_SCENARIO,
                                  base_shells: list[og.Shell] | None = None,
                                  bin_width_deg: float = BIN_WIDTH_DEG) -> np.ndarray:
     """Servable-customer count at each N in sat_counts, from an in-memory grid."""

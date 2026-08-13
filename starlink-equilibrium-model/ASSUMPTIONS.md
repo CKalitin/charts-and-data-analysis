@@ -200,6 +200,38 @@ downstream (the per-satellite-cap serviceable-customers charts and the latitude
 saturation heatmaps) — does not affect the aggregate-capacity term or any chart
 outside this family.
 
+### 12. V3 density-cap geometry uses v2 Mini's beam count/beamwidth as a placeholder
+**Where**: `capacity_density_model.py`, `V3_SCENARIO` (`beams_per_satellite=16`,
+`beamwidth_deg=1.5`, both copied from `V2_MINI_BEAD_SCENARIO`)
+**Why it exists**: user asked to switch the serviceable-customers model
+(`serviceable_customers_model.py` and its charts — NOT the earlier Phase 3/5
+`capacity_density.py` / `population_capacity_overlay.py` charts, left on v2 Mini)
+to V3. V3's TOTAL per-satellite capacity is real, sourced data (1,024 Gbps
+downlink / 200 Gbps uplink, per `satellite_capacity.md`, cross-confirmed against
+`cheatsheets.davidveksler.com`'s V1-V3 comparison). Its **beam count and
+beamwidth are not publicly disclosed** — confirmed by that same davidveksler.com
+source, which explicitly flags V3 beam-level specs as undisclosed. One single-source
+claim of "2,048 beams" (a tweet quoting SpaceX, via Sawyer Merritt) surfaced during
+research but conflicts with this project's own cross-confirmed v2 Mini beam count
+(16) by two orders of magnitude depending on interpretation, isn't independently
+corroborated, and wasn't used.
+**What was done**: reused v2 Mini's beam count (16) and beamwidth (1.5°) as an
+explicit placeholder, altitude set to V3's own real figure (345km, midpoint of the
+330-370km planned range). `downlink_gbps_per_beam` and `uplink_gbps_per_beam` are
+therefore DERIVED (1024/16 and 200/16), not independently sourced numbers.
+**Impact if wrong — asymmetric, read carefully**: `max_customers_per_satellite()`
+(the aggregate cap driving most of the serviceable-customers charts) is
+**UNAFFECTED** by this placeholder — `beams_per_satellite` and
+`downlink_gbps_per_beam` only ever appear multiplied together in that formula, and
+their product is pinned to V3's real, sourced total (1,024 Gbps), regardless of
+the true beam count. `max_customer_density_per_km2()` (the areal cap, feeding
+`effective_density_cap_by_latitude()` and the per-satellite-cap model's density
+term) **IS directly affected** — a real V3 beam count of, say, 192 or 2,048
+instead of 16 would change the per-beam footprint's implied capacity substantially,
+and this project has NOT independently derived which is closer to reality.
+Treat any DENSITY-specific V3 number in this project's output with more caution
+than the AGGREGATE-capacity numbers, until real V3 beam data is published.
+
 ---
 
 ## Confirmed by the user (locked in, listed for completeness only)

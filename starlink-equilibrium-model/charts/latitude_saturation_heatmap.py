@@ -30,7 +30,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import population_density_grid as pdg
 import serviceable_customers_model as scm
-from serviceable_customers_chart import GEN1_SATS, CURRENT_FLEET_SATS, SHELL_RATIO_NOTE, SOURCE_NOTE
+from serviceable_customers_chart import (
+    GEN1_SATS, CURRENT_FLEET_SATS, SHELL_RATIO_NOTE, SOURCE_NOTE, _add_capacity_secondary_axis,
+)
 from viz import render, info_box
 
 OUT_ROOT = Path(__file__).resolve().parent.parent / "results" / "population"
@@ -78,6 +80,7 @@ def _draw_saturation_heatmap(ax, fig, frac_masked, sat_counts, lat_centers, *, l
     ax.set_xlabel("Total satellites (log scale)")
     ax.set_ylabel("Latitude (degrees)")
     ax.xaxis.set_major_formatter(mticker.FuncFormatter(lambda v, _: f"{v:,.0f}"))
+    _add_capacity_secondary_axis(ax)
     return pcm
 
 
