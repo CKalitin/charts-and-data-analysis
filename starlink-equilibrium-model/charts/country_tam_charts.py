@@ -38,8 +38,10 @@ from serviceable_customers_chart import _add_capacity_secondary_axis, _add_fleet
 from viz import render, info_box
 
 OUT_ROOT = Path(__file__).resolve().parent.parent / "results" / "market"
-TAM_SOURCE_NOTE = ("Source: telecom_market_by_country.md + household_size_by_country.md "
-                    "+ WorldPop pop. density + capacity_density_model.py")
+# Short, explicitly \n-wrapped -- an overlong unwrapped info-box line has repeatedly
+# collapsed constrained_layout in this project (see CLAUDE.md); always prepend "\n"
+# at the call site, never append this inline onto another sentence.
+TAM_SOURCE_NOTE = "Source: telecom_market_by_country.md +\nhousehold_size_by_country.md"
 
 PRICE_MAP_SATS = 100_000  # user-specified N for the price heatmap
 
@@ -116,7 +118,7 @@ def fig_tam_vs_satellites(sat_counts, tam):
         ax, fig,
         f"Peak TAM {_usd_formatter(tam.max(), None)}/mo near N={peak_n:,.0f} --\n"
         "NOT monotonic: rising servable-% can collapse elasticity-derived\n"
-        "prices faster than subscriber growth compensates. " + TAM_SOURCE_NOTE,
+        "prices faster than subscriber growth compensates.\n" + TAM_SOURCE_NOTE,
         mode="on",
     )
     return fig, OUT_ROOT / "tam_vs_satellites.png"
@@ -144,7 +146,7 @@ def fig_tam_vs_satellites_linear(sat_counts, tam):
     info_box.add_info_box(
         ax, fig,
         f"Peak TAM {_usd_formatter(tam.max(), None)}/mo near N={peak_n:,.0f} --\n"
-        "NOT monotonic, see the log version's info box. " + TAM_SOURCE_NOTE,
+        "NOT monotonic, see the log version's info box.\n" + TAM_SOURCE_NOTE,
         mode="on",
     )
     return fig, OUT_ROOT / "tam_vs_satellites_linear.png"

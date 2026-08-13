@@ -2208,3 +2208,18 @@ secondary axis, explicitly noting the non-monotonic peak in its own info box.
 All new/changed model files pass `pyflakes` clean. Regeneration of the
 country-raster-dependent charts takes several minutes (217 raster loads) --
 run once, cached in memory for that process, not re-read per N in a sweep.
+
+**Lesson recurred AGAIN (6th+ time this project) while building these charts**:
+`tam_vs_satellites.png`'s first render squished its axes to ~17% of the figure
+width, title/legend text running off both edges -- the exact `constrained_layout`
+collapse signature. Cause, once again: `TAM_SOURCE_NOTE` was appended directly
+onto the end of another sentence (`"...compensates. " + TAM_SOURCE_NOTE`) instead
+of starting its own `\n`-separated line, producing one ~150-character unwrapped
+line. Fixed the same way every previous occurrence was fixed (explicit `\n`,
+short segments) and shortened `TAM_SOURCE_NOTE` itself. Confirmed the fix with
+`ax.get_position()` before and after (x1: 0.25 -> 0.997) rather than eyeballing
+the image alone, to be certain it was actually resolved, not just visually
+plausible. This is now documented in enough places (CLAUDE.md, more than once)
+that any future recurrence should be treated as a signal to add a lint-style
+guard (e.g. a helper that warns on any info-box string argument over ~80 chars
+without a `\n`) rather than fixing it by hand an 7th time.
