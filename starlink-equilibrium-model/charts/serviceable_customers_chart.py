@@ -1,37 +1,32 @@
-"""Serviceable customers vs. total satellite count -- combines orbital latitude
-density, Phase 3's per-satellite/per-km2 capacity caps, and the WorldPop gridded
-population data into one curve. See serviceable_customers_model.py for the full
-mechanism (local per-latitude-band min of supply vs. demand, then summed).
+"""Shared helpers for the serviceable-customers chart family
+(charts/serviceable_customers_per_satellite_chart.py, charts/latitude_saturation_heatmap.py)
+-- formatting, fleet reference lines, and the "draw one curve + its dashed ceiling
+line" primitive used by every chart in that family. Produces no charts of its own.
 
-Two chart families here:
-  1. Global curve, one resolution (1km -- the only data available worldwide).
-  2. US-only curve, TWO resolutions overlaid (1km vs. 100m) -- shows how much the
-     model's output changes when the underlying population data is finer-grained.
-
-Run: python charts/serviceable_customers_chart.py
+History: this file originally held the FIXED (single-satellite) density-cap model's
+own charts -- the areal beam-footprint density cap held constant regardless of
+constellation size N, capacity_density_model.py's original documented assumption,
+contrasted against the per-satellite (range-extended) model as a dashed reference
+curve. User request (2026-08-13): dropped that comparison from every chart -- a
+cap that never rises past what ONE satellite's beam footprint can deliver,
+regardless of how many satellites actually cover a spot, doesn't reflect how a
+real many-satellite constellation serves an area, so charting it as a live
+"vs." comparison read as misleading rather than illuminating. The per-satellite
+(range-extended, real Starlink FOV geometry) model in
+charts/serviceable_customers_per_satellite_chart.py is now the only charted model;
+this file just keeps the formatting/reference-line helpers both remaining chart
+files share, so they don't drift out of sync with each other.
 """
 from __future__ import annotations
 
-import sys
-from pathlib import Path
-
 import matplotlib.ticker as mticker
-import numpy as np
-
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-
-import population_density_grid as pdg
-import serviceable_customers_model as scm
-from viz import render, info_box
-
-OUT_ROOT = Path(__file__).resolve().parent.parent / "results" / "population"
-SOURCE_NOTE = "Source: WorldPop pop. density + capacity_density_model.py + orbital_geometry.py"
 
 # Known real constellation sizes, for reference lines (see starlink_shells.md / CLAUDE.md).
 GEN1_SATS = 4408
 CURRENT_FLEET_SATS = 10_900
 
 SHELL_RATIO_NOTE = "Real Gen1 shells: 53.0/53.2/70.0/97.6deg"
+SOURCE_NOTE = "Source: WorldPop pop. density + capacity_density_model.py + orbital_geometry.py"
 
 
 def _pop_formatter(x, _pos):
@@ -71,134 +66,3 @@ def _format_log_axes(ax):
     ax.xaxis.set_major_formatter(mticker.FuncFormatter(lambda v, _: f"{v:,.0f}"))
     ax.yaxis.set_major_formatter(mticker.FuncFormatter(_pop_formatter))
     ax.yaxis.set_minor_formatter(mticker.NullFormatter())
-
-
-# --------------------------------------------------------------------------------------
-# Chart 1: global, 1km resolution (log-log, then a linear-axis version of the same data)
-# --------------------------------------------------------------------------------------
-GLOBAL_LINEAR_MAX_SATS = 160_000  # covers the real-shell model's rise + knee + saturation (~125K)
-
-
-def fig_serviceable_vs_satellites_global(grid: pdg.PopulationGrid):
-    sat_counts = np.geomspace(100, 2_000_000, 40)
-    served = scm.sweep_serviceable_customers(sat_counts, grid)
-
-    fig, ax = render.new_figure(figsize=(12, 7.5))
-    _draw_curve(ax, sat_counts, served, "#4575b4", "Serviceable customers (global, 1km data)")
-    _add_fleet_reference_lines(ax)
-
-    ax.set_xscale("log")
-    ax.set_yscale("log")
-    ax.set_xlabel("Total satellites (log scale)")
-    ax.set_ylabel("Serviceable customers (log scale)")
-    ax.set_title("Serviceable customers vs. total satellites -- global")
-    _format_log_axes(ax)
-    ax.legend(loc="lower right", fontsize=8.5)
-
-    max_lat = scm.max_latitude_covered()
-    info_box.add_info_box(
-        ax, fig,
-        f"Ceiling: {_pop_formatter(served[-1], None)} (density-capped population, {max_lat:.0f}deg coverage).\n"
-        f"{SHELL_RATIO_NOTE}. " + SOURCE_NOTE,
-        mode="on",
-    )
-    return fig, OUT_ROOT / "serviceable_customers_vs_satellites_global.png"
-
-
-def fig_serviceable_vs_satellites_global_linear(grid: pdg.PopulationGrid):
-    # Evenly-spaced sat_counts (NOT geomspace) -- a linear axis needs even point density
-    # across the visible range, unlike the log chart above where log-spaced points look
-    # even. Range sized to the real-shell model's own saturation point (see constant).
-    sat_counts = np.linspace(0, GLOBAL_LINEAR_MAX_SATS, 200)
-    sat_counts[0] = 1.0  # 0 satellites is undefined for the orbital-density calc
-    served = scm.sweep_serviceable_customers(sat_counts, grid)
-
-    fig, ax = render.new_figure(figsize=(12, 7.5))
-    _draw_curve(ax, sat_counts, served, "#4575b4", "Serviceable customers (global, 1km data)")
-    _add_fleet_reference_lines(ax)
-
-    ax.set_xlim(0, GLOBAL_LINEAR_MAX_SATS)
-    ax.set_ylim(0, served.max() * 1.08)
-    ax.set_xlabel("Total satellites (linear scale)")
-    ax.set_ylabel("Serviceable customers (linear scale)")
-    ax.set_title("Serviceable customers vs. total satellites -- global (linear)")
-    ax.xaxis.set_major_formatter(mticker.FuncFormatter(lambda v, _: f"{v:,.0f}"))
-    ax.yaxis.set_major_formatter(mticker.FuncFormatter(_pop_formatter))
-    ax.legend(loc="lower right", fontsize=8.5)
-
-    max_lat = scm.max_latitude_covered()
-    info_box.add_info_box(
-        ax, fig,
-        f"Ceiling: {_pop_formatter(served[-1], None)} (density-capped population, {max_lat:.0f}deg coverage).\n"
-        f"{SHELL_RATIO_NOTE}. " + SOURCE_NOTE,
-        mode="on",
-    )
-    return fig, OUT_ROOT / "serviceable_customers_vs_satellites_global_linear.png"
-
-
-# --------------------------------------------------------------------------------------
-# Chart 2: US only, 1km vs. 100m population data, overlaid -- resolution sensitivity
-# --------------------------------------------------------------------------------------
-US_100M_CACHE = pdg.WORLDPOP_DIR / "_us_100m_pop_cap_by_lat.npz"
-
-
-def fig_serviceable_vs_satellites_us_resolution(us_grid_1km: pdg.PopulationGrid,
-                                                 pop_cap_100m: tuple[np.ndarray, np.ndarray]):
-    sat_counts = np.geomspace(100, 2_000_000, 40)
-    served_1km = scm.sweep_serviceable_customers(sat_counts, us_grid_1km)
-    served_100m = scm.sweep_from_pop_cap(sat_counts, pop_cap_100m)
-
-    fig, ax = render.new_figure(figsize=(12, 7.5))
-    _draw_curve(ax, sat_counts, served_1km, "#4575b4", "Serviceable customers (US, 1km data)")
-    _draw_curve(ax, sat_counts, served_100m, "#d73027", "Serviceable customers (US, 100m data)")
-    _add_fleet_reference_lines(ax)
-
-    ax.set_xscale("log")
-    ax.set_yscale("log")
-    ax.set_xlabel("Total satellites (log scale)")
-    ax.set_ylabel("Serviceable customers (log scale)")
-    ax.set_title("Serviceable customers vs. total satellites -- US, 1km vs. 100m population data")
-    _format_log_axes(ax)
-    ax.legend(loc="lower right", fontsize=8.5)
-
-    ceil_1km, ceil_100m = served_1km[-1], served_100m[-1]
-    pct_diff = 100 * (ceil_100m - ceil_1km) / ceil_1km
-    info_box.add_info_box(
-        ax, fig,
-        f"Ceilings: 1km {_pop_formatter(ceil_1km, None)}, 100m {_pop_formatter(ceil_100m, None)} ({pct_diff:+.0f}%).\n"
-        f"Same satellite-capacity curve; only pop. data resolution differs. " + SOURCE_NOTE,
-        mode="on",
-    )
-    return fig, OUT_ROOT / "serviceable_customers_vs_satellites_us_1km_vs_100m.png"
-
-
-def figures(grid: pdg.PopulationGrid):
-    return [
-        ("serviceable_global", lambda: fig_serviceable_vs_satellites_global(grid)),
-        ("serviceable_global_linear", lambda: fig_serviceable_vs_satellites_global_linear(grid)),
-    ]
-
-
-def main():
-    grid = pdg.load_or_build_grid()
-    plan = figures(grid)
-    for name, build in plan:
-        fig, path = build()
-        render.save_fig(fig, path)
-        print(f"  wrote {path.relative_to(Path(__file__).resolve().parent.parent)}")
-    print(f"wrote {len(plan)} charts")
-
-    if US_100M_CACHE.exists():
-        us_grid_1km = pdg.load_country_density_grid("USA")
-        cached = np.load(US_100M_CACHE)
-        pop_cap_100m = (cached["centers"], cached["pop_cap"])
-        fig, path = fig_serviceable_vs_satellites_us_resolution(us_grid_1km, pop_cap_100m)
-        render.save_fig(fig, path)
-        print(f"  wrote {path.relative_to(Path(__file__).resolve().parent.parent)}")
-    else:
-        print(f"  skipped US 1km-vs-100m chart: {US_100M_CACHE} not found yet "
-              f"(run serviceable_customers_model.density_capped_population_by_latitude_streaming first)")
-
-
-if __name__ == "__main__":
-    main()

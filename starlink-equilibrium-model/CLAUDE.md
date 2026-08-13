@@ -1809,3 +1809,69 @@ Verified no other file in the project referenced this function or filename
 (`charts/population_capacity_overlay.py` has an unrelated same-named function that
 writes a different chart, `population_by_latitude_served_unserved.png`, to
 `results/capacity/` -- left untouched, not part of this cleanup).
+
+## Retired the fixed (single-satellite) density-cap model from every chart (2026-08-13)
+
+User: "We have too many servicable density graphs" -- asked for exactly 3 chart
+pairs (log + linear each, 6 files total): density vs. satellites, global customers
+vs. satellites, US 1km-vs-100m customers vs. satellites. Also, explicitly: "No fake
+single-satellite density cap's either" -- the FIXED-cap model (areal beam-footprint
+density cap held constant regardless of constellation size N,
+`capacity_density_model.py`'s original documented assumption) had been charted
+throughout this project as a dashed "vs." comparison against the newer per-satellite
+(range-extended) model. The user's point: holding the density ceiling at what ONE
+satellite's beam footprint can deliver, no matter how many satellites actually cover
+a spot, doesn't reflect how the real constellation works -- charting it as a live
+comparison read as implying it was an equally valid alternative, not what it is.
+
+**Consolidated from 11 chart files down to 6** (all under
+`charts/serviceable_customers_per_satellite_chart.py` now, single source of truth):
+1. `servable_density_vs_satellites.png` / `_linear.png`
+2. `serviceable_customers_vs_satellites_global.png` / `_linear.png`
+3. `serviceable_customers_vs_satellites_us_1km_vs_100m.png` / `_linear.png`
+
+Deleted (superseded, `git rm`'d): the old fixed-cap-only
+`serviceable_customers_vs_satellites_global.png`/`_linear.png`/`_us_1km_vs_100m.png`
+content (filenames REUSED by the per-satellite model's output, not deleted as
+filenames -- see below), plus the now-redundant
+`serviceable_customers_vs_satellites_global_per_satellite_cap.png`/`_linear.png`
+and `_us_per_satellite_cap.png`/`_linear.png` (their content moved to the reused
+filenames above, `_per_satellite_cap` suffix dropped since it's the only model now).
+
+**`charts/serviceable_customers_chart.py` gutted to a shared-helpers-only module**
+(no more `figures()`/`main()`/PNG output of its own) -- kept because
+`charts/latitude_saturation_heatmap.py` and the per-satellite chart file both still
+import its formatting/reference-line helpers (`_pop_formatter`,
+`_add_fleet_reference_lines`, `_draw_curve`, `_format_log_axes`, `GEN1_SATS`,
+`CURRENT_FLEET_SATS`, `SHELL_RATIO_NOTE`, `SOURCE_NOTE`); its docstring now explains
+the retirement instead of describing charts it no longer produces.
+
+**`charts/serviceable_customers_per_satellite_chart.py` rewritten**: every dashed
+fixed-cap comparison curve, `CAP_NOTE`, and the density chart's "Fixed cap" `axhline`
+removed. Global/US customer charts now show ONE real curve each (US chart still has
+its two legitimate curves -- 1km vs. 100m population data resolution, a genuine
+data-quality comparison, not a fake-vs-real model comparison). Info boxes reworded
+to reference each curve's own raw-population ceiling (a true asymptote, not a
+"cap") instead of the old fixed-cap ceiling number. Also dropped the now-unused
+`US_100M_POP_CAP_CACHE` dependency (`_us_100m_pop_cap_by_lat.npz`, only ever fed the
+fixed model's `sweep_from_pop_cap`) -- only `US_100M_DENSITY_HIST_CACHE`
+(`_us_100m_density_area_hist.npz`) is needed now.
+
+**Explicitly verified "everything uses the new FOV model"** while doing this (the
+user's other ask): grepped every caller of `sats_overhead_by_latitude` vs.
+`sats_reaching_latitude` across the project. Confirmed `effective_density_cap_by_latitude()`
+(the density term, used by every remaining chart via `sweep_per_satellite_cap()` /
+`effective_density_cap_profile_average()`) is range-extended
+(`sats_reaching_latitude()`, Starlink's real ~25deg min-elevation FOV geometry);
+`capacity_by_latitude()` (the aggregate term) stays overhead-only, correctly, since
+that's a different, unaffected constraint. `charts/satellite_range_coverage.py`'s
+two figures already used the range-extended geometry directly (not through the
+demand model) since the session that built them -- unaffected either way. The
+FIXED model's own functions in `serviceable_customers_model.py`
+(`serviceable_customers()`, `sweep_serviceable_customers()`, `sweep_from_pop_cap()`,
+`density_capped_population_by_latitude()` + its streaming variant) were left in
+place, not deleted -- they're still a legitimate, well-documented alternate
+scenario (the X-Lab paper's own original assumption) and the module's own
+`if __name__ == "__main__":` demo still calls `sweep_serviceable_customers()` for a
+quick CLI table; they're just no longer charted, which is what "fake" meant here --
+charted as if a live comparison, not the code existing at all.
