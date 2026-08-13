@@ -142,6 +142,14 @@ error is small for this project's purposes.
 
 ### 11. Minimum elevation angle = 25° (ground coverage radius geometry)
 **Where**: `orbital_geometry.py`, `MIN_ELEVATION_DEG = 25.0`
+**Clarification (added 2026-08-13, was unclear before)**: this is the GROUND
+TERMINAL's (the user's dish's) angle, not the satellite's — measured at the dish,
+between its local horizon and the line of sight up to the satellite. A different
+quantity from the satellite's own off-nadir/look angle (`off_nadir_angle_deg()`).
+Confirmed from Geoff Huston's source slide, titled "Looking Up," and from
+Starlink's own dish diagnostic tool reporting a `direction_elevation` field —
+elevation is something the dish measures, not a satellite-side spec. Full detail
+in `data/starlink_coverage_geometry.md`.
 **Why it exists**: user asked for satellite coverage RADIUS ("how far to the sides
 can you see"), which requires a minimum usable elevation angle — a user terminal
 can't use a satellite too close to the horizon. 25° is the long-standing, widely-
@@ -151,11 +159,33 @@ THIS project's real shells, since Gen1's shells are all ≥540km, above every lo
 tier. Cross-validated the resulting geometry against two independently published
 figures for the 550km shell (25° → ~941km computed vs. ~900km cited; 40°, kept as
 `ALT_MIN_ELEVATION_DEG`, → ~574km computed vs. ~580km cited) — both matched closely.
+**Sourcing, dug deeper 2026-08-13 (user pushback: "that 25 degree number is not
+official from Huston, unless it cites a source but I can't see one")**: correct —
+re-checked Huston's slides directly and confirmed 25° has NO visible citation
+there, stated as a bare fact. Traced one level deeper to Shkelzen Cakaj, *"The
+Parameters Comparison of the 'Starlink' LEO Satellites Constellation for
+Different Orbital Shells,"* Frontiers in Communications and Networks, vol. 2,
+article 643095 (2021) — an actual peer-reviewed paper, which states SpaceX
+petitioned the FCC in 2020 to lower the minimum elevation angle from 40° (the
+original "designed horizon plane" figure for the 550km shell) to 25° "to improve
+reception." That paper's own citation for both numbers is "Starlink (2020)" —
+i.e. it traces to SpaceX's own 2020 FCC filing materials, not an independent
+academic derivation. Did not pull the raw FCC docket itself in this pass
+(candidate URLs identified, not opened). **So: a real, well-attested operational
+figure, not something invented for this project, but its root source is SpaceX's
+own filing, not a third-party measurement** — same confidence tier as other
+SpaceX-sourced figures in `satellite_capacity.md`. Full chain in
+`data/starlink_coverage_geometry.md`.
 **Impact if wrong**: directly rescales the coverage radius (and therefore the
-range-extended satellite density charts) — a lower elevation angle (as the 2026
-ruling allows for lower shells) would give a LARGER radius; a stricter figure like
-40° gives a ~40% smaller radius. Does not affect any other chart in this project —
-only `charts/satellite_range_coverage.py`'s outputs depend on this constant.
+range-extended satellite density charts and the per-satellite density-cap model's
+density term) — a lower elevation angle (as the 2026 ruling allows for lower
+shells) would give a LARGER radius; a stricter figure like 40° gives a ~40%
+smaller radius. Affects `charts/satellite_range_coverage.py`'s outputs directly,
+plus (as of 2026-08-12) `serviceable_customers_model.py`'s
+`sats_reaching_latitude()` / `effective_density_cap_by_latitude()` and everything
+downstream (the per-satellite-cap serviceable-customers charts and the latitude
+saturation heatmaps) — does not affect the aggregate-capacity term or any chart
+outside this family.
 
 ---
 

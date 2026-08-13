@@ -3,6 +3,10 @@
 Companion to [`starlink_shells.csv`](starlink_shells.csv). Follows the citation
 convention from `Reflect-Orbital/sso-land-proximity/data/reflect_orbital_sources.md`
 and `telecom_market_by_country.md`: every figure is cited with a confidence note.
+For ground-coverage RADIUS (how far to the sides a satellite can serve a user) and
+the minimum-elevation-angle sourcing behind it, see the separate
+[`starlink_coverage_geometry.md`](starlink_coverage_geometry.md) — a different
+question from this file's shell/plane/inclination geometry.
 
 Researched 2026-08-09 via web search — no bulk machine-readable source exists for
 this (unlike the Phase 1 telecom data), so this is a hand-compiled table from

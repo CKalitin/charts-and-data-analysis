@@ -1875,3 +1875,107 @@ scenario (the X-Lab paper's own original assumption) and the module's own
 `if __name__ == "__main__":` demo still calls `sweep_serviceable_customers()` for a
 quick CLI table; they're just no longer charted, which is what "fake" meant here --
 charted as if a live comparison, not the code existing at all.
+
+## Fixed a real bug: spurious 0%-served band at 82-83deg on the saturation heatmap (2026-08-13)
+
+User spotted a purple (near-0%) horizontal bar around 81-82deg on the latitude
+saturation heatmap and correctly called it erroneous. Root cause, found by
+numerically dumping `served_fraction_by_latitude()`'s inputs latitude-by-latitude
+near the boundary: `capacity_by_latitude()`, `effective_density_cap_by_latitude()`,
+`served_fraction_by_latitude()`, and `serviceable_customers_per_satellite_cap()`
+all applied a hard `covered = abs(centers) <= max_latitude_covered()` mask (82.4deg,
+the near-polar shell's true limit) ON TOP OF the already-correctly-bounded
+satellite-count data. The 1deg bin centered at 82.5 (spanning 82.0-83.0) has its
+CENTER just past the 82.4 cutoff, so the mask zeroed the ENTIRE bin -- even though
+its lower half (82.0-82.4) is genuinely reachable, has real satellite overhead
+(verified: 7.2 sats at N=4,408, growing to 13,120 at N=8M) AND real population
+(913 people, from the WorldPop grid). Result: that one bin showed 0% served at
+EVERY N, when it should show ~100% (same as its neighbors).
+
+**The fix, not a patch**: `og.latitude_density()` computes
+`lat = degrees(arcsin(sin(i) * sin(u)))`, and `|arcsin(x)| <= 90` with
+`|sin(i)*sin(u)| <= sin(i)` ALWAYS holds exactly (an identity, not a statistical
+approximation from the Monte Carlo sampling) -- so `sats_overhead_by_latitude()`
+and `sats_reaching_latitude()` are ALREADY exactly zero-bounded to each shell's
+true coverage limit, with no separate mask needed. Confirmed numerically: the
+83.5 bin (fully beyond 82.4) shows `overhead=0.000` at every N tested, exactly as
+expected with no mask at all. **Removed the redundant-and-wrong `covered` masking
+entirely** from all 4 functions above, instead of trying to hand-tune a
+bin-edge-aware cutoff -- the natural data was already correct, the mask was the
+only thing making it wrong. Deleted `max_latitude_covered()` itself too (zero
+remaining callers after the fix, confirmed via repo-wide grep).
+
+Verified the fix numerically before touching any chart: at N=4,408/100K/8M, the
+82.5 bin now reads `frac=1.0` (was `0.0`); the 83.5 bin correctly still reads
+`0.0` (genuinely beyond the polar shell's reach, not a bug); 84.5+ correctly reads
+NaN (no population there, greys out on the heatmap, not "unserved"). Regenerated
+`latitude_saturation_heatmap.png`/`_log.png` (visually confirmed the purple bar is
+gone) and, for consistency, the per-satellite-cap serviceable-customers charts
+(numbers moved negligibly -- the US charts came out byte-identical, since the US
+grid has no population above ~72degN, well short of the affected 82-83deg band).
+
+Left `lat_centers` in `served_fraction_by_latitude()`'s and
+`serviceable_customers_per_satellite_cap()`'s signatures even though neither
+function consumes it internally anymore (it was only ever used to build the now-
+deleted mask) -- every caller already has the array on hand from the same
+histogram call, and removing the parameter would mean touching 6 call sites across
+2 chart files for a purely cosmetic gain. Documented in both functions'
+docstrings so it doesn't read as an oversight.
+
+## Deleted the original Phase 2 satellite-density-by-latitude chart (2026-08-13)
+
+Same "delete the old, less-complete chart once a better one exists" pattern as
+the `population_by_latitude_gridded.png` deletion earlier this session. Found via
+a repo-wide audit (compared every `OUT_ROOT / "...png"` filename referenced in
+`charts/*.py` against what's actually inside `results/*/`): `charts/coverage_map.py`'s
+`fig_satellite_density_by_latitude()` produced `results/coverage/satellite_density_by_latitude.png`
+-- Phase 2's original overhead-only, per-shell-stacked chart. Now that
+`charts/satellite_range_coverage.py`'s `satellite_density_by_latitude_with_range.png`
+(built this session) shows the same overhead-only total AND the range-extended
+total overlaid, the old chart's only remaining unique content was the per-shell
+color breakdown -- judged not worth keeping a whole separate, now-partially-
+redundant chart file for. Deleted the function, its `figures()` entry, the PNG,
+and the now-unused `mticker` import; `fig_coverage_bands()` (the world-map chart,
+unaffected) and its shared `INCLINATION_COLORS` dict stay.
+
+## Deepened the 25deg minimum-elevation-angle sourcing + new sources doc (2026-08-13)
+
+User pushed back on the citation: "That 25 degree number is not official from
+Huston, unless it cites a source but I can't see one, look harder into it." Then,
+before a response was ready: "Ah I found the source in the paper." Re-fetched and
+extracted raw text from Geoff Huston's actual PDF slides (not just a summary) to
+confirm: correct, slide 5 states the 25deg figure as a bare fact with no visible
+citation. Traced one level deeper to Shkelzen Cakaj's 2021 Frontiers in
+Communications and Networks paper (peer-reviewed, unlike Huston's conference
+slides) -- it explicitly covers both 25deg and 40deg for the 550km shell and
+states SpaceX petitioned the FCC in 2020 to lower the angle from 40 to 25deg "to
+improve reception." That paper's own citation for both numbers is just "Starlink
+(2020)" -- one more level down than this project had previously gone, landing on
+SpaceX's own FCC filing materials as the ultimate root, not an independent
+measurement. Also checked eoPortal (a common secondary source in this space) for
+an independent citation -- it doesn't mention elevation angle at all. Did not open
+the raw FCC docket itself this pass (candidate URLs identified in
+`data/starlink_coverage_geometry.md`, not fetched).
+
+**Also answered, unprompted but clearly needed**: "Is that elevation angle for
+the dish or the satellite?" It's the ground terminal's (the user's dish's) angle,
+not the satellite's -- confirmed two ways from Huston's own slides: the relevant
+slide is titled "Looking Up" (the ground-terminal perspective), and a later slide
+shows live output from Starlink's own dish diagnostic CLI tool reporting a
+`direction_elevation` field -- elevation is something the DISH measures and
+reports, not a satellite-side spec. This is a genuinely different quantity from
+the satellite's own off-nadir/look angle (`off_nadir_angle_deg()` in
+`orbital_geometry.py`), which was already correctly implemented as the
+satellite-side angle -- only the naming/explanation was ambiguous, not the math.
+
+**New file**: `data/starlink_coverage_geometry.md` -- full citation chain (Huston
+slides -> Cakaj 2021 paper -> "Starlink (2020)"), the dish-vs-satellite
+clarification with its two pieces of evidence, and the coverage-radius cross-
+validation numbers, in the same citation-heavy style as `satellite_capacity.md`
+and `starlink_shells.md`. Added a one-line cross-reference from
+`starlink_shells.md` (shell/plane geometry is a different question from coverage
+radius, kept as separate files rather than merged). Updated `ASSUMPTIONS.md` #11
+and `orbital_geometry.py`'s module-level comment block with the same deepened
+chain and clarification -- no numeric constants changed (`MIN_ELEVATION_DEG`
+stays 25.0), this was a sourcing/documentation correction, not a model fix, so no
+charts needed regenerating from this part of the work.

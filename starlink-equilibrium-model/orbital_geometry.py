@@ -171,12 +171,14 @@ def expected_sats_by_latitude(shells: list[Shell], bin_width_deg: float = 1.0):
 # ==========================================================================================
 # Ground coverage radius ("how far to the sides can a satellite serve a user") -- 2026-08-11.
 # Standard LEO visibility geometry: a user terminal needs the satellite above some minimum
-# elevation angle epsilon (measured from the local horizon) to maintain a link. The lower
-# epsilon is allowed to go, the farther from the sub-satellite point a satellite can still
-# serve a user -- this is what "coverage radius" or "field of view" means here, NOT a single
-# spot-beam's footprint (capacity_density_model.py's ~163 km^2 figure is a much narrower,
-# separate concept: one beam's oversubscription limit, not how far the satellite can reach
-# with ANY of its beams).
+# elevation angle epsilon -- measured AT THE GROUND TERMINAL (the user's dish), between its
+# local horizon and the line of sight up to the satellite, NOT a property of the satellite
+# itself (that's the related-but-different off_nadir_angle_deg(), measured at the satellite's
+# end of the same line of sight). The lower epsilon is allowed to go, the farther from the
+# sub-satellite point a satellite can still serve a user -- this is what "coverage radius" or
+# "field of view" means here, NOT a single spot-beam's footprint (capacity_density_model.py's
+# ~163 km^2 figure is a much narrower, separate concept: one beam's oversubscription limit,
+# not how far the satellite can reach with ANY of its beams).
 #
 # MIN_ELEVATION_DEG = 25.0 is the long-standing, widely-cited Starlink user-terminal minimum
 # (pre-2026 FCC standard). Checked whether the FCC's 2026-04 ruling (STA approval lowering
@@ -184,9 +186,13 @@ def expected_sats_by_latitude(shells: list[Shell], bin_width_deg: float = 1.0):
 # THIS project's real shells: it doesn't -- Gen1's shells are all >=540km, above every
 # lowered tier, so 25deg remains the applicable figure. Validated against two independent
 # published figures for the 550km shell specifically: 25deg -> ~943km computed here vs.
-# "~900km" cited; 40deg (a stricter "designed horizon plane" figure from a separate paper,
-# kept as ALT_MIN_ELEVATION_DEG for reference) -> ~578km computed here vs. "~580km" cited --
-# both match closely, cross-confirming the geometry. See ASSUMPTIONS.md #11.
+# "~900km" cited; 40deg (ALT_MIN_ELEVATION_DEG -- the ORIGINAL "designed horizon plane" figure
+# for the 550km shell, before SpaceX petitioned the FCC in 2020 to lower it to 25deg "to
+# improve reception," per the same source) -> ~578km computed here vs. "~580km" cited -- both
+# match closely, cross-confirming the geometry. Full citation chain (traced deeper 2026-08-13
+# after a user challenge to the sourcing) in data/starlink_coverage_geometry.md and
+# ASSUMPTIONS.md #11 -- short version: well-attested operational figures, ultimately traced to
+# SpaceX's own 2020 FCC filing materials, not an independent academic measurement.
 # ==========================================================================================
 
 MIN_ELEVATION_DEG = 25.0
