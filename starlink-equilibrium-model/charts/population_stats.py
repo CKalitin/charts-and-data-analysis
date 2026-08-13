@@ -33,34 +33,11 @@ def _pop_formatter(x, _pos):
 
 
 # --------------------------------------------------------------------------------------
-# Chart 1: population vs. latitude, global, gridded (replaces the old capital-city proxy)
-# --------------------------------------------------------------------------------------
-def fig_population_by_latitude(grid: pdg.PopulationGrid):
-    centers, pop = pdg.population_by_latitude(grid, bin_width_deg=1.0)
-
-    fig, ax = render.new_figure(figsize=(11, 6.5))
-    ax.bar(centers, pop, width=1.0, align="center", color="#4575b4", alpha=0.85, linewidth=0)
-    ax.set_xlabel("Latitude (degrees)")
-    ax.set_ylabel("Population")
-    ax.set_title("Population vs. latitude")
-    ax.set_xlim(-90, 90)
-    ax.invert_xaxis()  # north (positive) on the left, project convention
-    ax.xaxis.set_major_locator(mticker.MultipleLocator(15))
-    ax.yaxis.set_major_formatter(mticker.FuncFormatter(_pop_formatter))
-
-    peak_lat = centers[pop.argmax()]
-    info_box.add_info_box(
-        ax, fig,
-        f"Peak: {_pop_formatter(pop.max(), None)} at {peak_lat:.0f}deg. "
-        f"{grid.n_countries} countries, gridded (not capital-city proxy). " + SOURCE_NOTE,
-        mode="on",
-    )
-    return fig, OUT_ROOT / "population_by_latitude_gridded.png"
-
-
-# --------------------------------------------------------------------------------------
-# Chart 1b: same data, population on x / latitude on y, north-up -- easier to read at a
-# glance since humans default to "north = up" (a map orientation), not "north = left".
+# Chart 1: population vs. latitude, global, gridded (replaces the old capital-city proxy).
+# North-up (latitude on y, population on x) -- easier to read at a glance since humans
+# default to "north = up" (a map orientation), not "north = left". An earlier
+# latitude-on-x version (population_by_latitude_gridded.png) was deleted once this one
+# existed as a strict superset (same data, better orientation) -- see CLAUDE.md.
 # --------------------------------------------------------------------------------------
 def fig_population_by_latitude_horizontal(grid: pdg.PopulationGrid):
     centers, pop = pdg.population_by_latitude(grid, bin_width_deg=1.0)
@@ -134,7 +111,6 @@ def _weighted_median(values: np.ndarray, weights: np.ndarray) -> float:
 
 def figures(global_grid: pdg.PopulationGrid, us_grid: pdg.PopulationGrid):
     return [
-        ("population_by_latitude", lambda: fig_population_by_latitude(global_grid)),
         ("population_by_latitude_horizontal", lambda: fig_population_by_latitude_horizontal(global_grid)),
         ("density_histogram_global", lambda: fig_population_vs_density_histogram(
             global_grid, "global", "population_vs_density_histogram_global.png")),

@@ -1786,3 +1786,26 @@ even more clearly dominant bottleneck for the long tail of the curve.
 wording in `charts/serviceable_customers_per_satellite_chart.py` that still said
 "satellites-overhead-weighted" for the servable-density chart's averaging --
 updated to "range-extended-satellites-weighted" to match the actual mechanism.
+
+## Deleted superseded vertical-orientation charts (2026-08-13)
+
+User asked to delete non-horizontal (latitude-on-x) chart versions now that a
+north-up (latitude-on-y) sibling exists showing the same data. Checked every file
+in `results/population/` for such a pair -- only one exists:
+`population_by_latitude_gridded.png` (`fig_population_by_latitude()`, latitude-on-x,
+`invert_xaxis()`) vs. `population_by_latitude_horizontal.png`
+(`fig_population_by_latitude_horizontal()`, latitude-on-y, north-up) in
+`charts/population_stats.py` -- same underlying data
+(`pdg.population_by_latitude()`), same info-box content, genuinely redundant once
+the horizontal version existed. (The `charts/satellite_range_coverage.py` pair
+does NOT have this problem -- those two figures were converted to horizontal IN
+PLACE in an earlier follow-up, not duplicated, so there was never a separate
+vertical file left behind for them.)
+
+Deleted `fig_population_by_latitude()` from `charts/population_stats.py` (not just
+the PNG -- per this project's no-dead-code convention) and its entry in
+`figures()`; `git rm`'d `results/population/population_by_latitude_gridded.png`.
+Verified no other file in the project referenced this function or filename
+(`charts/population_capacity_overlay.py` has an unrelated same-named function that
+writes a different chart, `population_by_latitude_served_unserved.png`, to
+`results/capacity/` -- left untouched, not part of this cleanup).
