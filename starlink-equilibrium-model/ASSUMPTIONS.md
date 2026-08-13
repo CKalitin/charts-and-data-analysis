@@ -162,19 +162,32 @@ figures for the 550km shell (25° → ~941km computed vs. ~900km cited; 40°, ke
 **Sourcing, dug deeper 2026-08-13 (user pushback: "that 25 degree number is not
 official from Huston, unless it cites a source but I can't see one")**: correct —
 re-checked Huston's slides directly and confirmed 25° has NO visible citation
-there, stated as a bare fact. Traced one level deeper to Shkelzen Cakaj, *"The
-Parameters Comparison of the 'Starlink' LEO Satellites Constellation for
-Different Orbital Shells,"* Frontiers in Communications and Networks, vol. 2,
-article 643095 (2021) — an actual peer-reviewed paper, which states SpaceX
-petitioned the FCC in 2020 to lower the minimum elevation angle from 40° (the
-original "designed horizon plane" figure for the 550km shell) to 25° "to improve
-reception." That paper's own citation for both numbers is "Starlink (2020)" —
-i.e. it traces to SpaceX's own 2020 FCC filing materials, not an independent
-academic derivation. Did not pull the raw FCC docket itself in this pass
-(candidate URLs identified, not opened). **So: a real, well-attested operational
-figure, not something invented for this project, but its root source is SpaceX's
-own filing, not a third-party measurement** — same confidence tier as other
-SpaceX-sourced figures in `satellite_capacity.md`. Full chain in
+there, stated as a bare fact. Traced through Shkelzen Cakaj, *"The Parameters
+Comparison of the 'Starlink' LEO Satellites Constellation for Different Orbital
+Shells,"* Frontiers in Communications and Networks, vol. 2, article 643095
+(2021), whose own citation for the figure was just "Starlink (2020)" — **then,
+same day, following up on "has SpaceX through FCC released anything," pulled and
+read the actual FCC order text directly** (`docs.fcc.gov/public/attachments/fcc-21-48a1.pdf`,
+extracted with `pypdf` after WebFetch's own PDF reader failed on it): **FCC Order
+21-48**, approving SpaceX's Third Modification Application (SAT-MOD-20200417-00037,
+filed April 17, 2020 — the likely referent of "Starlink (2020)"). Footnote 3,
+verbatim: *"SpaceX is authorized to operate with earth station elevation angles
+as low as 25 degrees for user terminals and gateways, and for gateways in the
+polar regions ... as low as five degrees."* This is a primary source, not a
+summary — 25° is the actual FCC-AUTHORIZED figure, tied explicitly in the order's
+body text to the same altitude change (→540-570km) that produced this project's
+real Gen1 shells. Also reconciles an apparent conflict found along the way: an
+APNIC blog post states Starlink's ORIGINAL 2016 filing specified 40° (for
+terrestrial-microwave interference protection, a different reason) — both are
+real, just two different points on the same regulatory timeline (2016: 40°;
+2020 request / 2021 grant: lowered to 25°). **Checked what public Starlink
+tracker websites use** (the user's other question): starlink.sx has a
+user-adjustable elevation setting rather than a fixed number; orbitalradar.com
+computes elevation as a per-viewer result but doesn't publish its cutoff —
+neither site converges on a single public "the number," which is fine, since this
+project now has the primary FCC authorization directly. **Confidence: directly
+confirmed from FCC order text** — upgraded from "well-attested, traced to an
+unopened filing" a few hours earlier. Full chain and quotes in
 `data/starlink_coverage_geometry.md`.
 **Impact if wrong**: directly rescales the coverage radius (and therefore the
 range-extended satellite density charts and the per-satellite density-cap model's

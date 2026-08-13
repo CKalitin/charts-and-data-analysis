@@ -180,19 +180,20 @@ def expected_sats_by_latitude(shells: list[Shell], bin_width_deg: float = 1.0):
 # ~163 km^2 figure is a much narrower, separate concept: one beam's oversubscription limit,
 # not how far the satellite can reach with ANY of its beams).
 #
-# MIN_ELEVATION_DEG = 25.0 is the long-standing, widely-cited Starlink user-terminal minimum
-# (pre-2026 FCC standard). Checked whether the FCC's 2026-04 ruling (STA approval lowering
-# the minimum to 10deg below 400km, 20deg for 400-500km, 5deg above 62N) changes this for
-# THIS project's real shells: it doesn't -- Gen1's shells are all >=540km, above every
-# lowered tier, so 25deg remains the applicable figure. Validated against two independent
-# published figures for the 550km shell specifically: 25deg -> ~943km computed here vs.
-# "~900km" cited; 40deg (ALT_MIN_ELEVATION_DEG -- the ORIGINAL "designed horizon plane" figure
-# for the 550km shell, before SpaceX petitioned the FCC in 2020 to lower it to 25deg "to
-# improve reception," per the same source) -> ~578km computed here vs. "~580km" cited -- both
-# match closely, cross-confirming the geometry. Full citation chain (traced deeper 2026-08-13
-# after a user challenge to the sourcing) in data/starlink_coverage_geometry.md and
-# ASSUMPTIONS.md #11 -- short version: well-attested operational figures, ultimately traced to
-# SpaceX's own 2020 FCC filing materials, not an independent academic measurement.
+# MIN_ELEVATION_DEG = 25.0 is the FCC-AUTHORIZED Starlink Gen1 user-terminal minimum,
+# confirmed directly from FCC Order 21-48's own text (footnote 3): "SpaceX is authorized to
+# operate with earth station elevation angles as low as 25 degrees for user terminals and
+# gateways" -- granted 2021, tied explicitly to the same altitude change (->540-570km) that
+# produced this project's real Gen1 shells. Checked whether the FCC's 2026-04 ruling (STA
+# approval lowering the minimum to 10deg below 400km, 20deg for 400-500km, 5deg above 62N)
+# changes this for THIS project's real shells: it doesn't -- Gen1's shells are all >=540km,
+# above every lowered tier, so 25deg remains the applicable figure. Validated against two
+# independent published figures for the 550km shell specifically: 25deg -> ~943km computed
+# here vs. "~900km" cited; 40deg (ALT_MIN_ELEVATION_DEG -- the ORIGINAL 2016 figure, before
+# SpaceX's 2020 modification request lowered it to 25deg) -> ~578km computed here vs.
+# "~580km" cited -- both match closely, cross-confirming the geometry. Full citation chain,
+# including the primary FCC order text, in data/starlink_coverage_geometry.md and
+# ASSUMPTIONS.md #11.
 # ==========================================================================================
 
 MIN_ELEVATION_DEG = 25.0

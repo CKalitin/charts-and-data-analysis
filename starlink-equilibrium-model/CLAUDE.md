@@ -1979,3 +1979,45 @@ and `orbital_geometry.py`'s module-level comment block with the same deepened
 chain and clarification -- no numeric constants changed (`MIN_ELEVATION_DEG`
 stays 25.0), this was a sourcing/documentation correction, not a model fix, so no
 charts needed regenerating from this part of the work.
+
+## Traced the 25deg figure to the actual FCC order text (2026-08-13, same day, follow-up)
+
+User asked directly: "What number do we use for the satellites? ... what do
+[tracker sites] use? Has SpaceX (through FCC) released anything to suggest
+something?" Pulled `docs.fcc.gov/public/attachments/fcc-21-48a1.pdf` and
+extracted its text with `pypdf` (WebFetch's own PDF reader returned "no relevant
+content found" on this file -- noted as a general lesson: pull FCC PDFs and
+extract locally rather than trusting WebFetch's summary for these). Found the
+primary source directly: **FCC Order 21-48**, footnote 3, verbatim: "SpaceX is
+authorized to operate with earth station elevation angles as low as 25 degrees
+for user terminals and gateways, and for gateways in the polar regions ... as low
+as five degrees." This order approved SpaceX's "Third Modification Application"
+(SAT-MOD-20200417-00037, filed April 17, 2020 -- almost certainly what Cakaj's
+paper's "Starlink (2020)" citation meant), and its body text ties the 25deg figure
+explicitly to the SAME altitude change (1,100-1,300km -> 540-570km) that produced
+this project's real Gen1 shells.
+
+Also resolved an apparent contradiction found along the way: an APNIC blog post
+("Navigating Starlink's FCC paper trail") states the ORIGINAL 2016 Starlink filing
+specified 40deg, "to protect terrestrial microwave links." Not a conflicting
+claim -- a different, earlier point in the same regulatory timeline: 2016 filing
+= 40deg (interference protection); SpaceX's 2020 modification request = lower to
+25deg (paired with the lower 540-570km altitude, "to maintain coverage... improve
+customer experience"); FCC's 2021 order = granted. `ALT_MIN_ELEVATION_DEG=40` in
+this project is correctly the original, now-superseded 2016 figure.
+
+**Tracker question, answered**: checked starlink.sx and orbitalradar.com
+directly. Neither publishes a single fixed elevation/radius as "the" number --
+starlink.sx has a user-adjustable "Minimum elevation" setting; orbitalradar.com
+shows elevation as a per-viewer computed result without disclosing its cutoff.
+starlink.sx does mention a "40deg visibility line," but that's the Dishy
+hardware's own physical steering-range limit (a different concept from the
+link-quality minimum elevation this project models), coincidentally the same
+numeral as the superseded 2016 FCC figure.
+
+Updated `data/starlink_coverage_geometry.md` (new primary-source section with the
+verbatim FCC footnote and full reconciled timeline), `ASSUMPTIONS.md` #11
+(confidence upgraded from "well-attested, traced to an unopened filing" to
+"directly confirmed from FCC order text"), and `orbital_geometry.py`'s comment
+block. No numeric constants changed -- `MIN_ELEVATION_DEG=25.0` was already
+correct, now on much firmer footing.
