@@ -2223,3 +2223,47 @@ plausible. This is now documented in enough places (CLAUDE.md, more than once)
 that any future recurrence should be treated as a signal to add a lint-style
 guard (e.g. a helper that warns on any info-box string argument over ~80 chars
 without a `\n`) rather than fixing it by hand an 7th time.
+
+## TAM follow-up: stacked-by-region chart + CSV exports (2026-08-14, same day)
+
+User: a CSV of monthly revenue by country vs. satellite count (a few buckets, not
+a dense sweep), the same aggregated by continent, a stacked-by-region version of
+`tam_vs_satellites.png` instead of one aggregate line, and confusion about why
+peak TAM (~$11.1B/mo) is so much smaller than the real global telecom industry
+(~$1.53T/year).
+
+**Answered the money question with real numbers before writing any new code**
+(wanted to rule out an actual bug, not just explain away a surprising result):
+pulled real 2024/2025 global telecom revenue (~$1.53-1.55T/year =~ $127B/month,
+PwC/Deloitte) and computed the model's own saturated-N numbers directly. At full
+saturation (N>=500K), TAM converges to ~$4.33B/mo across ~503.7M subscribers,
+blended average price **$8.59/month** -- and that subscriber count matches the
+UNCONSTRAINED total unconnected-household count (503.7M, computed independently
+from raw telecom+household data with no satellite model involved) almost exactly,
+confirming capacity saturates the true demand ceiling correctly, not a modeling
+error. The low blended price is a direct, mechanical consequence of the user's
+OWN elasticity anchors (0.75% of monthly GNI/capita at 0% unconnected) applied to
+a population that is, by construction, concentrated in low-GNI countries -- 0.75%
+of a $2,000/year GNI is ~$1.25/month. Three real, additive reasons the total is
+smaller than global telecom revenue, not one: (1) only ~2.23B of 8.19B people
+(27.3%) are unconnected -- the other 72.7% already generate most of that $127B/mo
+today and aren't in scope; (2) the unconnected segment is inherently lower-ARPU,
+both because affordability is why they're unconnected and because the pricing
+mechanism explicitly seeks an affordable price for them; (3) TAM here is ONE
+residential subscription per household, not enterprise/B2B/equipment/roaming/TV
+bundles that make up the rest of real telecom revenue.
+
+**New in `country_tam_model.py`**: `sweep_tam_by_region()` -- same per-country
+sweep as `sweep_total_tam()`, grouped by the existing World Bank `region` column
+instead of summed to one total.
+
+**New in `charts/country_tam_charts.py`**:
+- `tam_vs_satellites_by_region.png` -- `ax.stackplot()` (per the charting-and-
+  modeling skill's own guidance for positive stacked series), South Asia
+  dominates both the peak and the post-peak decline -- directly visible now,
+  confirming the India-driven story already found in the per-country numbers.
+- `export_tam_csv()` -> `tam_by_country_vs_satellites.csv` (212 rows) and
+  `tam_by_continent_vs_satellites.csv` (7 rows), both WIDE format (one column per
+  bucket in `SAT_BUCKETS = [100, 1_000, 4_408, 10_900, 33_900, 100_000, 500_000,
+  1_000_000, 2_000_000]`), not a dense per-N sweep table -- "a few buckets, not
+  millions of lines," per the user's own framing.

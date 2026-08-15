@@ -160,6 +160,29 @@ def sweep_total_tam(sat_counts, telecom_rows: list[dict], household_size: dict[s
     return np.array(out)
 
 
+def sweep_tam_by_region(sat_counts, telecom_rows: list[dict], household_size: dict[str, float],
+                         country_pop_by_lat: dict[str, tuple[np.ndarray, np.ndarray]],
+                         global_lat_centers: np.ndarray, global_area_hist: np.ndarray,
+                         global_dens_centers: np.ndarray, scenario: cdm.CapacityScenario = cdm.V3_SCENARIO,
+                         base_shells: list[og.Shell] | None = None,
+                         bin_width_deg: float = scm.BIN_WIDTH_DEG) -> dict[str, np.ndarray]:
+    """{region: array of TAM $/month, one per sat_counts entry} -- same per-country
+    computation as sweep_total_tam(), just grouped by `region` (the same World Bank
+    region column used throughout this project, charts/regions.py) instead of
+    summed to one global total. For the stacked-by-region TAM chart."""
+    regions = sorted({r["region"] for r in telecom_rows})
+    out: dict[str, list[float]] = {r: [] for r in regions}
+    for n in sat_counts:
+        rows = compute_country_tam(n, telecom_rows, household_size, country_pop_by_lat, global_lat_centers,
+                                    global_area_hist, global_dens_centers, scenario, base_shells, bin_width_deg)
+        by_region = dict.fromkeys(regions, 0.0)
+        for row in rows:
+            by_region[row.region] += row.tam_usd_per_month
+        for r in regions:
+            out[r].append(by_region[r])
+    return {r: np.array(v) for r, v in out.items()}
+
+
 if __name__ == "__main__":
     grid = pdg.load_or_build_grid()
     lat_centers, dens_centers, hist = scm.density_area_histogram_by_latitude(grid)
