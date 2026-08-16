@@ -2267,3 +2267,81 @@ instead of summed to one total.
   bucket in `SAT_BUCKETS = [100, 1_000, 4_408, 10_900, 33_900, 100_000, 500_000,
   1_000_000, 2_000_000]`), not a dense per-N sweep table -- "a few buckets, not
   millions of lines," per the user's own framing.
+
+## Full-world TAM model: "Starlink just takes incumbent share as it expands" (2026-08-16)
+
+New, SEPARATE, parallel model -- `country_tam_model.py` / `country_tam_charts.py`
+(unconnected-populations-only TAM) are UNCHANGED, still both intact and both still
+the right answer to their own narrower question. User's request: size the market
+assuming Starlink displaces existing incumbent telecom revenue as it expands, not
+just fills the currently-unconnected gap. Answered with a written plan + an
+`AskUserQuestion` batch (3 questions) before building, per this project's established
+"ask before a big build" convention:
+
+1. **Share capture inside the capacity footprint** -> **Full capture (100%)**
+   (user declined the offered partial-adoption-ceiling alternative) -- within
+   servable_fraction(N), Starlink wins ALL of that population's business, no
+   switching-friction/competition curve.
+2. **Pricing for already-connected switchers** -> **Split pricing** -- incumbent-
+   price (`_raw_arpu()`) for the segment that was already connected (a straight
+   revenue swap), elasticity-derived price (via `country_tam_model._country_price()`,
+   reused directly) for the segment that was previously unconnected. Chosen
+   specifically because it produces a bonus breakdown (incumbent-displacement vs.
+   newly-connected revenue) as its own chart.
+3. **Model scope** -> **new parallel files**, not a mode flag on the existing ones.
+
+**The key insight that made this cheap to build**: `country_service_model.servable_fraction(N)`
+is already built from TOTAL population density (`population_density_grid.py`), not
+a connectivity-filtered subset -- so it already tells you what fraction of a
+country's ENTIRE population (connected + unconnected) sits within capacity reach at
+N satellites. The old TAM model's only unconnected-only-ness came from artificially
+capping `addressable_population` at `unconnected_population`; removing that cap is
+exactly "take incumbent share." Required no new capacity modeling at all.
+
+**New: `country_tam_full_model.py`** (`CountryTAMFull` dataclass,
+`compute_country_tam_full()`, `sweep_total_tam_full()`, `sweep_tam_full_by_region()`,
+`sweep_tam_full_by_segment()`). `addressable_population = servable_fraction(N) x
+total_population` (no unconnected cap). Split into "incumbent" (already-connected)
+and "new" (previously unconnected) segments PROPORTIONALLY to the country's own
+connected/unconnected ratio -- no sub-national data exists to know WHICH specific
+people within a density bin are already connected, so this is an explicit
+simplifying assumption, not measured (**ASSUMPTIONS.md #15**).
+
+**New: `charts/country_tam_full_charts.py`** (5 outputs, reuses `SAT_BUCKETS`,
+`TAM_SOURCE_NOTE`, `_usd_formatter` directly from `country_tam_charts.py` rather
+than duplicating them):
+- `tam_full_by_country_100k.png` -- revenue choropleth at N=100,000. Visually very
+  different from the unconnected-only price heatmap: dominated by large WEALTHY
+  markets (top 3: USA $9.4B/mo, China $5.3B/mo, Germany $1.9B/mo), not underserved
+  ones, since revenue now includes captured incumbent share.
+- `tam_full_vs_satellites.png` (+ `_linear`) -- clean sigmoid, saturates at
+  **$45.6B/mo near N=257,728** (~4x the unconnected-only model's peak of ~$11.1B/mo
+  at N=33,900, as expected -- this model captures the whole world's telecom
+  spend, not just the underserved slice).
+- `tam_full_vs_satellites_by_region.png` -- stacked by World Bank region. East Asia
+  & Pacific (China-driven) and Europe & Central Asia dominate at scale -- a
+  DIFFERENT leading region than the unconnected-only model's South Asia, because
+  this model rewards large connected populations, not large unconnected ones.
+- `tam_full_vs_satellites_by_segment.png` -- **the direct payoff of the split-
+  pricing decision**: stacked incumbent-displacement vs. newly-connected revenue.
+  At peak, **91% of TAM is incumbent-displacement** -- capturing existing,
+  already-paying customers dominates the model almost everywhere once capacity
+  stops being the binding constraint; newly-connected revenue is a real but
+  secondary contribution that itself peaks (~$5B/mo) and then slightly recedes as
+  a share of the (still-growing) total.
+- `tam_full_by_country_vs_satellites.csv` / `tam_full_by_continent_vs_satellites.csv`
+  -- same wide-format shape and `SAT_BUCKETS` as the unconnected-only model's CSVs,
+  for direct side-by-side comparison.
+
+**One real, INHERITED data-quality caveat surfaced prominently in this model's
+output, flagged honestly rather than hidden**: at low N, Zimbabwe ranks 3rd-7th
+globally by TAM (e.g. $236M/mo at N=4,408, ahead of the UK) -- this is the SAME
+"thin survey sample" `_raw_arpu()` artifact already documented in Phase 6
+(Zimbabwe's raw pre-cap ARPU is ~$437/mo, implausible for that economy) and
+ASSUMPTIONS.md #4. It's not a NEW bug: this model deliberately reuses `_raw_arpu()`
+uncapped for the incumbent-switcher segment (the same function/behavior
+`country_tam_model.py` already used for its <20%-unconnected branch), but the
+full-capture design surfaces it more visibly since Zimbabwe's "incumbent" segment
+now contributes revenue regardless of its overall %-unconnected. Not fixed here --
+same open item as ASSUMPTIONS.md #4's proposed fixes (drop/cap outlier countries,
+or a regional-median fallback), not decided on unilaterally.
