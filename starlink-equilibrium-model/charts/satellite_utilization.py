@@ -61,7 +61,7 @@ def fig_utilization_vs_satellites(hist, dens_centers, lat_centers):
     ax.set_xscale("log")
     ax.set_yscale("log")
     _add_capacity_secondary_axis(ax)  # AFTER set_xscale -- see its docstring
-    ax.set_xlabel("Total satellites (log scale)")
+    ax.set_xlabel("Total satellites (V3, log scale)")
     ax.set_ylabel("% of available satellite capacity used (log scale)")
     ax.set_title("Satellite capacity utilization vs. total satellites")
     ax.xaxis.set_major_formatter(mticker.FuncFormatter(lambda v, _: f"{v:,.0f}"))
@@ -93,7 +93,7 @@ def fig_utilization_vs_satellites_linear(hist, dens_centers, lat_centers):
     ax.set_xlim(0, UTIL_LINEAR_MAX_SATS)
     ax.set_ylim(0, util.max() * 1.08)
     _add_capacity_secondary_axis(ax)
-    ax.set_xlabel("Total satellites (linear scale)")
+    ax.set_xlabel("Total satellites (V3, linear scale)")
     ax.set_ylabel("% of available satellite capacity used (linear scale)")
     ax.set_title("Satellite capacity utilization vs. total satellites (linear)")
     ax.xaxis.set_major_formatter(mticker.FuncFormatter(lambda v, _: f"{v:,.0f}"))

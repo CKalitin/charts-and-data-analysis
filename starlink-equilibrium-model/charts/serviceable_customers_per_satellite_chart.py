@@ -72,7 +72,7 @@ def fig_servable_density_vs_satellites():
     ax.set_yscale("log")
     _add_capacity_secondary_axis(ax)  # AFTER set_xscale -- see its docstring: creating this
     # before the parent's scale is set gets silently reset back to the broken default formatter
-    ax.set_xlabel("Total satellites (log scale)")
+    ax.set_xlabel("Total satellites (V3, log scale)")
     ax.set_ylabel("Servable population density (people/km2, log scale)")
     ax.set_title("Servable population density vs. total satellites (Starlink shell profile)")
     ax.xaxis.set_major_formatter(mticker.FuncFormatter(lambda v, _: f"{v:,.0f}"))
@@ -109,7 +109,7 @@ def fig_servable_density_vs_satellites_linear():
 
     ax.set_xlim(0, DENSITY_LINEAR_MAX_SATS)
     ax.set_ylim(0, caps.max() * 1.05)
-    ax.set_xlabel("Total satellites (linear scale)")
+    ax.set_xlabel("Total satellites (V3, linear scale)")
     ax.set_ylabel("Servable population density (people/km2, linear scale)")
     ax.set_title("Servable population density vs. total satellites (Starlink shell profile, linear)")
     ax.xaxis.set_major_formatter(mticker.FuncFormatter(lambda v, _: f"{v:,.0f}"))
@@ -142,7 +142,7 @@ def fig_serviceable_vs_satellites_global(grid: pdg.PopulationGrid):
     ax.set_xscale("log")
     ax.set_yscale("log")
     _add_capacity_secondary_axis(ax)  # AFTER set_xscale -- see its docstring
-    ax.set_xlabel("Total satellites (log scale)")
+    ax.set_xlabel("Total satellites (V3, log scale)")
     ax.set_ylabel("Serviceable customers (log scale)")
     ax.set_title("Serviceable customers vs. total satellites -- global")
     _format_log_axes(ax)
@@ -175,7 +175,7 @@ def fig_serviceable_vs_satellites_global_linear(grid: pdg.PopulationGrid):
 
     ax.set_xlim(0, GLOBAL_LINEAR_MAX_SATS)
     ax.set_ylim(0, served.max() * 1.08)
-    ax.set_xlabel("Total satellites (linear scale)")
+    ax.set_xlabel("Total satellites (V3, linear scale)")
     ax.set_ylabel("Serviceable customers (linear scale)")
     ax.set_title("Serviceable customers vs. total satellites -- global (linear)")
     ax.xaxis.set_major_formatter(mticker.FuncFormatter(lambda v, _: f"{v:,.0f}"))
@@ -214,7 +214,7 @@ def fig_serviceable_vs_satellites_us_resolution(us_grid_1km: pdg.PopulationGrid,
     ax.set_xscale("log")
     ax.set_yscale("log")
     _add_capacity_secondary_axis(ax)  # AFTER set_xscale -- see its docstring
-    ax.set_xlabel("Total satellites (log scale)")
+    ax.set_xlabel("Total satellites (V3, log scale)")
     ax.set_ylabel("Serviceable customers (log scale)")
     ax.set_title("Serviceable customers vs. total satellites -- US, 1km vs. 100m population data")
     _format_log_axes(ax)
@@ -255,7 +255,7 @@ def fig_serviceable_vs_satellites_us_resolution_linear(us_grid_1km: pdg.Populati
 
     ax.set_xlim(0, US_LINEAR_MAX_SATS)
     ax.set_ylim(0, max(served_1km.max(), served_100m.max()) * 1.08)
-    ax.set_xlabel("Total satellites (linear scale)")
+    ax.set_xlabel("Total satellites (V3, linear scale)")
     ax.set_ylabel("Serviceable customers (linear scale)")
     ax.set_title("Serviceable customers vs. total satellites -- US, 1km vs. 100m population data (linear)")
     ax.xaxis.set_major_formatter(mticker.FuncFormatter(lambda v, _: f"{v:,.0f}"))

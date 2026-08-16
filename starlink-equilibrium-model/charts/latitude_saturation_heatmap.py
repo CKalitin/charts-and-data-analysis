@@ -77,7 +77,7 @@ def _draw_saturation_heatmap(ax, fig, frac_masked, sat_counts, lat_centers, *, l
     ax.set_xscale("log")
     ax.set_xlim(sat_counts[0], sat_counts[-1])
     ax.set_ylim(-90, 90)
-    ax.set_xlabel("Total satellites (log scale)")
+    ax.set_xlabel("Total satellites (V3, log scale)")
     ax.set_ylabel("Latitude (degrees)")
     ax.xaxis.set_major_formatter(mticker.FuncFormatter(lambda v, _: f"{v:,.0f}"))
     _add_capacity_secondary_axis(ax)
