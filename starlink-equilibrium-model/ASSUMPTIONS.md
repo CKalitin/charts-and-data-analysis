@@ -286,6 +286,32 @@ own docstring) AND this project's own capacity model's servable-% estimate. Erro
 compound: a wrong servable-% feeds a wrong target-%-unconnected, which feeds a
 wrong price via the (already-approximate) elasticity curve.
 
+### 15. Full-world TAM: 100% share capture inside footprint, proportional connected/unconnected split
+**Where**: `country_tam_full_model.py`, `compute_country_tam_full()`.
+**User-specified rule, confirmed via AskUserQuestion, 2026-08-16**: within a
+country's servable_fraction(N) footprint, Starlink is assumed to capture 100% of
+that population's telecom business (no switching-friction/partial-adoption curve
+-- the "just takes incumbent share" framing, taken literally). The user explicitly
+declined the offered alternative (a partial-adoption ceiling below 100%).
+**A design choice made, not separately asked about**: no sub-national data exists
+to know WHICH specific people within a density bin (a latitude x population-density
+cell) are already connected vs. unconnected, so the servable population is split
+into "incumbent" (already-connected, priced at `_raw_arpu()`) and "new" (previously
+unconnected, priced via `country_tam_model._country_price()`) segments
+PROPORTIONALLY to the country's own overall connected/unconnected ratio --
+`addressable_connected = servable_fraction x connected_population`,
+`addressable_unconnected = servable_fraction x unconnected_population`. This
+assumes Starlink's capacity-constrained reach doesn't systematically favor already-
+connected (typically denser, urban) or unconnected (typically sparser, rural)
+people within the same density bin -- plausible as a first cut, not verified.
+**Impact if wrong**: if in reality Starlink's footprint at low N disproportionately
+reaches already-connected urban areas (e.g. dense demand competes for capacity
+first) rather than a proportional mix, the "incumbent" segment's revenue share
+would be understated early in the N sweep and the "new" segment's overstated, or
+vice versa if unconnected rural areas are reached first. Does not affect the TOTAL
+addressable population (`servable_fraction x population`), only how it's split
+between the two price mechanisms.
+
 ---
 
 ## Confirmed by the user (locked in, listed for completeness only)
