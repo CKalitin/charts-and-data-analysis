@@ -1037,6 +1037,76 @@ from them. Remaining open items:
 - Unlimited-plan $/GB normalization method not yet decided — must be documented
   explicitly in `telecom_market_by_country.md` once chosen, not silently assumed.
 
+## Market ladder chart (2026-08-23, new session, user said the existing one wasn't satisfactory)
+
+User asked for "another market ladder analysis" -- explicitly pointed at the Terraform
+Industries blog post
+(https://terraformindustries.wordpress.com/2026/06/16/the-enormous-size-of-the-oil-and-gas-market-drives-adoption-of-synthetic-fuel-production/)
+and `Terraform-Market-Ladder/terraformer_market_ladder.py` as the pattern to copy, and asked
+specifically for **v3 satellites**, **$/capacity/year vs. cumulative capacity**, with the
+**same dual-x-axis formatting** as that script (`ax.secondary_xaxis("top", functions=(...))`,
+bottom axis in the base unit, top axis relabeled in a second physical unit).
+
+**What "the existing one" meant**: `charts/phase6.py`'s `continuous_cost_vs_market_size.png`
+-- the chart CLAUDE.md's own Phase 6 section already logged as the one the user previously
+asked to "analyze ... for what needs to be explained (knees)". That chart sweeps COST as a
+free parameter (x = $/Gbps/year, y = $B/year captured) -- useful for the cost-vs-market
+sweep, but it's not actually shaped like Terraform's ladder (price vs. cumulative volume) and
+has no per-country/step detail at all, just one smooth swept curve.
+
+**What was built**: `charts/market_ladder.py` -> `results/market_ladder/v3_market_ladder.png`
+-- NEW chart, no model changes. It renders `equilibrium_model.build_revenue_curve()`'s
+existing output (already computed for Phase 5/6, unchanged) as an actual descending
+staircase, Terraform-ladder style:
+  - x (bottom, log): cumulative capacity deployed, Gbps. x (top, secondary axis): cumulative
+    v3 satellites, converted via v3's 1,024 Gbps/satellite (`data/satellite_capacity.csv`,
+    `v3_broadband` row) -- this is why the chart is v3-only: that Gbps/satellite ratio is
+    generation-specific, so the same secondary axis wouldn't mean the same thing for v1.0/v2
+    Mini.
+  - y (log): $/Gbps/year -- the ARPU-implied annual revenue rate per Gbps, i.e. the actual
+    per-country "price" already computed in the revenue curve.
+  - The staircase itself is all 204 countries' real steps (a `LineCollection`, plasma_r
+    gradient by rank) -- NOT binned into synthetic tiers the way Terraform had to invent
+    "markets" for substitution fuels. This project's standing "must be continuous, not
+    discrete tiers" rule (Phase 6, above) was specifically about the swept-cost chart; it
+    doesn't forbid drawing the real per-country granularity as a staircase here, since these
+    steps are the actual data, not an artificial binning choice.
+  - Only 7 of the 204 steps get individual labels (`HIGHLIGHT_COUNTRIES` in the script) --
+    the biggest REAL markets by volume, spread across the full curve: Norway, United States,
+    Mexico, Brazil, China, India, Fiji (floor). Labeling all 204 is unreadable; labeling more
+    (Argentina/Russia/Nigeria/Indonesia were tried and cut) just crowds the one log-decade
+    they all sit in without adding a materially different data point.
+  - The 15 countries tied at the flat `ARPU_CAP_USD_MONTH=100` cap (the Phase 6 "artifact
+    plateau" finding -- Bermuda, Central African Republic, ... -- see Phase 6 section above)
+    are merged into ONE labeled block instead of 15 individual annotations, with the label
+    explicitly calling it a cap artifact, not real pricing, pointing back at this file.
+  - Both v3 cost scenarios (Starship "initial" $352/Gbps/yr and "end-state" $305/Gbps/yr,
+    5yr life + 20% margin, `cost_per_gbps_model.py`) are drawn as dashed reference lines.
+    **Both sit BELOW the entire demand ladder** (cheapest real country, Fiji, is
+    $737/Gbps/yr -- more than 2x even the pricier v3 scenario) -- visual confirmation, on
+    this chart, of the same Phase 5 finding that at v3-class cost, revenue/demand is not the
+    binding constraint; the model runs out of modeled countries (204/204 served) before cost
+    ever becomes the limiter.
+
+**Bug hit and fixed while building this** (same recurring class as elsewhere in this
+project): the "China" label's offset was small enough that its own text box, drawn on top
+(higher zorder) after the dot+leader-line pass, fully occluded both -- looked like a floating
+label with no connection to the curve. Not caught by looking at the chart as a whole, only by
+cropping and zooming the rendered PNG region-by-region. Fixed by giving China a larger
+offset. **Lesson for any future per-point annotation in this project**: a small
+offset-in-points label can visually swallow its own anchor dot/leader when the box is drawn
+above it in z-order -- worth a zoomed crop check per labeled point, not just a full-chart
+glance, especially in a crowded region of the plot.
+
+Also hit the already-documented "log axis needs an explicit nonzero floor" bug class a second
+time in this file's own session: the secondary top axis's default `:,.0f` formatter rounded
+every satellite count below 0.5 to a duplicate "0" near the left edge. Fixed by formatting
+values under 10 satellites with one decimal instead of rounding to an integer, AND by setting
+an explicit x-axis floor (200 Gbps, just under the $100-cap block's marker) rather than
+starting at the true data minimum (~2 Gbps, Bermuda) -- the first few countries are
+individually tiny and already summarized inside that block's label, so extending the axis
+down to them added only visual noise, not information.
+
 ## Next step for whoever picks this up
 
 Phases 1-5 are done. Start **Phase 6 (derived charts)**, but two things first:
