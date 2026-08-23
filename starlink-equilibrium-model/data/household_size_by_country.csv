@@ -1,0 +1,218 @@
+iso3,country,household_size,source_year,confidence
+ABW,Aruba,2.89,2010,direct_national_census_or_survey
+AFG,Afghanistan,8.04,2015,direct_national_census_or_survey
+AGO,Angola,4.82,2016,direct_national_census_or_survey
+ALB,Albania,3.3,2017,direct_national_census_or_survey
+AND,Andorra,2.58,,regional_median_fallback
+ARE,United Arab Emirates,5.24,,regional_median_fallback
+ARG,Argentina,3.26,2010,direct_national_census_or_survey
+ARM,Armenia,3.54,2016,direct_national_census_or_survey
+ASM,American Samoa,3.9,,regional_median_fallback
+ATG,Antigua and Barbuda,3.62,,regional_median_fallback
+AUS,Australia,2.5,2011,direct_national_census_or_survey
+AUT,Austria,2.27,2011,direct_national_census_or_survey
+AZE,Azerbaijan,4.55,2009,direct_national_census_or_survey
+BDI,Burundi,4.83,2016,direct_national_census_or_survey
+BEL,Belgium,2.36,2011,direct_national_census_or_survey
+BEN,Benin,5.19,2018,direct_national_census_or_survey
+BFA,Burkina Faso,5.92,2014,direct_national_census_or_survey
+BGD,Bangladesh,4.47,2014,direct_national_census_or_survey
+BGR,Bulgaria,2.34,2011,direct_national_census_or_survey
+BHR,Bahrain,5.24,,regional_median_fallback
+BHS,"Bahamas, The",3.4,2010,direct_national_census_or_survey
+BIH,Bosnia and Herzegovina,2.58,,regional_median_fallback
+BLR,Belarus,2.48,2009,direct_national_census_or_survey
+BLZ,Belize,3.62,,regional_median_fallback
+BMU,Bermuda,2.26,2016,direct_national_census_or_survey
+BOL,Bolivia,3.53,2012,direct_national_census_or_survey
+BRA,Brazil,3.31,2010,direct_national_census_or_survey
+BRB,Barbados,3.62,,regional_median_fallback
+BRN,Brunei Darussalam,3.9,,regional_median_fallback
+BTN,Bhutan,4.52,,regional_median_fallback
+BWA,Botswana,3.52,2011,direct_national_census_or_survey
+CAF,Central African Republic,4.91,1994,direct_national_census_or_survey
+CAN,Canada,2.45,2016,direct_national_census_or_survey
+CHE,Switzerland,2.21,2000,direct_national_census_or_survey
+CHI,Channel Islands,2.58,,regional_median_fallback
+CHL,Chile,3.58,2002,direct_national_census_or_survey
+CHN,China,2.8,2023,direct_national_census_or_survey
+CIV,Cote d'Ivoire,5.09,2012,direct_national_census_or_survey
+CMR,Cameroon,4.99,2011,direct_national_census_or_survey
+COD,"Congo, Dem. Rep.",5.3,2013,direct_national_census_or_survey
+COG,"Congo, Rep.",4.31,2011,direct_national_census_or_survey
+COL,Colombia,3.53,2015,direct_national_census_or_survey
+COM,Comoros,5.37,2012,direct_national_census_or_survey
+CPV,Cabo Verde,4.88,,regional_median_fallback
+CRI,Costa Rica,3.46,2011,direct_national_census_or_survey
+CUB,Cuba,3.14,2002,direct_national_census_or_survey
+CUW,Curacao,3.62,,regional_median_fallback
+CYM,Cayman Islands,3.62,,regional_median_fallback
+CYP,Cyprus,2.75,2011,direct_national_census_or_survey
+CZE,Czechia,2.4,2011,direct_national_census_or_survey
+DEU,Germany,2.05,2011,direct_national_census_or_survey
+DJI,Djibouti,5.24,,regional_median_fallback
+DMA,Dominica,3.62,,regional_median_fallback
+DNK,Denmark,2.58,,regional_median_fallback
+DOM,Dominican Republic,3.48,2013,direct_national_census_or_survey
+DZA,Algeria,5.24,,regional_median_fallback
+ECU,Ecuador,3.78,2010,direct_national_census_or_survey
+EGY,"Egypt, Arab Rep.",4.13,2014,direct_national_census_or_survey
+ERI,Eritrea,4.88,,regional_median_fallback
+ESP,Spain,2.69,2011,direct_national_census_or_survey
+EST,Estonia,2.3,2011,direct_national_census_or_survey
+ETH,Ethiopia,4.61,2016,direct_national_census_or_survey
+FIN,Finland,2.07,2010,direct_national_census_or_survey
+FJI,Fiji,4.57,2014,direct_national_census_or_survey
+FRA,France,2.22,2015,direct_national_census_or_survey
+FRO,Faroe Islands,2.58,,regional_median_fallback
+FSM,"Micronesia, Fed. Sts.",3.9,,regional_median_fallback
+GAB,Gabon,4.1,2012,direct_national_census_or_survey
+GBR,United Kingdom,2.27,2011,direct_national_census_or_survey
+GEO,Georgia,3.34,2014,direct_national_census_or_survey
+GHA,Ghana,3.49,2014,direct_national_census_or_survey
+GIB,Gibraltar,2.58,,regional_median_fallback
+GIN,Guinea,6.25,2012,direct_national_census_or_survey
+GMB,"Gambia, The",8.23,2013,direct_national_census_or_survey
+GNB,Guinea-Bissau,4.88,,regional_median_fallback
+GNQ,Equatorial Guinea,4.88,,regional_median_fallback
+GRC,Greece,2.44,2011,direct_national_census_or_survey
+GRD,Grenada,3.62,,regional_median_fallback
+GRL,Greenland,2.58,,regional_median_fallback
+GTM,Guatemala,4.81,2015,direct_national_census_or_survey
+GUM,Guam,3.9,,regional_median_fallback
+GUY,Guyana,3.8,2009,direct_national_census_or_survey
+HKG,"Hong Kong SAR, China",2.83,2016,direct_national_census_or_survey
+HND,Honduras,4.47,2012,direct_national_census_or_survey
+HRV,Croatia,2.8,2011,direct_national_census_or_survey
+HTI,Haiti,4.29,2017,direct_national_census_or_survey
+HUN,Hungary,2.6,2011,direct_national_census_or_survey
+IDN,Indonesia,3.86,2017,direct_national_census_or_survey
+IMN,Isle of Man,2.28,2016,direct_national_census_or_survey
+IND,India,4.57,2015,direct_national_census_or_survey
+IRL,Ireland,2.77,2011,direct_national_census_or_survey
+IRN,"Iran, Islamic Rep.",3.49,2016,direct_national_census_or_survey
+IRQ,Iraq,7.7,1997,direct_national_census_or_survey
+ISL,Iceland,2.58,,regional_median_fallback
+ISR,Israel,3.14,2008,direct_national_census_or_survey
+ITA,Italy,2.4,2011,direct_national_census_or_survey
+JAM,Jamaica,3.06,2011,direct_national_census_or_survey
+JOR,Jordan,4.72,2017,direct_national_census_or_survey
+JPN,Japan,2.26,2020,direct_national_census_or_survey
+KAZ,Kazakhstan,3.5,2009,direct_national_census_or_survey
+KEN,Kenya,3.64,2015,direct_national_census_or_survey
+KGZ,Kyrgyz Republic,4.21,2012,direct_national_census_or_survey
+KHM,Cambodia,4.61,2014,direct_national_census_or_survey
+KIR,Kiribati,3.9,,regional_median_fallback
+KNA,St. Kitts and Nevis,3.62,,regional_median_fallback
+KOR,"Korea, Rep.",2.18,2022,direct_national_census_or_survey
+KWT,Kuwait,5.24,,regional_median_fallback
+LAO,Lao PDR,5.77,2005,direct_national_census_or_survey
+LBN,Lebanon,5.24,,regional_median_fallback
+LBR,Liberia,4.95,2013,direct_national_census_or_survey
+LBY,Libya,5.24,,regional_median_fallback
+LCA,St. Lucia,3.62,,regional_median_fallback
+LIE,Liechtenstein,2.32,2010,direct_national_census_or_survey
+LKA,Sri Lanka,4.52,,regional_median_fallback
+LSO,Lesotho,3.34,2014,direct_national_census_or_survey
+LTU,Lithuania,2.32,2011,direct_national_census_or_survey
+LUX,Luxembourg,2.41,2011,direct_national_census_or_survey
+LVA,Latvia,2.58,2011,direct_national_census_or_survey
+MAC,"Macao SAR, China",3.07,2016,direct_national_census_or_survey
+MAF,St. Martin (French part),3.62,,regional_median_fallback
+MAR,Morocco,5.24,2004,direct_national_census_or_survey
+MCO,Monaco,2.58,,regional_median_fallback
+MDA,Moldova,2.89,2014,direct_national_census_or_survey
+MDG,Madagascar,4.95,2011,direct_national_census_or_survey
+MDV,Maldives,5.4,2017,direct_national_census_or_survey
+MEX,Mexico,3.74,2015,direct_national_census_or_survey
+MHL,Marshall Islands,3.9,,regional_median_fallback
+MKD,North Macedonia,2.58,,regional_median_fallback
+MLI,Mali,5.81,2018,direct_national_census_or_survey
+MLT,Malta,2.85,2011,direct_national_census_or_survey
+MMR,Myanmar,4.22,2016,direct_national_census_or_survey
+MNE,Montenegro,3.21,2011,direct_national_census_or_survey
+MNG,Mongolia,4.32,2000,direct_national_census_or_survey
+MNP,Northern Mariana Islands,3.9,,regional_median_fallback
+MOZ,Mozambique,4.37,2011,direct_national_census_or_survey
+MRT,Mauritania,4.88,,regional_median_fallback
+MUS,Mauritius,3.48,2011,direct_national_census_or_survey
+MWI,Malawi,4.51,2015,direct_national_census_or_survey
+MYS,Malaysia,4.56,2000,direct_national_census_or_survey
+NAM,Namibia,4.24,2013,direct_national_census_or_survey
+NCL,New Caledonia,3.9,,regional_median_fallback
+NER,Niger,5.92,2012,direct_national_census_or_survey
+NGA,Nigeria,4.9,2015,direct_national_census_or_survey
+NIC,Nicaragua,4.92,2005,direct_national_census_or_survey
+NLD,Netherlands,2.23,2011,direct_national_census_or_survey
+NOR,Norway,2.22,2011,direct_national_census_or_survey
+NPL,Nepal,4.24,2016,direct_national_census_or_survey
+NRU,Naoero,3.9,,regional_median_fallback
+NZL,New Zealand,2.67,2013,direct_national_census_or_survey
+OMN,Oman,8.02,2003,direct_national_census_or_survey
+PAK,Pakistan,6.8,2013,direct_national_census_or_survey
+PAN,Panama,3.67,2010,direct_national_census_or_survey
+PER,Peru,3.75,2012,direct_national_census_or_survey
+PHL,Philippines,4.23,2017,direct_national_census_or_survey
+PLW,Palau,3.9,,regional_median_fallback
+PNG,Papua New Guinea,5.43,2000,direct_national_census_or_survey
+POL,Poland,2.81,2011,direct_national_census_or_survey
+PRI,Puerto Rico (US),3.62,,regional_median_fallback
+PRK,"Korea, Dem. People's Rep.",3.93,2008,direct_national_census_or_survey
+PRT,Portugal,2.66,2011,direct_national_census_or_survey
+PRY,Paraguay,4.63,2002,direct_national_census_or_survey
+PSE,West Bank and Gaza,5.24,,regional_median_fallback
+PYF,French Polynesia,3.9,,regional_median_fallback
+QAT,Qatar,5.24,,regional_median_fallback
+ROU,Romania,2.88,2011,direct_national_census_or_survey
+RUS,Russian Federation,2.58,2010,direct_national_census_or_survey
+RWA,Rwanda,4.26,2015,direct_national_census_or_survey
+SAU,Saudi Arabia,5.24,,regional_median_fallback
+SDN,Sudan,5.59,2008,direct_national_census_or_survey
+SEN,Senegal,8.66,2017,direct_national_census_or_survey
+SGP,Singapore,3.29,2010,direct_national_census_or_survey
+SLB,Solomon Islands,3.9,,regional_median_fallback
+SLE,Sierra Leone,5.9,2013,direct_national_census_or_survey
+SLV,El Salvador,4.07,2007,direct_national_census_or_survey
+SMR,San Marino,2.58,,regional_median_fallback
+SOM,"Somalia, Fed. Rep.",4.88,,regional_median_fallback
+SRB,Serbia,2.88,2011,direct_national_census_or_survey
+SSD,South Sudan,5.95,2008,direct_national_census_or_survey
+STP,Sao Tome and Principe,4.88,,regional_median_fallback
+SUR,Suriname,3.94,2004,direct_national_census_or_survey
+SVK,Slovak Republic,2.8,2011,direct_national_census_or_survey
+SVN,Slovenia,2.47,2015,direct_national_census_or_survey
+SWE,Sweden,2.17,2020,direct_national_census_or_survey
+SWZ,Eswatini,4.74,2007,direct_national_census_or_survey
+SXM,Sint Maarten (Dutch part),3.62,,regional_median_fallback
+SYC,Seychelles,4.88,,regional_median_fallback
+SYR,Syrian Arab Republic,5.24,,regional_median_fallback
+TCA,Turks and Caicos Islands,3.62,,regional_median_fallback
+TCD,Chad,5.78,2015,direct_national_census_or_survey
+TGO,Togo,4.55,2014,direct_national_census_or_survey
+THA,Thailand,3.69,2010,direct_national_census_or_survey
+TJK,Tajikistan,6.27,2012,direct_national_census_or_survey
+TKM,Turkmenistan,2.58,,regional_median_fallback
+TLS,Timor-Leste,5.27,2016,direct_national_census_or_survey
+TON,Tonga,3.9,,regional_median_fallback
+TTO,Trinidad and Tobago,3.29,2011,direct_national_census_or_survey
+TUN,Tunisia,5.24,,regional_median_fallback
+TUR,Turkiye,3.14,2023,direct_national_census_or_survey
+TUV,Tuvalu,3.9,,regional_median_fallback
+TZA,Tanzania,4.85,2015,direct_national_census_or_survey
+UGA,Uganda,4.53,2016,direct_national_census_or_survey
+UKR,Ukraine,2.46,2007,direct_national_census_or_survey
+URY,Uruguay,2.78,2011,direct_national_census_or_survey
+USA,United States,2.49,2020,direct_national_census_or_survey
+UZB,Uzbekistan,5.24,1996,direct_national_census_or_survey
+VCT,St. Vincent and the Grenadines,3.62,,regional_median_fallback
+VEN,"Venezuela, RB",4.33,2001,direct_national_census_or_survey
+VGB,British Virgin Islands,3.62,,regional_median_fallback
+VIR,Virgin Islands (U.S.),3.62,,regional_median_fallback
+VNM,Viet Nam,3.78,2009,direct_national_census_or_survey
+VUT,Vanuatu,3.9,,regional_median_fallback
+WSM,Samoa,6.75,2016,direct_national_census_or_survey
+XKX,Kosovo,2.58,,regional_median_fallback
+YEM,"Yemen, Rep.",6.67,2013,direct_national_census_or_survey
+ZAF,South Africa,3.36,2016,direct_national_census_or_survey
+ZMB,Zambia,5.13,2013,direct_national_census_or_survey
+ZWE,Zimbabwe,4.08,2015,direct_national_census_or_survey

@@ -1061,3 +1061,1287 @@ Phases 1-5 are done. Start **Phase 6 (derived charts)**, but two things first:
    already structured as reusable functions, so this should mostly be re-running
    them across a finer cost grid rather than new modeling) and the final
    revenue-per-satellite-by-orbit chart.
+
+## WorldPop world-map heatmap chart (2026-08-10)
+
+New session, user request: re-download the gitignored `data/raw/worldpop/` GeoTIFFs
+(a fresh container has none — see the "Download complete" note in the Phase 6
+section above) and produce an actual population-density heatmap of the world from
+them. Re-running `download_worldpop.py` reproduced the exact same **215/217**
+result as the original run (CHI, XKX permanently absent from WorldPop's own country
+list — not a network issue, confirmed by retrying those two alone to a clean
+`no_data` status after transient connection resets cleared on retry).
+
+**New environment dependency, not yet formalized as a requirements file**: this
+container had NO scientific Python stack at all (no numpy/matplotlib/pip packages
+beyond stdlib). Created a project-local `.venv/` (already covered by the repo's
+`.gitignore` `.venv` entry, nothing to add) with `numpy`, `matplotlib`, `tifffile`,
+`imagecodecs`. **Deliberately did NOT add `rasterio`/GDAL** — WorldPop's GeoTIFFs are
+plain unprojected WGS84 rasters with simple `ModelPixelScaleTag`/`ModelTiepointTag`
+georeferencing, so `tifffile` + manual tag parsing was enough and avoids a heavy
+GDAL binary dependency. **A future session must `source .venv/bin/activate` (or
+recreate it) before running any chart in this project** — nothing was installed
+system-wide.
+
+**New module: `population_density_grid.py`** (root) — mosaics the 215 independent,
+unaligned per-country GeoTIFFs into one global 0.1deg lon/lat grid.
+`SRC_DEG = 1/120` (WorldPop's native "1km" pixel) divides evenly into
+`TARGET_DEG = 0.1` (`BLOCK = 12`), so downsampling is exact block-averaging, no
+resampling/interpolation. Each country is read, NaN-masked (`GDAL_NODATA = -99999`),
+block-reduced (tiny territories smaller than one block keep native resolution
+instead of vanishing), then scatter-accumulated (sum + count, i.e. a true weighted
+mean) into the shared grid via direct floor-division indexing — deliberately NOT
+`np.searchsorted` on the descending latitude-edges array, which is a sign-convention
+trap (caught before shipping, not after). Result cached to
+`data/raw/worldpop/_grid_cache_0.1deg.npz` (inside the already-gitignored worldpop
+dir) since the full mosaic takes ~1 minute — **always call
+`load_or_build_grid()`, never `build_global_grid()` directly**, so a chart rerun is
+instant.
+
+**Sanity check run, not printed on the chart itself**: integrating the grid's
+density x per-cell area (accounting for `cos(latitude)` cell-width shrinkage) back
+out to a global population total gives **~8.85B**, vs. WorldPop's actual ~7.9B
+(2020) — about 10-12% high, expected order of magnitude for a coarse 0.1deg
+block-mean (mixed land/ocean coastal cells get averaged over valid land pixels only
+but multiplied by the FULL cell area, biasing coastal/archipelago cells upward).
+Good enough as a visual heatmap; **do not use this grid for a quantitative
+population total** without correcting for that bias first — Phase 5/6's actual
+demand model still uses whole-country `AG.LND.TOTL.K2` land area, not this grid (see
+the still-open density-cap integration step logged in the Phase 6 section above).
+
+**New chart: `charts/population_density_map.py`** ->
+`results/population/population_density_heatmap.png`. Reuses
+`coverage_map.load_land_paths()` / `draw_world_basemap()` directly (imported via a
+second `sys.path.insert` of the `charts/` dir itself, since `charts/` has no
+`__init__.py` and isn't a package) rather than duplicating the basemap code.
+`pcolormesh` + `LogNorm` (population density spans 1 to ~48,200 people/km2 — linear
+would show almost nothing), `plasma` colormap with `cmap.set_bad(alpha=0)` so
+below-floor (`DENSITY_FLOOR = 1` person/km2) and no-data cells are fully transparent
+and the grey land basemap shows through uninhabited land instead of leaving a hole.
+Colorbar ticks set explicitly via `FuncFormatter` (the project's established
+LogNorm-colorbar-ticks fix — see the edge-case catalog in the `charting-and-modeling`
+skill; the default `LogFormatter` renders literal `$\mathdefault{10^n}$` otherwise).
+Title follows the project's binding "vs. axes" rule even though this is a 2D map,
+not a scatter: "Population density (people/km2) vs. longitude and latitude".
+
+Visual result matches expectation: Nile valley, Ganges/Indus plains, Java, the
+NE-US/BosWash corridor, and coastal China are the brightest (highest-density)
+regions; Sahara, Amazon interior, Siberia, and central Australia render fully
+transparent (below the 1 person/km2 floor) with the bare land basemap showing
+through.
+
+**Not yet done**: this is a **visualization-only** artifact, same status as the raw
+GeoTIFF download itself — `equilibrium_model.py`'s density-cap logic is still
+unchanged (whole-country land area, not populated area). If a future session
+integrates the WorldPop data into the model per the Phase 6 "Next step for whoever
+picks up the integration" note above, `population_density_grid.py`'s per-country
+block-reduced arrays (before global-mosaic accumulation) are the natural building
+block for a per-country "populated area above threshold X" function — don't
+re-parse the GeoTIFFs a second time with a different approach.
+
+## Serviceable-customers model: the actual density-cap integration (2026-08-10, same session)
+
+Same session as the heatmap above. User asked for the integration step flagged as
+"not yet done" just above -- immediately, same day -- plus a population-vs-latitude
+refresh, population-vs-density histograms, and a data-resolution sensitivity check
+(1km vs 100m). Built in this order:
+
+**New module: `serviceable_customers_model.py`** (root) -- the actual integration.
+Combines three previously-separate pieces for the first time:
+`orbital_geometry.expected_sats_by_latitude()` (Phase 2), `capacity_density_model.py`'s
+TWO Phase 3 caps (max customers/satellite -- an aggregate SUPPLY ceiling that grows
+with satellite count N; max customers/km2 -- a per-area DEMAND ceiling, independent
+of N), and `population_density_grid.py`'s real gridded population (replacing Phase
+5/6's whole-country-land-area approximation with actual per-cell density).
+
+Key modeling choices, all deliberate:
+- **Shell split is a rough 3-inclination stand-in (45/65/80deg, ratio 5:1:1), per
+  the user's explicit instruction** -- NOT `starlink_shells.csv`'s precise Gen1
+  geometry (53.0/53.2/70.0/97.6deg). Fractional satellites per shell at any N (the
+  same "expected value" treatment `orbital_geometry.py` already uses elsewhere), all
+  three shells share one fixed altitude (`scenario.altitude_km`, 550km) for
+  consistency with the Phase 3 capacity scenario, not real per-generation altitudes.
+- **The min() of supply vs. demand is taken PER 1deg LATITUDE BAND, then summed --
+  NOT on the two global totals.** Applying it globally would let satellite-capacity
+  surplus at a sparse latitude (e.g. 80deg) silently "cover" a shortfall at a dense
+  one (e.g. 30deg), which satellites can't actually do. This is the same
+  finest-available-granularity principle as Phase 5's per-country min(), just at
+  latitude-band granularity here (grid-cell granularity isn't possible since the
+  orbital model only resolves latitude, not longitude).
+- **The demand-side ceiling (density-capped population by latitude) is
+  N-INDEPENDENT** (coverage extent is fixed by the widest shell, 80deg, regardless of
+  N) **and is computed ONCE per sweep**, not per N -- `sweep_serviceable_customers()`
+  relies on this for speed (a handful of seconds for a 40-point sweep, ~215-country
+  grid).
+
+**Real bug caught and fixed before shipping, in BOTH `population_density_grid.py`
+and `serviceable_customers_model.py`**: the latitude-to-bin-index formula was
+`(90 - lat) / bin_width`, which MIRRORS north and south (maps the north pole to
+bin 0, which is actually the array's southernmost bin). Caught by eye: the first
+`population_by_latitude_gridded.png` draft showed the huge India/China population
+peak in the SOUTHERN hemisphere at -26deg, which is obviously wrong (real peak
+~26-30deg NORTH). Fixed to `(lat + 90) / bin_width` in both files. **Important
+downstream finding**: this bug did NOT change `serviceable_customers_model.py`'s
+actual totals, because satellite capacity-by-latitude is symmetric around the
+equator (pure orbital mechanics, no hemisphere preference) -- mirroring which
+population value pairs with which (symmetric) capacity value doesn't change the sum.
+Only the standalone latitude chart's display was actually wrong. Don't assume that
+generalizes to a future asymmetric capacity model, though -- re-check this
+invariant if shell altitudes/inclinations ever become hemisphere-asymmetric.
+
+**New shared functions added to `population_density_grid.py`** (not duplicated
+per-caller, per the skill's rule #1): `row_areas_km2()` (per-latitude-row cell area,
+cos(lat)-scaled), `cell_population()`, `population_by_latitude()`. Also two new
+single-raster loaders, used for the US-only work below:
+`load_country_density_grid(iso3)` (reads one country's 1km tif directly, own
+lon/lat edges, no global-grid mosaicking/quantization) and
+`load_population_count_raster_as_density(path)` (converts a WorldPop *count* raster
+-- people PER PIXEL, e.g. the 100m "ppp" product -- to density by dividing by each
+pixel's own geographic area; the 1km product is already density, no conversion
+needed there).
+
+**New charts**:
+- `charts/population_stats.py` -> `results/population/`: `population_by_latitude_gridded.png`
+  (replaces the old capital-city-proxy chart with real gridded data -- multi-peaked,
+  matches real geography much more precisely than the single-point-per-country
+  version) and `population_vs_density_histogram_{global,us}.png` (log-x histogram,
+  population summed into log-spaced density bins; global median ~687/km2, US median
+  ~1,081/km2 -- log-spaced `DENSITY_BIN_EDGES` from 0.1 to ~126,000/km2).
+- `charts/serviceable_customers_chart.py` -> `results/population/serviceable_customers_vs_satellites_global.png`:
+  log-log sweep from 100 to 2,000,000 satellites. Shows the expected ramp-then-
+  saturate shape -- linear growth on log-log until satellite capacity exceeds the
+  local density-capped population ceiling, then flattens at **~1.13B customers**
+  globally (density-capped population within the 80deg coverage envelope). Gen1
+  (4,408) and current-fleet (~10,900) marked as vertical reference lines, both still
+  on the steep/linear part of the curve. (An early cross-check claimed N=4,408 gave
+  ~29.6M, "matching" Phase 3's original finding almost exactly -- **that was against
+  the buggy pre-fix code below and is superseded**; see the bug writeup for the
+  corrected value.)
+
+## CRITICAL BUG, found and fixed same day: np.fmin silently zeroed out the whole density cap (2026-08-10)
+
+User asked a sharp follow-up question ("isn't that beam density for one satellite?")
+that led to re-examining the model, which surfaced a real, serious bug in
+`serviceable_customers_model.py`'s core capping step -- **affecting every
+serviceable-customers number shipped earlier the same day**, not just the
+in-progress US 100m work.
+
+**The bug**: `_capped_population_per_row()` and the streaming variant both used
+`np.fmin(density, max_density_cap)` to clamp density to the cap. `np.fmin` has a
+specific, easy-to-miss NaN behavior: **it IGNORES NaN and returns the other
+operand** (`np.fmin(nan, cap) == cap`, not `nan`). Every no-data cell -- ocean, or
+any land not covered by a country's WorldPop raster -- was silently converted into
+"a cell at exactly the density cap" instead of contributing zero. For the GLOBAL
+grid, where ~70% of the array is ocean (NaN), this is enormous: `nansum` no longer
+excludes those cells (they're not NaN anymore after `fmin`), so the ceiling was
+inflated by roughly `cap x total_ocean_area`.
+
+**How it was caught**: not by inspection -- by the numbers not adding up. The 100m US
+streaming run (see below) produced a "density-capped population" of 392M for the
+US, which is mathematically IMPOSSIBLE: `capped_total` can never exceed
+`cap x total_valid_land_area` (a hard upper bound from the min() itself), and the
+US's real land area (~9.33M km2, cross-checked directly from the working 1km grid)
+x the 2.57/km2 cap caps out at ~24M. Getting 392M -- 16x over the hard ceiling --
+meant the arithmetic itself was broken, not just an assumption being generous.
+Traced to the exact `fmin`-vs-`minimum` distinction via a sampled diagnostic pass.
+
+**Fix**: `np.fmin` -> `np.minimum` (`minimum` propagates NaN as an operand should),
+in both `_capped_population_per_row()` (grid.py's whole-array path) and
+`density_capped_population_by_latitude_streaming()`'s in-place chunk loop. One-line
+fix in two places, but the numeric impact is large:
+
+| Quantity | Buggy (fmin) | Fixed (minimum) |
+|---|---|---|
+| Global density-capped ceiling | 1.13B | **188.6M** |
+| Global serviceable @ N=4,408 (Gen1) | 29.6M | **24.5M** |
+| Global serviceable @ N=10,900 (current fleet) | (not separately reported) | **55.8M** |
+| US 1km density-capped ceiling | (not separately reported pre-fix) | **8.20M** |
+| US 100m density-capped ceiling (streaming) | 392.1M (impossible) | recomputed after fix, see below |
+
+`results/population/serviceable_customers_vs_satellites_global.png` was already
+committed with the WRONG (1.13B-ceiling) numbers -- **regenerated and recommitted
+with the fix**. Anyone reading the earlier commit's chart or this same day's earlier
+CLAUDE.md text (the "1.13B ceiling," "99.7% of population lives above the cap,"
+Gen1-matches-Phase-3 claims) should treat those specific NUMBERS as superseded by
+this table; the MECHANISM description (per-latitude-band min of supply vs. demand,
+shell ratios, etc.) is unaffected -- only the NaN-handling bug, not the modeling
+logic itself, was wrong.
+
+**Lesson for future numeric code in this project**: `np.fmin`/`np.fmax` are almost
+never what you want when NaN means "excluded/no-data" rather than "a real value to
+compare." Default to `np.minimum`/`np.maximum` (which propagate NaN) unless you have
+a specific, deliberate reason to want NaN-skipping comparison behavior -- and if you
+do use fmin/fmax on an array that can contain structural NaN (not measurement noise),
+that's worth a comment explaining why the skip is intentional.
+
+## US 1km vs. 100m resolution comparison (2026-08-10, same day, after the bug fix above)
+
+`data/raw/worldpop/usa_ppp_2020_100m.tif` downloaded successfully (WorldPop's `wpgp`
+"Unconstrained individual countries 2000-2020, 100m resolution" product,
+`usa_ppp_2020.tif`, exactly 4,011,468,120 bytes as declared by the server --
+confirmed via the same `hub.worldpop.org` REST API used by `download_worldpop.py`,
+category `pop`, alias `wpgp`; the `pop_density` category only exposes 1km products,
+hence needing a different category/alias for 100m). **This file is a population
+COUNT product ("ppp" = people per pixel), NOT density** -- unlike the 1km product,
+values must be divided by each pixel's own geographic area to get people/km2;
+`load_population_count_raster_as_density()` / the streaming aggregator handle this.
+
+**Too large to load whole**: 62,976 x 430,711 pixels, ~101GB uncompressed as
+float32. Added `population_density_grid.open_raster_zarr()` (tifffile's zarr store,
+tile-decode-on-demand) and
+`serviceable_customers_model.density_capped_population_by_latitude_streaming()`
+(row-chunked accumulation, never holding more than one chunk in memory).
+
+**First streaming attempt OOM-killed** (exit 137) at `row_chunk=2048`: each chunk's
+divide/fmin(now minimum)/multiply sequence allocated a FRESH full-size array at
+every step (~4x the ~3.5GB chunk size = ~14GB, on a 15GB box). Fixed by mutating the
+chunk buffer in place at every step (`out=chunk` on divide and minimum, `chunk *=
+area_col`) and dropping to `row_chunk=512` (one tile-row, ~881MB/chunk) -- peak
+memory now ~1x chunk size. Clean run: ~570s (~9.5 min) with `row_chunk=512`.
+
+**Two full streaming runs were needed**: the first (memory-safe) run completed but
+used the still-buggy `fmin` code (392.1M result, caught as impossible per the bug
+section above); re-run after the `minimum` fix, giving **6.8M** for the 100m ceiling
+(vs. **8.2M** for the same country at 1km, from the ALREADY-fixed whole-grid path --
+a real, moderate **-17%** difference from using finer input data). Directionally
+sensible: finer resolution resolves more small-scale density peaks that individually
+exceed the cap and get clipped, which 1km's coarser averaging partially smooths away
+-- so finer data should generally push the capped ceiling DOWN, not up, and it did.
+Chart: `results/population/serviceable_customers_vs_satellites_us_1km_vs_100m.png`.
+
+**One more bug, caught immediately after, same root-cause family (log-axis
+formatting, not NaN this time)**: the US comparison chart's y-range (~200K to ~8M,
+under 2 decades) was narrow enough that matplotlib auto-enabled MINOR tick labels,
+which bypassed the chart's `set_major_formatter`-only fix and rendered literal
+`$\mathdefault{6\times10^{6}}$` text -- the global chart's wider range (several
+decades) never triggered this, so it shipped clean and hid the issue. Also: the
+info box's one long unwrapped line was implicated in a `constrained_layout not
+applied because axes sizes collapsed to zero` warning and a squished/cut-off box.
+Fixed BOTH at the shared level (`_format_log_axes()`, applied to every chart in this
+file, not just the one that showed the symptom) rather than patching the one chart
+-- add `ax.yaxis.set_minor_formatter(mticker.NullFormatter())` alongside the major
+formatter on any log-scale numeric axis in this project going forward, and keep
+info-box text to short wrapped lines per the project's existing convention.
+
+**Open question flagged mid-session, since answered**: the density cap (2.57
+customers/km2) is a SINGLE BEAM's footprint limit; the fixed-cap model applies it as
+a hard per-area ceiling independent of satellite count N, correctly matching
+`capacity_density_model.py`'s original documented Phase 3 assumption. User's answer:
+**"make it so that the density limit is only per satellite, make this another set of
+charts (not replacing the old ones)."** Built as a genuinely separate model variant,
+not a change to the existing one -- see the next section.
+
+## Per-satellite density cap: a SECOND model variant, new charts (2026-08-10, same day)
+
+New, separate curve family answering the open question above: instead of a FIXED
+areal density cap, the cap now scales PER SATELLITE -- `effective_cap(lat, N) =
+base_cap x sats_overhead(lat, N)`, i.e. each satellite overhead a latitude band
+independently contributes its own beam-footprint allowance, so more satellites
+raises the local areal ceiling too, not just the aggregate per-satellite capacity
+ceiling (which already scaled with N in the original model). **The original
+fixed-cap model and its charts are UNCHANGED** -- this is purely additive, per the
+user's explicit instruction not to replace the old charts.
+
+**New model code, all in `serviceable_customers_model.py`** (not a separate file --
+shares `make_shells`/`max_latitude_covered`/etc. with the fixed-cap model, so it
+lives alongside it under a clearly-marked "Per-satellite density cap variant"
+section):
+- `sats_overhead_by_latitude()` -- extracted from `capacity_by_latitude()` (a
+  behavior-preserving refactor, verified: N=4,408/10,900 give byte-identical results
+  to before) so both the aggregate-capacity supply curve AND the new per-satellite
+  cap scaling read the same underlying satellites-overhead-by-latitude quantity.
+- **Why a histogram, not a direct recompute**: the fixed-cap model could compute its
+  (N-independent) demand ceiling ONCE per sweep, since the cap never changed. Here
+  the cap changes at EVERY N, and re-reading the raw raster per N is not an option
+  (the 100m file alone takes ~10 min per PASS, x46 sweep points would be ~7.5
+  hours). Instead, `density_area_histogram_by_latitude()` (in-memory) and
+  `..._streaming()` (100m, same row-chunked/in-place-mutation pattern as the
+  existing streaming aggregator) build a (latitude band x density bin) AREA
+  histogram ONCE -- `DENSITY_BIN_EDGES`, 59 log-spaced bins, 0.01 to ~200,000/km2.
+  `capped_population_from_histogram()` then re-applies ANY cap value against that
+  histogram as a cheap array op, no raw-data re-reads needed for the rest of a sweep.
+  Cross-checked: summing the histogram's own (bin_center x area) reproduces the
+  known raw population totals closely (global: 8.89B from the histogram vs. 8.85B
+  from the exact grid sum, US 1km: consistent within the same small binning-
+  approximation error) -- confirms the histogram isn't silently losing population.
+- `serviceable_customers_per_satellite_cap()` / `sweep_per_satellite_cap()` mirror
+  the fixed-cap model's `serviceable_customers()` / `sweep_from_pop_cap()` signature
+  shape, taking a precomputed histogram instead of a precomputed scalar ceiling.
+
+**Real, expected finding**: at low N the two models are nearly identical (both
+dominated by the aggregate capacity constraint, not the density cap, at low
+satellite counts). They diverge sharply once satellites overhead a band exceed ~1
+-- the fixed-cap curve saturates at 188.6M (unchanged from before) while the
+per-satellite curve keeps climbing, approaching **~8.9B (raw population)** by
+N~5-10M satellites. This is the direct, correct answer to the earlier "why doesn't
+the ceiling go to 8B" question **under this new assumption** -- with a per-satellite
+cap, given enough satellites the areal constraint stops binding anywhere and the
+model becomes purely population-limited, same as the user originally expected
+before the fixed-cap assumption was explained.
+
+**New charts, `charts/serviceable_customers_per_satellite_chart.py`** (imports
+shared helpers -- `_draw_curve`, `_format_log_axes`, `_pop_formatter`,
+`_add_fleet_reference_lines`, `SOURCE_NOTE`, `SHELL_RATIO_NOTE` -- directly from
+`charts/serviceable_customers_chart.py` rather than duplicating them; `_draw_curve`
+gained an optional `linestyle` param, default `"-"`, so the OLD chart file's calls
+are behavior-unchanged):
+- `serviceable_customers_vs_satellites_global_per_satellite_cap.png` -- fixed cap
+  (dashed) vs. per-satellite cap (solid) overlaid, global, 1km data.
+- `serviceable_customers_vs_satellites_us_per_satellite_cap.png` -- 4 curves:
+  {1km, 100m} x {fixed, per-satellite}, US only. Needs a SECOND streaming pass over
+  the 100m US raster (`density_area_histogram_by_latitude_streaming()`, cached to
+  `data/raw/worldpop/_us_100m_density_area_hist.npz`) -- the earlier streaming cache
+  (`_us_100m_pop_cap_by_lat.npz`, a single scalar-per-latitude-band ceiling) isn't
+  enough for this variant since the cap now needs re-applying at every N.
+
+**Layout bug hit a second time, same root cause as the earlier US 1km-vs-100m
+chart**: an overlong single-line info-box string triggered the same
+`constrained_layout not applied because axes sizes collapsed to zero` /
+squished-plot symptom. Fixed the same way -- shorter, explicitly wrapped lines. Two
+occurrences of the identical bug class now on record; keep info-box text short by
+default rather than rediscovering this a third time.
+
+## Real Starlink shell data (correcting the rough ratio) + linear-axis charts (2026-08-10, same day)
+
+User, on seeing the per-satellite-cap chart: **"I didn't mean use literally my rough
+ratio use the real Starlink satellite plane data."** The earlier "5:1:1 at
+45/65/80deg" shell split (introduced when this whole serviceable-customers model was
+first built) was meant as a rough verbal description of Starlink's shape, NOT a
+literal instruction to invent a 3-shell stand-in -- correctly read now as: use
+`data/starlink_shells.csv`'s real Gen1 geometry, already loaded elsewhere in this
+project via `orbital_geometry.load_shells_with_full_geometry()`.
+
+**Real shells are very different from the rough guess**: 5 sub-shells, NOT evenly
+spread across 45/65/80deg -- 71.8% combined at 53.0/53.2deg, 16.3% at 70.0deg, 11.8%
+at 97.6deg (near-polar), 4,408 satellites total. Max latitude covered by the union
+is 82.4deg (the near-polar shell), vs. the rough model's 80deg -- barely changes the
+fixed-cap ceiling number (still 188.6M at the displayed precision).
+
+**Model refactor in `serviceable_customers_model.py`**: `make_shells()` (rough
+ratio, deleted) -> `real_shells()` (loads the real CSV) + `scale_shells_to_total()`
+(scales EACH real shell's plane count proportionally to hit any target N, preserving
+its own true altitude/inclination -- no longer one shared synthetic altitude for all
+shells). Every function that took a `ratios=SHELL_RATIOS` param now takes
+`base_shells=None` (defaulting to `real_shells()`) instead -- `sats_overhead_by_latitude`,
+`capacity_by_latitude`, `max_latitude_covered`, `serviceable_customers`,
+`sweep_from_pop_cap`, `sweep_serviceable_customers`, `serviceable_customers_per_satellite_cap`,
+`sweep_per_satellite_cap`. **All 6 previously-shipped serviceable-customers chart
+PNGs were regenerated** with real shells (this is a correction to a wrong input
+assumption, not a new/additive chart set like the per-satellite-cap variant was --
+the old rough-ratio numbers were simply wrong and are not preserved anywhere).
+
+**User's second question, answered with the actual numbers**: *"I'm surprised by it
+being linear on the log-log graph, I'd expect diminishing returns much faster."*
+Real mechanism, verified by computing `served(N)/N` directly: while EVERY latitude
+band's satellite-derived capacity is still below its own local density-capped demand
+ceiling (the constellation is capacity-bound, not demand-bound, ANYWHERE), total
+capacity(N) = N x customers_per_satellite x (a fixed, N-independent sum of per-shell
+time-fractions) -- an EXACTLY linear function of N, hence a perfectly straight
+log-log line. This held almost exactly with the old rough-ratio model (`served/N`
+was constant at ~6,704, the exact customers-per-satellite figure, from N=100 to
+N~40,000). **With REAL shells the ratio is NOT constant** -- it declines steadily
+from ~6,249 at N=100 down to ~1,622 by N~116,000 -- because the real shells are
+UNEVENLY weighted (72% at 53deg vs. 11.8% near-polar), so different latitude bands'
+demand ceilings get "used up" at very different rates relative to their real
+orbital-driven satellite supply, causing earlier, more gradual visible curvature
+than the toy model showed. **The deeper reason the bend is gradual rather than a
+sharp knee either way**: the model has no mechanism to preferentially route
+additional satellites toward still-undersupplied bands vs. already-saturated ones --
+every additional satellite is distributed across ALL bands in the same fixed
+orbital-mechanics-determined proportions, so the aggregate curve stays dominated by
+the still-capacity-bound majority of bands until MANY individual bands have
+saturated, not just the first one.
+
+**New linear-axis chart variants added** (per user request, following the existing
+`equilibrium.py` precedent of log-log + linear versions of the same chart): for the
+3 chart families most relevant to this discussion --
+`serviceable_customers_vs_satellites_global_linear.png`,
+`serviceable_customers_vs_satellites_global_per_satellite_cap_linear.png`,
+`serviceable_customers_vs_satellites_us_per_satellite_cap_linear.png`. **NOT** simply
+reusing the log chart's `geomspace` sample points on a linear axis -- that would put
+almost all 40 points in a dense cluster near zero and leave the visually-important
+knee/saturation region sparse; each linear chart uses its own `np.linspace(0, MAX,
+200)`, with `MAX` sized to that specific curve's own saturation point (looked up
+numerically first, not guessed): 160K for the global fixed-cap-only chart, 7M for
+the global fixed-vs-per-satellite comparison (per-satellite's own ceiling is far
+later than fixed-cap's), 1.2M for the US comparison. Did NOT add a linear version of
+the plain US 1km-vs-100m fixed-cap-only chart (`serviceable_customers_chart.py`) --
+not requested, add if wanted.
+
+**Cosmetic bug caught while reviewing the new linear charts, fixed at the shared
+level**: `_add_fleet_reference_lines()` (Gen1 4,408 / current fleet ~10,900) used the
+same vertical text offset for both labels, which worked fine on log-axis charts
+(the two lines are visually far apart there) but overlapped into unreadable garbled
+text on the wide-range linear charts (7M/1.2M axis, where 4,408 and 10,900 are both
+essentially "at the left edge"). Fixed with a per-label vertical stagger
+`[(4,-4), (4,-70)]` so the two labels never collide regardless of how close the
+lines are in x -- applies to every chart using this helper, not just the ones that
+showed the symptom, per this project's now well-established "fix shared helpers
+once" convention.
+
+## Servable population DENSITY vs. satellite count (2026-08-10, same day)
+
+User: "Give me servable population density vs sat count." Distinct metric from
+everything built so far in this file's model -- not a customer COUNT, but the
+per-area density CEILING (people/km2) itself, as a function of N. Read as: extend
+the per-satellite-cap mechanism (`effective_cap(lat, N) = base_cap x satellites
+overhead that band`) into its own chart, showing the ceiling's growth directly
+rather than folding it into a customer total.
+
+**New model functions in `serviceable_customers_model.py`**:
+`effective_density_cap_by_latitude()` -- the density-counterpart of
+`capacity_by_latitude()` (which does the same thing for the aggregate capacity cap);
+factors out the `base_cap x sats_overhead` line that was previously inlined only
+inside `serviceable_customers_per_satellite_cap()`. `effective_density_cap_at_latitudes()`
+samples that array at specific latitudes (nearest 1deg bin) -- for a chart that
+tracks a handful of representative latitudes across a satellite-count sweep, rather
+than the full per-band array at one N.
+
+**New chart**: `charts/serviceable_customers_per_satellite_chart.py` gained a third
+figure, `fig_servable_density_vs_satellites()` -> `results/population/servable_density_vs_satellites.png`.
+
+Also re-sent (not regenerated -- unchanged since the Phase/session that built them)
+`population_vs_density_histogram_global.png` and `_us.png`
+(`charts/population_stats.py`) per the user's request to see them again.
+
+**Revised same day, right after shipping**: first version plotted 5 representative
+latitudes (0/30/53/70/80deg) as separate lines. User: **"don't make it a series of
+latitudes, just use one for the Starlink profile."** Correct call -- an arbitrary
+5-latitude sample isn't "the Starlink profile," it's 5 disconnected cuts through it.
+Replaced with `effective_density_cap_profile_average()`: a single
+satellites-overhead-WEIGHTED average across ALL covered latitude bands (weight =
+`sats_overhead(lat, N)`, the same quantity the constellation actually distributes
+satellites by) -- "the effective ceiling a typical satellite in this real
+constellation supports," collapsing the whole shell profile into one honest number
+instead of 5 arbitrary ones. `effective_density_cap_at_latitudes()` (the sampling
+helper the first version used) was deleted along with it -- no longer had a caller,
+and per this project's "no dead code" convention, an unused sampling helper doesn't
+get kept around "in case it's useful later."
+
+**Linear version added right after** (user: "Linear version please"):
+`fig_servable_density_vs_satellites_linear()` -> `servable_density_vs_satellites_linear.png`.
+Same x-range as the log-log version (0-2,000,000, for direct comparability) via
+`np.linspace` (not `geomspace` -- this curve has no saturation point to size a
+tighter range around, unlike every other linear chart in this project so far; it's
+an exactly-proportional straight line in N by construction, since it's a weighted
+sum of quantities each proportional to N). Legend placed `loc="lower right"` --
+`"upper left"` collided with the Gen1 reference-line label, which sits right at the
+y-axis on a chart where the line rises from the origin (unlike the serviceable-
+customer charts, where "upper left" is genuinely empty because those curves start
+near zero and only rise slowly at first).
+
+## Why the serviceable-customers derivative doesn't match the density histogram, and the latitude saturation heatmap (2026-08-11)
+
+User asked why d(serviceable customers)/dN isn't the same shape as the population-
+vs-density histogram, given the servable-density curve is exactly proportional to N.
+Investigated by splitting the per-latitude-band shortfall (`raw pop - served`) by
+WHICH constraint binds, at several N (quick ad hoc script, not saved as a chart):
+
+| N | total shortfall | supply-bound | density-cap-bound |
+|---|---|---|---|
+| 2,000,000 | 2,961M | 2,960M | 1.2M |
+| 3,000,000 | 1,453M | 1,453M | 0M |
+| 5,000,000 | 137M | 137M | 0M |
+
+**Real finding: the density cap stops binding almost everywhere by ~N=2M.** From
+there to full saturation (~N=6M), essentially 100% of the remaining shortfall is
+AGGREGATE-CAPACITY-bound (`customers_per_satellite x satellites_overhead`), which
+has NOTHING to do with per-cell density. The servable-density chart (a single
+satellite-weighted-average number) was never the right quantity to explain this
+tail -- it only describes the density-cap side, and that side stopped mattering long
+before saturation.
+
+**The actual mechanism**: the single most populous 1-degree latitude band on Earth
+is **26.5N** (South Asia -- India/Bangladesh, ~279M people, matches the peak in
+`population_by_latitude_gridded.png` exactly). Real Starlink shells concentrate 72%
+of satellites at **53N**, for reasons unrelated to population. Checked directly:
+aggregate supply at 26.5N reaches only 17% of that band's population at N=1M, 51% at
+N=3M, 98.5% at N=5.8M -- **it takes ~5.8-6M satellites for aggregate capacity over
+ONE latitude band to catch up with its own population**, and that's essentially the
+whole tail of the global curve. Not "spread out," not really "density" either --
+a mismatch between where satellites concentrate (orbital-mechanics-driven) and
+where people actually live (demographics-driven).
+
+**New model functions**: `served_fraction_by_latitude()` / `sweep_served_fraction_by_latitude()`
+in `serviceable_customers_model.py` -- served population as a FRACTION of each
+band's own raw population, at one N (or swept across many N into an (N x latitude)
+grid). NaN (not 0) where a band has zero population, so it reads as "no data" in a
+heatmap rather than "0% served."
+
+**New chart, brainstormed with the user then built on request ("Heat map!")**:
+`charts/latitude_saturation_heatmap.py` -> `results/population/latitude_saturation_heatmap.png`.
+y=latitude, x=satellite count (log), color=% of that band's population served
+(viridis, grey=no population in that band). This is the chart that finally answers
+"why doesn't a map show this" -- it isn't a spatial story, it's a latitude x N
+story. **Visually striking and immediately legible**: near-polar bands (~75-82deg,
+sparse population) turn yellow almost instantly; a slow diagonal "wave" sweeps down
+through the temperate latitudes as N grows; the ~20-30deg band (both hemispheres,
+especially +26N/South Asia) is the very last sliver to turn yellow, right at the
+edge of the plot (~N=6-8M) -- a direct visual match to the numbers above. Annotated
+directly on the chart: dashed reference lines at 53N (shell concentration) and
+26.5N (South Asia peak), plus the existing Gen1/current-fleet vertical lines.
+One small but correct edge-case surfaced by the chart itself: a thin dark band right
+at ~82.5-83N (just outside the 82.4deg coverage limit) has some population but stays
+permanently at 0% served -- never colored grey (which would wrongly imply zero
+population there) nor yellow (since it's outside every shell's coverage).
+
+## Two follow-ups, same day: log-color heatmap + north-up population chart (2026-08-11)
+
+**1. Log-color heatmap version** ("Make another version of that heatmap with log
+Color map"). The linear 0-100% color scale crushes almost all of the interesting
+low-%-served structure into uniform dark purple -- most of the heatmap's real
+story (0.01% vs 1% vs 10% served) is invisible on a linear scale. Refactored
+`charts/latitude_saturation_heatmap.py` to share a `_draw_saturation_heatmap()`
+helper between two thin figure functions (`log_color=False`/`True`), rather than
+duplicating the pcolormesh/annotation/axis code -- only the norm and colorbar
+ticks/formatter actually differ. `LogNorm` can't take exact 0, so 0%-served cells
+are clipped up to a `LOG_COLOR_FLOOR = 1e-4` (0.01%) before plotting; NaN
+(no-population) cells are masked BEFORE the clip so they stay grey, not
+misrepresented as "0.01% served". Colorbar ticks are explicit + `FuncFormatter`,
+not LogNorm's default formatter -- the same `$\mathdefault{...}$` bug from the
+`charting-and-modeling` skill's edge-case catalog, now hit a second time on a
+colorbar (first time was `population_density_map.py`'s heatmap). **Hit the
+established "overlong info-box line" layout bug a third time** while building this
+-- one line concatenated `SHELL_RATIO_NOTE + SOURCE_NOTE` onto an already-long
+line with no separating `\n`; fixed by giving it its own line, per the same pattern
+now documented twice already above. Output: `latitude_saturation_heatmap_log.png`.
+
+**2. North-up population-by-latitude chart** ("population as the x axis and
+latitude as y axis... humans usually see north as up"). Added
+`fig_population_by_latitude_horizontal()` to `charts/population_stats.py` --
+literally the same data as `fig_population_by_latitude()` (same
+`pdg.population_by_latitude()` call), just `fill_betweenx` instead of
+`fill_between` and the axes swapped; y-axis is latitude ascending (-90 at bottom,
++90 at top) with NO inversion needed, since "north up" is naturally satisfied by
+plain ascending order once latitude is the y-axis (unlike this project's other
+latitude-on-x charts, which all need `invert_xaxis()` to put north on the left).
+**Hit the SAME overlong-info-box-line bug a 4th time**, this time triggered by the
+narrower portrait `figsize=(8.5, 10.5)` (a line that fit fine in the usual
+11-12in-wide landscape figures didn't fit here) -- fixed the same way, explicit
+`\n` per line. Output: `population_by_latitude_horizontal.png`. **Lesson now
+recorded 4 times in this file**: always default new info-box calls to short,
+explicitly-`\n`-wrapped lines (2-4 words each is safest) rather than letting a
+line's length depend on how wide happens to be convenient at the call site --
+narrower figures (portrait charts, multi-panel, etc.) shrink the safe margin
+further than the landscape charts most of this project's history was built with.
+
+## Satellite ground-coverage RANGE geometry + two new charts (2026-08-11)
+
+User: satellite-density-by-latitude only counted satellites whose SUB-SATELLITE
+POINT sits exactly at a given latitude -- asked for how far a satellite can
+actually SERVE to the sides ("horizontal field of view"), researched from real
+Starlink analyses, applied to that chart, then overlaid on population-by-latitude.
+
+**Researched, not guessed** (WebSearch): Starlink's long-standing minimum user-
+terminal elevation angle is **25 degrees**. Checked whether the FCC's 2026-04 STA
+ruling (lowers the minimum to 10deg <400km, 20deg 400-500km, 5deg above 62N)
+changes this for this project -- it doesn't: Gen1's real shells are all >=540km,
+above every lowered tier, so 25deg remains the applicable figure. New
+`ASSUMPTIONS.md` #11 entry.
+
+**New geometry in `orbital_geometry.py`** (standard LEO visibility geometry, law of
+sines on the Earth-center/satellite/ground-station triangle -- not a beam-footprint
+calculation, a DIFFERENT concept from `capacity_density_model.py`'s ~163 km2 single
+-beam footprint): `off_nadir_angle_deg()`, `ground_range_angular_radius_deg()`,
+`ground_range_km()`. **Self-derived formula cross-validated against two
+independently published figures for the 550km shell**: 25deg -> 941km computed vs.
+"~900km" cited; 40deg (kept as `ALT_MIN_ELEVATION_DEG`, a stricter alternative from
+a different source) -> 574km computed vs. "~580km" cited -- both matched closely,
+confirming the derivation before it fed any chart.
+
+**`expected_sats_reaching_latitude()`**: the range-extended satellite-density
+function -- a satellite at latitude L covers [L-R, L+R] where R is ITS OWN shell's
+coverage radius (real shells differ 540-570km, so R differs slightly per shell,
+~927-968km / ~8.3-8.7deg). Implemented as a boxcar convolution (sum, not average)
+of each shell's `expected_sats_by_latitude()` histogram -- deliberately NOT a
+2D (lat x lon) treatment, a stated 1D latitude-marginal simplification consistent
+with this module's other latitude-only treatments (documented in the function's
+own docstring, not hidden). Total across all bins is no longer conserved at 4,408
+(by design -- each satellite now counts toward every bin it can reach, ~17x the
+raw total summed).
+
+**New chart file `charts/satellite_range_coverage.py`** (2 figures, NOT replacing
+`coverage_map.py`'s original overhead-only satellite-density chart):
+1. `satellite_density_by_latitude_with_range.png` -- overhead-only (the original
+   Phase 2 metric) vs. range-extended, same axes, both visible. **~6x difference at
+   peak** (144 overhead vs. 870 range-extended at ~46-52deg) -- and the
+   range-extended curve is visibly SMOOTHED/BROADENED relative to the sharp
+   overhead-only spikes, exactly as expected from convolving with an ~8.5deg-wide
+   window.
+2. `satellite_range_vs_population_by_latitude.png` -- range-extended satellite
+   density overlaid on population-by-latitude, twin y-axis, shared latitude x-axis.
+   **Confirms and sharpens the same finding from the saturation-heatmap section
+   above, from a completely different angle**: population peaks at 26deg (South
+   Asia), satellite reach peaks at 46deg -- a 20-degree gap between where people are
+   and where satellites concentrate, visible directly as two non-aligned peaks on
+   one chart, no model math required to see it.
+
+**Follow-up, same day: area fills -> bar charts.** User: the underlying data is
+discretely binned by 1deg latitude (`BIN_WIDTH_DEG = 1.0`, unchanged since Phase 2),
+so a smooth `fill_between`/`fill_betweenx` visually implies continuous
+interpolation between bins that isn't real. Converted to `ax.bar()`/`ax.barh()`
+(`width`/`height=1.0`, `align="center"`) in all 4 charts using this pattern:
+`fig_population_by_latitude()`, `fig_population_by_latitude_horizontal()` (both
+`charts/population_stats.py`), and both figures in
+`charts/satellite_range_coverage.py`. Twin-axis chart 2's satellite curve stays a
+LINE, not bars -- it's the range-EXTENDED (convolved/smoothed) series, and
+bars-on-bars on a twin axis reads worse than bars+line. **Also answered**: 1deg
+binning itself is NOT a listed `ASSUMPTIONS.md` entry -- it's a computational
+resolution choice (`BIN_WIDTH_DEG`), not a real-world numeric assumption the user
+needs to confirm/override, and nothing in this project has tested sensitivity to a
+coarser/finer bin width.
+
+**Second follow-up, same day: orientation fix.** User: "These graphs have flipped
+axis to what I want / North = highest latitude = y axis top." Both
+`charts/satellite_range_coverage.py` figures still used the OLDER latitude-on-x
+(`invert_xaxis()`) convention from Phase 2, unlike `population_by_latitude_horizontal.png`
+which already had it right (built two follow-ups ago). Flipped both to match:
+`ax.bar()` -> `ax.barh()` (portrait `figsize=(9, 11)`, `ax.set_ylim(-90, 90)`, no
+inversion needed -- ascending order already puts north at the top). The twin-axis
+chart needed `ax1.twiny()` instead of `ax1.twinx()` since latitude is now the
+SHARED axis (y) and each series gets its own independent x-axis instead of y --
+satellite series plotted as `ax2.plot(ext_total, sat_centers, ...)` (values first,
+latitude second, matching twiny's x-varies/y-shared convention). Left
+`population_by_latitude_gridded.png` (the original vertical, latitude-on-x chart)
+unchanged -- it already has a correctly-oriented sibling
+(`population_by_latitude_horizontal.png`), so "fixing" it would just create a
+duplicate of that chart under a different name.
+
+## Range-extended satellite counts for the per-satellite density-cap term (2026-08-12)
+
+User asked: "Do we have to regenerate the heatmaps with the new sat FOV?" -- the
+new range-extended satellite-density geometry from the previous session
+(`orbital_geometry.expected_sats_reaching_latitude()`) existed but the
+per-satellite-cap model (`serviceable_customers_model.py`) still computed its
+areal density cap from OVERHEAD-ONLY satellite counts
+(`sats_overhead_by_latitude()`), not the range-extended ones -- an inconsistency
+between the new geometry and the model that uses it. Before touching anything,
+worked out which of the model's TWO satellite-count terms should actually change:
+
+- **Areal density-cap term** (`base_cap x sats`, in `effective_density_cap_by_latitude()`):
+  range-extension is VALID here. Different satellites reaching the same ground
+  spot can each independently contribute their own beam allowance -- that's the
+  whole premise of the per-satellite-cap model (more satellites overhead/reachable
+  = more simultaneous beam capacity available at that spot).
+- **Aggregate capacity term** (`customers_per_satellite x sats`, in
+  `capacity_by_latitude()` and the supply side of `served_fraction_by_latitude()`
+  / `serviceable_customers_per_satellite_cap()`): range-extension is INVALID here.
+  A satellite has ONE finite customer-capacity budget. Counting it toward every
+  latitude its coverage circle reaches (not just its own sub-satellite point)
+  would multiply-count that budget -- the same satellite serving 6,704 customers
+  claimed simultaneously at both 40deg and 50deg, which isn't physically real (a
+  satellite's total capacity is shared across whichever users it actually talks to
+  at once, not duplicated per latitude band it merely CAN reach).
+
+Presented this distinction to the user via `AskUserQuestion`; they confirmed
+"Yes, use range-extended (recommended)" for the density-cap term specifically,
+leaving the capacity term untouched.
+
+**Changes in `serviceable_customers_model.py`**:
+- New `sats_reaching_latitude()` -- thin wrapper around
+  `og.expected_sats_reaching_latitude()`, the range-extended counterpart to the
+  existing `sats_overhead_by_latitude()`. Docstring states the validity split above
+  so a future reader doesn't "fix" the two terms to match each other.
+- `effective_density_cap_by_latitude()` now calls `sats_reaching_latitude()`
+  instead of `sats_overhead_by_latitude()`.
+- `effective_density_cap_profile_average()` simplified: instead of a second,
+  redundant range-extension pass to build its weight array, it now reuses
+  `effective_density_cap_by_latitude()`'s own output as the weight (mathematically
+  identical, since `cap = base_cap x sats` is a constant multiple that cancels in
+  the weighted-average ratio).
+- `serviceable_customers_per_satellite_cap()` and `served_fraction_by_latitude()`
+  (the function driving the saturation heatmaps) both now call
+  `effective_density_cap_by_latitude()` for the demand/density side and keep their
+  own separate, unchanged `sats_overhead_by_latitude()` call for the
+  supply/capacity side -- previously both functions inlined ONE shared
+  `sats_overhead_by_latitude()` call for both terms, which is exactly the
+  conflation this fix corrects.
+
+**Numeric sanity check at N=4,408 (Gen1)**: peak overhead satellite count is
+~144 (at 52.5deg); peak range-extended (reaching) count is ~870 (at 45.5deg,
+shifted -- a wider window pulls the peak toward the broader mid-latitude mass, not
+just the sharpest overhead spike). Range-extended >= overhead everywhere covered,
+as required. `effective_density_cap_profile_average(4408)` moved from a much
+smaller overhead-weighted figure to **~1,464 people/km2** (base cap 2.57/km2 x
+~570, i.e. roughly the range-extended-to-overhead ratio) -- makes the areal
+density cap dramatically less binding than before, which is the physically
+correct direction: a user can be served by ANY satellite whose coverage circle
+reaches them, not only one exactly overhead, so the true local capacity was being
+understated pre-fix.
+
+**Downstream effect on the saturation heatmaps**: confirms the user's implicit
+question -- yes, they needed regenerating, and the answer to "why" is that the
+model itself (not just a display change) was recomputed. Because the density term
+is now far less binding, the heatmaps show saturation happening EARLIER (lower N)
+across most latitude bands than before -- consistent with, and reinforcing, the
+"aggregate-capacity-bound, not density-bound" finding from the previous session's
+heatmap section: with the density cap loosened further, capacity is left as an
+even more clearly dominant bottleneck for the long tail of the curve.
+
+**Regenerated** (all via their normal chart scripts, not by hand):
+`serviceable_customers_vs_satellites_global_per_satellite_cap.png` (+ `_linear`),
+`serviceable_customers_vs_satellites_us_per_satellite_cap.png` (+ `_linear`),
+`servable_density_vs_satellites.png` (+ `_linear`), `latitude_saturation_heatmap.png`,
+`latitude_saturation_heatmap_log.png`. Also fixed now-stale info-box/docstring
+wording in `charts/serviceable_customers_per_satellite_chart.py` that still said
+"satellites-overhead-weighted" for the servable-density chart's averaging --
+updated to "range-extended-satellites-weighted" to match the actual mechanism.
+
+## Deleted superseded vertical-orientation charts (2026-08-13)
+
+User asked to delete non-horizontal (latitude-on-x) chart versions now that a
+north-up (latitude-on-y) sibling exists showing the same data. Checked every file
+in `results/population/` for such a pair -- only one exists:
+`population_by_latitude_gridded.png` (`fig_population_by_latitude()`, latitude-on-x,
+`invert_xaxis()`) vs. `population_by_latitude_horizontal.png`
+(`fig_population_by_latitude_horizontal()`, latitude-on-y, north-up) in
+`charts/population_stats.py` -- same underlying data
+(`pdg.population_by_latitude()`), same info-box content, genuinely redundant once
+the horizontal version existed. (The `charts/satellite_range_coverage.py` pair
+does NOT have this problem -- those two figures were converted to horizontal IN
+PLACE in an earlier follow-up, not duplicated, so there was never a separate
+vertical file left behind for them.)
+
+Deleted `fig_population_by_latitude()` from `charts/population_stats.py` (not just
+the PNG -- per this project's no-dead-code convention) and its entry in
+`figures()`; `git rm`'d `results/population/population_by_latitude_gridded.png`.
+Verified no other file in the project referenced this function or filename
+(`charts/population_capacity_overlay.py` has an unrelated same-named function that
+writes a different chart, `population_by_latitude_served_unserved.png`, to
+`results/capacity/` -- left untouched, not part of this cleanup).
+
+## Retired the fixed (single-satellite) density-cap model from every chart (2026-08-13)
+
+User: "We have too many servicable density graphs" -- asked for exactly 3 chart
+pairs (log + linear each, 6 files total): density vs. satellites, global customers
+vs. satellites, US 1km-vs-100m customers vs. satellites. Also, explicitly: "No fake
+single-satellite density cap's either" -- the FIXED-cap model (areal beam-footprint
+density cap held constant regardless of constellation size N,
+`capacity_density_model.py`'s original documented assumption) had been charted
+throughout this project as a dashed "vs." comparison against the newer per-satellite
+(range-extended) model. The user's point: holding the density ceiling at what ONE
+satellite's beam footprint can deliver, no matter how many satellites actually cover
+a spot, doesn't reflect how the real constellation works -- charting it as a live
+comparison read as implying it was an equally valid alternative, not what it is.
+
+**Consolidated from 11 chart files down to 6** (all under
+`charts/serviceable_customers_per_satellite_chart.py` now, single source of truth):
+1. `servable_density_vs_satellites.png` / `_linear.png`
+2. `serviceable_customers_vs_satellites_global.png` / `_linear.png`
+3. `serviceable_customers_vs_satellites_us_1km_vs_100m.png` / `_linear.png`
+
+Deleted (superseded, `git rm`'d): the old fixed-cap-only
+`serviceable_customers_vs_satellites_global.png`/`_linear.png`/`_us_1km_vs_100m.png`
+content (filenames REUSED by the per-satellite model's output, not deleted as
+filenames -- see below), plus the now-redundant
+`serviceable_customers_vs_satellites_global_per_satellite_cap.png`/`_linear.png`
+and `_us_per_satellite_cap.png`/`_linear.png` (their content moved to the reused
+filenames above, `_per_satellite_cap` suffix dropped since it's the only model now).
+
+**`charts/serviceable_customers_chart.py` gutted to a shared-helpers-only module**
+(no more `figures()`/`main()`/PNG output of its own) -- kept because
+`charts/latitude_saturation_heatmap.py` and the per-satellite chart file both still
+import its formatting/reference-line helpers (`_pop_formatter`,
+`_add_fleet_reference_lines`, `_draw_curve`, `_format_log_axes`, `GEN1_SATS`,
+`CURRENT_FLEET_SATS`, `SHELL_RATIO_NOTE`, `SOURCE_NOTE`); its docstring now explains
+the retirement instead of describing charts it no longer produces.
+
+**`charts/serviceable_customers_per_satellite_chart.py` rewritten**: every dashed
+fixed-cap comparison curve, `CAP_NOTE`, and the density chart's "Fixed cap" `axhline`
+removed. Global/US customer charts now show ONE real curve each (US chart still has
+its two legitimate curves -- 1km vs. 100m population data resolution, a genuine
+data-quality comparison, not a fake-vs-real model comparison). Info boxes reworded
+to reference each curve's own raw-population ceiling (a true asymptote, not a
+"cap") instead of the old fixed-cap ceiling number. Also dropped the now-unused
+`US_100M_POP_CAP_CACHE` dependency (`_us_100m_pop_cap_by_lat.npz`, only ever fed the
+fixed model's `sweep_from_pop_cap`) -- only `US_100M_DENSITY_HIST_CACHE`
+(`_us_100m_density_area_hist.npz`) is needed now.
+
+**Explicitly verified "everything uses the new FOV model"** while doing this (the
+user's other ask): grepped every caller of `sats_overhead_by_latitude` vs.
+`sats_reaching_latitude` across the project. Confirmed `effective_density_cap_by_latitude()`
+(the density term, used by every remaining chart via `sweep_per_satellite_cap()` /
+`effective_density_cap_profile_average()`) is range-extended
+(`sats_reaching_latitude()`, Starlink's real ~25deg min-elevation FOV geometry);
+`capacity_by_latitude()` (the aggregate term) stays overhead-only, correctly, since
+that's a different, unaffected constraint. `charts/satellite_range_coverage.py`'s
+two figures already used the range-extended geometry directly (not through the
+demand model) since the session that built them -- unaffected either way. The
+FIXED model's own functions in `serviceable_customers_model.py`
+(`serviceable_customers()`, `sweep_serviceable_customers()`, `sweep_from_pop_cap()`,
+`density_capped_population_by_latitude()` + its streaming variant) were left in
+place, not deleted -- they're still a legitimate, well-documented alternate
+scenario (the X-Lab paper's own original assumption) and the module's own
+`if __name__ == "__main__":` demo still calls `sweep_serviceable_customers()` for a
+quick CLI table; they're just no longer charted, which is what "fake" meant here --
+charted as if a live comparison, not the code existing at all.
+
+## Fixed a real bug: spurious 0%-served band at 82-83deg on the saturation heatmap (2026-08-13)
+
+User spotted a purple (near-0%) horizontal bar around 81-82deg on the latitude
+saturation heatmap and correctly called it erroneous. Root cause, found by
+numerically dumping `served_fraction_by_latitude()`'s inputs latitude-by-latitude
+near the boundary: `capacity_by_latitude()`, `effective_density_cap_by_latitude()`,
+`served_fraction_by_latitude()`, and `serviceable_customers_per_satellite_cap()`
+all applied a hard `covered = abs(centers) <= max_latitude_covered()` mask (82.4deg,
+the near-polar shell's true limit) ON TOP OF the already-correctly-bounded
+satellite-count data. The 1deg bin centered at 82.5 (spanning 82.0-83.0) has its
+CENTER just past the 82.4 cutoff, so the mask zeroed the ENTIRE bin -- even though
+its lower half (82.0-82.4) is genuinely reachable, has real satellite overhead
+(verified: 7.2 sats at N=4,408, growing to 13,120 at N=8M) AND real population
+(913 people, from the WorldPop grid). Result: that one bin showed 0% served at
+EVERY N, when it should show ~100% (same as its neighbors).
+
+**The fix, not a patch**: `og.latitude_density()` computes
+`lat = degrees(arcsin(sin(i) * sin(u)))`, and `|arcsin(x)| <= 90` with
+`|sin(i)*sin(u)| <= sin(i)` ALWAYS holds exactly (an identity, not a statistical
+approximation from the Monte Carlo sampling) -- so `sats_overhead_by_latitude()`
+and `sats_reaching_latitude()` are ALREADY exactly zero-bounded to each shell's
+true coverage limit, with no separate mask needed. Confirmed numerically: the
+83.5 bin (fully beyond 82.4) shows `overhead=0.000` at every N tested, exactly as
+expected with no mask at all. **Removed the redundant-and-wrong `covered` masking
+entirely** from all 4 functions above, instead of trying to hand-tune a
+bin-edge-aware cutoff -- the natural data was already correct, the mask was the
+only thing making it wrong. Deleted `max_latitude_covered()` itself too (zero
+remaining callers after the fix, confirmed via repo-wide grep).
+
+Verified the fix numerically before touching any chart: at N=4,408/100K/8M, the
+82.5 bin now reads `frac=1.0` (was `0.0`); the 83.5 bin correctly still reads
+`0.0` (genuinely beyond the polar shell's reach, not a bug); 84.5+ correctly reads
+NaN (no population there, greys out on the heatmap, not "unserved"). Regenerated
+`latitude_saturation_heatmap.png`/`_log.png` (visually confirmed the purple bar is
+gone) and, for consistency, the per-satellite-cap serviceable-customers charts
+(numbers moved negligibly -- the US charts came out byte-identical, since the US
+grid has no population above ~72degN, well short of the affected 82-83deg band).
+
+Left `lat_centers` in `served_fraction_by_latitude()`'s and
+`serviceable_customers_per_satellite_cap()`'s signatures even though neither
+function consumes it internally anymore (it was only ever used to build the now-
+deleted mask) -- every caller already has the array on hand from the same
+histogram call, and removing the parameter would mean touching 6 call sites across
+2 chart files for a purely cosmetic gain. Documented in both functions'
+docstrings so it doesn't read as an oversight.
+
+## Deleted the original Phase 2 satellite-density-by-latitude chart (2026-08-13)
+
+Same "delete the old, less-complete chart once a better one exists" pattern as
+the `population_by_latitude_gridded.png` deletion earlier this session. Found via
+a repo-wide audit (compared every `OUT_ROOT / "...png"` filename referenced in
+`charts/*.py` against what's actually inside `results/*/`): `charts/coverage_map.py`'s
+`fig_satellite_density_by_latitude()` produced `results/coverage/satellite_density_by_latitude.png`
+-- Phase 2's original overhead-only, per-shell-stacked chart. Now that
+`charts/satellite_range_coverage.py`'s `satellite_density_by_latitude_with_range.png`
+(built this session) shows the same overhead-only total AND the range-extended
+total overlaid, the old chart's only remaining unique content was the per-shell
+color breakdown -- judged not worth keeping a whole separate, now-partially-
+redundant chart file for. Deleted the function, its `figures()` entry, the PNG,
+and the now-unused `mticker` import; `fig_coverage_bands()` (the world-map chart,
+unaffected) and its shared `INCLINATION_COLORS` dict stay.
+
+## Deepened the 25deg minimum-elevation-angle sourcing + new sources doc (2026-08-13)
+
+User pushed back on the citation: "That 25 degree number is not official from
+Huston, unless it cites a source but I can't see one, look harder into it." Then,
+before a response was ready: "Ah I found the source in the paper." Re-fetched and
+extracted raw text from Geoff Huston's actual PDF slides (not just a summary) to
+confirm: correct, slide 5 states the 25deg figure as a bare fact with no visible
+citation. Traced one level deeper to Shkelzen Cakaj's 2021 Frontiers in
+Communications and Networks paper (peer-reviewed, unlike Huston's conference
+slides) -- it explicitly covers both 25deg and 40deg for the 550km shell and
+states SpaceX petitioned the FCC in 2020 to lower the angle from 40 to 25deg "to
+improve reception." That paper's own citation for both numbers is just "Starlink
+(2020)" -- one more level down than this project had previously gone, landing on
+SpaceX's own FCC filing materials as the ultimate root, not an independent
+measurement. Also checked eoPortal (a common secondary source in this space) for
+an independent citation -- it doesn't mention elevation angle at all. Did not open
+the raw FCC docket itself this pass (candidate URLs identified in
+`data/starlink_coverage_geometry.md`, not fetched).
+
+**Also answered, unprompted but clearly needed**: "Is that elevation angle for
+the dish or the satellite?" It's the ground terminal's (the user's dish's) angle,
+not the satellite's -- confirmed two ways from Huston's own slides: the relevant
+slide is titled "Looking Up" (the ground-terminal perspective), and a later slide
+shows live output from Starlink's own dish diagnostic CLI tool reporting a
+`direction_elevation` field -- elevation is something the DISH measures and
+reports, not a satellite-side spec. This is a genuinely different quantity from
+the satellite's own off-nadir/look angle (`off_nadir_angle_deg()` in
+`orbital_geometry.py`), which was already correctly implemented as the
+satellite-side angle -- only the naming/explanation was ambiguous, not the math.
+
+**New file**: `data/starlink_coverage_geometry.md` -- full citation chain (Huston
+slides -> Cakaj 2021 paper -> "Starlink (2020)"), the dish-vs-satellite
+clarification with its two pieces of evidence, and the coverage-radius cross-
+validation numbers, in the same citation-heavy style as `satellite_capacity.md`
+and `starlink_shells.md`. Added a one-line cross-reference from
+`starlink_shells.md` (shell/plane geometry is a different question from coverage
+radius, kept as separate files rather than merged). Updated `ASSUMPTIONS.md` #11
+and `orbital_geometry.py`'s module-level comment block with the same deepened
+chain and clarification -- no numeric constants changed (`MIN_ELEVATION_DEG`
+stays 25.0), this was a sourcing/documentation correction, not a model fix, so no
+charts needed regenerating from this part of the work.
+
+## Traced the 25deg figure to the actual FCC order text (2026-08-13, same day, follow-up)
+
+User asked directly: "What number do we use for the satellites? ... what do
+[tracker sites] use? Has SpaceX (through FCC) released anything to suggest
+something?" Pulled `docs.fcc.gov/public/attachments/fcc-21-48a1.pdf` and
+extracted its text with `pypdf` (WebFetch's own PDF reader returned "no relevant
+content found" on this file -- noted as a general lesson: pull FCC PDFs and
+extract locally rather than trusting WebFetch's summary for these). Found the
+primary source directly: **FCC Order 21-48**, footnote 3, verbatim: "SpaceX is
+authorized to operate with earth station elevation angles as low as 25 degrees
+for user terminals and gateways, and for gateways in the polar regions ... as low
+as five degrees." This order approved SpaceX's "Third Modification Application"
+(SAT-MOD-20200417-00037, filed April 17, 2020 -- almost certainly what Cakaj's
+paper's "Starlink (2020)" citation meant), and its body text ties the 25deg figure
+explicitly to the SAME altitude change (1,100-1,300km -> 540-570km) that produced
+this project's real Gen1 shells.
+
+Also resolved an apparent contradiction found along the way: an APNIC blog post
+("Navigating Starlink's FCC paper trail") states the ORIGINAL 2016 Starlink filing
+specified 40deg, "to protect terrestrial microwave links." Not a conflicting
+claim -- a different, earlier point in the same regulatory timeline: 2016 filing
+= 40deg (interference protection); SpaceX's 2020 modification request = lower to
+25deg (paired with the lower 540-570km altitude, "to maintain coverage... improve
+customer experience"); FCC's 2021 order = granted. `ALT_MIN_ELEVATION_DEG=40` in
+this project is correctly the original, now-superseded 2016 figure.
+
+**Tracker question, answered**: checked starlink.sx and orbitalradar.com
+directly. Neither publishes a single fixed elevation/radius as "the" number --
+starlink.sx has a user-adjustable "Minimum elevation" setting; orbitalradar.com
+shows elevation as a per-viewer computed result without disclosing its cutoff.
+starlink.sx does mention a "40deg visibility line," but that's the Dishy
+hardware's own physical steering-range limit (a different concept from the
+link-quality minimum elevation this project models), coincidentally the same
+numeral as the superseded 2016 FCC figure.
+
+Updated `data/starlink_coverage_geometry.md` (new primary-source section with the
+verbatim FCC footnote and full reconciled timeline), `ASSUMPTIONS.md` #11
+(confidence upgraded from "well-attested, traced to an unopened filing" to
+"directly confirmed from FCC order text"), and `orbital_geometry.py`'s comment
+block. No numeric constants changed -- `MIN_ELEVATION_DEG=25.0` was already
+correct, now on much firmer footing.
+
+## Switched the serviceable-customers model to V3 + added a Tbps secondary axis (2026-08-14)
+
+User: "Let's use V3." New `capacity_density_model.V3_SCENARIO`: real, sourced
+totals (1,024 Gbps downlink / 200 Gbps uplink per satellite, altitude 345km
+midpoint of 330-370km planned) but beam count/beamwidth are NOT publicly
+disclosed for V3 (confirmed absent even in the already-trusted davidveksler.com
+source) -- reused v2 Mini's beam count (16) and beamwidth (1.5deg) as an
+EXPLICIT PLACEHOLDER for the density-cap geometry only. New **ASSUMPTIONS.md
+#12** spells out the asymmetric impact: `max_customers_per_satellite()` (the
+aggregate cap) is UNAFFECTED by the placeholder, since beams-per-satellite and
+Gbps-per-beam only ever appear multiplied together there and that product is
+pinned to V3's real total; `max_customer_density_per_km2()` (the areal cap) IS
+affected, a real flagged uncertainty. All 12 default-parameter sites in
+`serviceable_customers_model.py` switched from `V2_MINI_BEAD_SCENARIO` to
+`V3_SCENARIO`. Explicitly OUT of scope: the earlier Phase 3/5 charts
+(`charts/capacity_density.py`, `charts/population_capacity_overlay.py`) stay on
+v2 Mini -- this switch only touches the serviceable-customers model this
+session has been building.
+
+**Secondary top axis, every "vs. satellite count" chart**: user wants
+satellite count to STAY the bottom (primary) x-axis, with cumulative max
+capacity (Tbps) as a secondary TOP axis on the same chart -- `ax.secondary_xaxis
+("top", functions=(to_tbps, from_tbps))`, added as `_add_capacity_secondary_axis()`
+in the shared helpers module. `gbps_per_sat = downlink_gbps_per_beam x
+beams_per_satellite` is pinned to V3's real 1,024 Gbps total regardless of the
+beam-count placeholder above, so this axis is accurate even where the
+density-cap numbers elsewhere in the same chart carry that caveat. Wired into
+all 6 `serviceable_customers_per_satellite_chart.py` figures and both
+`latitude_saturation_heatmap.py` figures (8 charts total).
+
+**Two-layer bug, both found and fixed the same day (see the charting-and-modeling
+skill's edge-case catalog, updated with both):**
+1. The secondary axis showed literal `$\mathdefault{10^2}$` text -- matplotlib's
+   default log-tick formatter generates mathtext syntax that `viz/render.py`'s
+   project-wide `text.parse_math=False` (set to stop literal `$` in dollar-value
+   labels from being parsed as LaTeX) can't render, so it prints literally
+   instead. Existing project convention (`_format_log_axes()`) already covered
+   this for primary axes; extended the same explicit-FuncFormatter treatment to
+   the new secondary axis.
+2. That fix didn't stick on first regeneration -- traced to a SECOND, previously
+   undocumented cause via a minimal standalone repro: calling `ax.set_xscale
+   ("log")` on the PARENT axis AFTER creating the secondary axis and setting its
+   formatter silently RESETS the secondary axis's formatter back to the broken
+   default (confirmed: identical code with the two calls reordered either
+   reproduces or avoids the bug, nothing else changed). Fixed by moving
+   `_add_capacity_secondary_axis()` to after `ax.set_xscale()`/`set_yscale()` in
+   all 3 affected log-chart functions (the 3 linear-chart functions never call
+   set_xscale, so order didn't matter there).
+
+Both findings were narrowed down to 100% certainty (root cause traced to an
+exact rcParams line + reproduced/toggled with a minimal standalone script, not
+just observed once) before updating the shared charting-and-modeling skill's
+edge-case catalog, per the user's explicit "only if 100%, so as to not add
+noise" instruction -- generalized the existing (too-narrow, colorbar-only) skill
+entry to cover ANY log-scaled axis including secondary axes, and added a new
+row for the ordering gotcha.
+
+## Utilization model + charts, per-country servable-%, and a full TAM-in-dollars model (2026-08-14, "the biggest change yet")
+
+User's own framing. Four connected asks in one message, resolved with an
+AskUserQuestion batch (4 questions) before any implementation:
+1. **Household size** -> **real per-country data** (chosen over a global constant
+   or regional tiers).
+2. **Per-country servable-%** -> **full per-country population-by-latitude**
+   weighting (chosen over capital-city or single-average-latitude proxies) --
+   confirmed CHEAP, not expensive, once research showed all 216 per-country
+   WorldPop rasters used to build the global mosaic are already cached locally
+   (`data/raw/worldpop/*_pd_1km.tif`), so no new downloads were needed.
+3. **Utilization world heatmap** -> **accept latitude-striping** (the model is
+   1D/latitude-only; painting the per-band value as horizontal stripes on a world
+   map is an honest rendering of what the model computes, not a simplified 2D
+   result masquerading as one).
+4. **TAM scope** -> user's own custom answer: **price heatmap + a TAM-vs-satellite-
+   count/capacity chart** (not just a single headline $ number).
+
+### New model: capacity UTILIZATION (`serviceable_customers_model.py`)
+Utilization = served/supply (% of available satellite capacity actually used) --
+a DIFFERENT question from the existing served/population "% served." New
+functions: `capacity_utilization_by_latitude()`, `sweep_capacity_utilization_by_latitude()`
+(per-band, for the world-map heatmap), `capacity_utilization()`,
+`sweep_capacity_utilization()` (global aggregate, reuses the already-tested
+`serviceable_customers_per_satellite_cap()` rather than re-deriving supply/demand,
+since total supply always equals `N x customers_per_satellite` exactly).
+
+**Verified numerically before writing a docstring claim about its shape**: guessed
+it would rise-then-peak-then-decay (supply catching up to demand); actual behavior
+under V3 is monotonically DECREASING across the whole practical range -- V3's
+per-satellite capacity (200,000 customers/satellite) is so large that even N=1
+already sits near its highest utilization (~95%) in the sweep. Caught this by
+actually running the sweep before documenting it, not by assuming the
+first-principles guess was right.
+
+**New chart file `charts/satellite_utilization.py`** (3 figures):
+`utilization_vs_satellites.png` (+ `_linear`) -- same "vs. satellite count"
+pattern as the serviceable-customers charts, Tbps secondary axis included.
+`utilization_heatmap_world.png` -- world map, genuine horizontal stripes (see
+decision #3 above), at N=10,900 (today's real fleet size, a concrete default, not
+an arbitrary one) -- reuses `coverage_map.py`'s land-outline basemap + a 1-column
+`pcolormesh` (`lon_edges=[-180,180]`) to render a per-latitude-band value as full-
+width stripes.
+
+### New module: `country_service_model.py` -- per-country servable-%
+`load_all_country_population_by_latitude()` loads each country's own cached
+raster ONCE (a fixed ~217-raster cost, several minutes) and caches its
+population-by-latitude distribution, since that doesn't depend on N.
+`country_servable_fraction()` then weight-averages the already-computed GLOBAL
+`served_fraction_by_latitude(N)` by each country's own distribution -- this
+requires NO new cross-border capacity-allocation logic: the global function
+already reflects capacity shared/competed across every country at a given
+latitude (built from the all-countries-combined population histogram), so a
+country's own number is just a weighted READOUT of that, not a separate
+allocation decision. Verified this lines up correctly (same `_lat_bin_edges()`-
+style bin scheme in both `population_by_latitude()` and
+`served_fraction_by_latitude()`) rather than assuming it.
+
+**Sanity-checked before trusting it**: at every N tested, Australia (sparse,
+concentrated near the 53deg shell band) has the HIGHEST servable-%; India and
+Egypt (dense, competing for the same mid-latitude capacity as everyone else at
+that latitude) have the LOWEST -- exactly matches the "South Asia is supply-
+constrained" finding from the 2026-08-11 saturation-heatmap work, from a
+completely independent code path.
+
+### New dataset: `data/household_size_by_country.csv` / `.md`
+Built by `build_household_size_dataset.py` from Wikipedia's "List of countries by
+number of households" (151/217 countries direct match; 66 on a regional-median
+fallback, flagged per-row via a `confidence` column, region medians span
+2.45-5.24 people/household -- a real, large spread, not a case where a global
+constant would have been fine). Tried the UN Population Division's own database
+first (more authoritative) -- it's an interactive portal, not a bulk download;
+WebFetch returned an implausible value on a first attempt (caught by a sanity
+check, not shipped) and the approach was abandoned in favor of the
+already-compiled Wikipedia table. Full detail, including the ~20 country-name
+mapping overrides needed, in `data/household_size_by_country.md`. New
+**ASSUMPTIONS.md #13**.
+
+### New module: `country_tam_model.py` -- the TAM engine
+Pricing rule (user-specified): **<20% of a country's population unconnected** ->
+price = that country's own existing incumbent price (`charts.affordability._raw_arpu()`,
+reused, not reimplemented -- same fixed/mobile selection `equilibrium_model.py`
+already uses). **>=20% unconnected** -> price is instead DERIVED by inverting the
+elasticity curve: this country's own capacity-constrained servable-% (from
+`country_service_model.py`) becomes the target "% unconnected at this price," fed
+through `cost_pct_from_pct_unconnected()` (see below) to solve for the price that
+would leave exactly that many people priced out. `UNCONNECTED_PCT_THRESHOLD = 20.0`.
+
+`addressable_population = min(unconnected_population, servable_fraction(N) x
+total_population)` -- applied identically regardless of price branch (own design
+decision, flagged in **ASSUMPTIONS.md #14** as not separately confirmed with the
+user). `addressable_subscriptions = addressable_population / household_size`.
+`TAM ($/month) = addressable_subscriptions x price`.
+
+**Hoisted the elasticity curve's anchor constants to module level**
+(`charts/served_population_vs_cost.py`: `ELASTICITY_X_LO/HI`, `ELASTICITY_Y_LO/HI`,
+`pct_unconnected_from_cost_pct()`, and the new inverse `cost_pct_from_pct_unconnected()`)
+instead of duplicating the 0.75%/10% anchor values in the new TAM module -- one
+source of truth for a curve two files now depend on.
+
+**Verified the model produces a sensible, genuinely interesting result, not just
+a number that runs**: at N=4,408 total TAM ~$4.94B/mo; N=10,900 ~$8.35B/mo (RISES,
+more subscribers, prices still high); N=100,000 ~$5.80B/mo (FALLS -- India's
+servable-% jumps to 71%, collapsing its elasticity-derived price from $77.92 to
+$15.20/mo faster than its subscriber count grows). TAM peaking and then declining
+as N grows is a real, economically coherent finding this model can show, not
+something assumed away -- documented in the chart's own info box, not just here.
+
+### New data: `data/raw/ne_110m_admin_0_countries.geojson` + `charts/country_choropleth.py`
+Needed actual per-country BOUNDARY polygons for a choropleth (the existing
+`ne_110m_land.geojson` is land-outline-only, no per-country divisions) --
+downloaded Natural Earth's 110m admin-0 countries file (177 features, MultiPolygon
+geometries, unlike the land file's Polygon-only). New shared loader
+`load_country_paths()` (keyed by `ADM0_A3`, NOT `ISO_A3` -- Natural Earth's
+`ISO_A3` is "-99" for 5 features including Norway and France) + `draw_choropleth()`,
+reusable for any future per-country map. ~50 of 217 telecom-dataset countries have
+no 110m-resolution polygon (small island states, Hong Kong/Macao/Singapore,
+microstates) -- a known, documented limitation of the 110m simplification level,
+shown as grey/missing on the map, not silently dropped from the info box's count.
+
+### New chart file `charts/country_tam_charts.py` (3 figures)
+`subscription_price_by_country_100k.png` -- the requested choropleth, log-color
+by derived monthly USD price, at the user-specified N=100,000.
+`tam_vs_satellites.png` (+ `_linear`) -- total TAM vs. satellite count, Tbps
+secondary axis, explicitly noting the non-monotonic peak in its own info box.
+
+All new/changed model files pass `pyflakes` clean. Regeneration of the
+country-raster-dependent charts takes several minutes (217 raster loads) --
+run once, cached in memory for that process, not re-read per N in a sweep.
+
+**Lesson recurred AGAIN (6th+ time this project) while building these charts**:
+`tam_vs_satellites.png`'s first render squished its axes to ~17% of the figure
+width, title/legend text running off both edges -- the exact `constrained_layout`
+collapse signature. Cause, once again: `TAM_SOURCE_NOTE` was appended directly
+onto the end of another sentence (`"...compensates. " + TAM_SOURCE_NOTE`) instead
+of starting its own `\n`-separated line, producing one ~150-character unwrapped
+line. Fixed the same way every previous occurrence was fixed (explicit `\n`,
+short segments) and shortened `TAM_SOURCE_NOTE` itself. Confirmed the fix with
+`ax.get_position()` before and after (x1: 0.25 -> 0.997) rather than eyeballing
+the image alone, to be certain it was actually resolved, not just visually
+plausible. This is now documented in enough places (CLAUDE.md, more than once)
+that any future recurrence should be treated as a signal to add a lint-style
+guard (e.g. a helper that warns on any info-box string argument over ~80 chars
+without a `\n`) rather than fixing it by hand an 7th time.
+
+## TAM follow-up: stacked-by-region chart + CSV exports (2026-08-14, same day)
+
+User: a CSV of monthly revenue by country vs. satellite count (a few buckets, not
+a dense sweep), the same aggregated by continent, a stacked-by-region version of
+`tam_vs_satellites.png` instead of one aggregate line, and confusion about why
+peak TAM (~$11.1B/mo) is so much smaller than the real global telecom industry
+(~$1.53T/year).
+
+**Answered the money question with real numbers before writing any new code**
+(wanted to rule out an actual bug, not just explain away a surprising result):
+pulled real 2024/2025 global telecom revenue (~$1.53-1.55T/year =~ $127B/month,
+PwC/Deloitte) and computed the model's own saturated-N numbers directly. At full
+saturation (N>=500K), TAM converges to ~$4.33B/mo across ~503.7M subscribers,
+blended average price **$8.59/month** -- and that subscriber count matches the
+UNCONSTRAINED total unconnected-household count (503.7M, computed independently
+from raw telecom+household data with no satellite model involved) almost exactly,
+confirming capacity saturates the true demand ceiling correctly, not a modeling
+error. The low blended price is a direct, mechanical consequence of the user's
+OWN elasticity anchors (0.75% of monthly GNI/capita at 0% unconnected) applied to
+a population that is, by construction, concentrated in low-GNI countries -- 0.75%
+of a $2,000/year GNI is ~$1.25/month. Three real, additive reasons the total is
+smaller than global telecom revenue, not one: (1) only ~2.23B of 8.19B people
+(27.3%) are unconnected -- the other 72.7% already generate most of that $127B/mo
+today and aren't in scope; (2) the unconnected segment is inherently lower-ARPU,
+both because affordability is why they're unconnected and because the pricing
+mechanism explicitly seeks an affordable price for them; (3) TAM here is ONE
+residential subscription per household, not enterprise/B2B/equipment/roaming/TV
+bundles that make up the rest of real telecom revenue.
+
+**New in `country_tam_model.py`**: `sweep_tam_by_region()` -- same per-country
+sweep as `sweep_total_tam()`, grouped by the existing World Bank `region` column
+instead of summed to one total.
+
+**New in `charts/country_tam_charts.py`**:
+- `tam_vs_satellites_by_region.png` -- `ax.stackplot()` (per the charting-and-
+  modeling skill's own guidance for positive stacked series), South Asia
+  dominates both the peak and the post-peak decline -- directly visible now,
+  confirming the India-driven story already found in the per-country numbers.
+- `export_tam_csv()` -> `tam_by_country_vs_satellites.csv` (212 rows) and
+  `tam_by_continent_vs_satellites.csv` (7 rows), both WIDE format (one column per
+  bucket in `SAT_BUCKETS = [100, 1_000, 4_408, 10_900, 33_900, 100_000, 500_000,
+  1_000_000, 2_000_000]`), not a dense per-N sweep table -- "a few buckets, not
+  millions of lines," per the user's own framing.
+
+## Full-world TAM model: "Starlink just takes incumbent share as it expands" (2026-08-16)
+
+New, SEPARATE, parallel model -- `country_tam_model.py` / `country_tam_charts.py`
+(unconnected-populations-only TAM) are UNCHANGED, still both intact and both still
+the right answer to their own narrower question. User's request: size the market
+assuming Starlink displaces existing incumbent telecom revenue as it expands, not
+just fills the currently-unconnected gap. Answered with a written plan + an
+`AskUserQuestion` batch (3 questions) before building, per this project's established
+"ask before a big build" convention:
+
+1. **Share capture inside the capacity footprint** -> **Full capture (100%)**
+   (user declined the offered partial-adoption-ceiling alternative) -- within
+   servable_fraction(N), Starlink wins ALL of that population's business, no
+   switching-friction/competition curve.
+2. **Pricing for already-connected switchers** -> **Split pricing** -- incumbent-
+   price (`_raw_arpu()`) for the segment that was already connected (a straight
+   revenue swap), elasticity-derived price (via `country_tam_model._country_price()`,
+   reused directly) for the segment that was previously unconnected. Chosen
+   specifically because it produces a bonus breakdown (incumbent-displacement vs.
+   newly-connected revenue) as its own chart.
+3. **Model scope** -> **new parallel files**, not a mode flag on the existing ones.
+
+**The key insight that made this cheap to build**: `country_service_model.servable_fraction(N)`
+is already built from TOTAL population density (`population_density_grid.py`), not
+a connectivity-filtered subset -- so it already tells you what fraction of a
+country's ENTIRE population (connected + unconnected) sits within capacity reach at
+N satellites. The old TAM model's only unconnected-only-ness came from artificially
+capping `addressable_population` at `unconnected_population`; removing that cap is
+exactly "take incumbent share." Required no new capacity modeling at all.
+
+**New: `country_tam_full_model.py`** (`CountryTAMFull` dataclass,
+`compute_country_tam_full()`, `sweep_total_tam_full()`, `sweep_tam_full_by_region()`,
+`sweep_tam_full_by_segment()`). `addressable_population = servable_fraction(N) x
+total_population` (no unconnected cap). Split into "incumbent" (already-connected)
+and "new" (previously unconnected) segments PROPORTIONALLY to the country's own
+connected/unconnected ratio -- no sub-national data exists to know WHICH specific
+people within a density bin are already connected, so this is an explicit
+simplifying assumption, not measured (**ASSUMPTIONS.md #15**).
+
+**New: `charts/country_tam_full_charts.py`** (5 outputs, reuses `SAT_BUCKETS`,
+`TAM_SOURCE_NOTE`, `_usd_formatter` directly from `country_tam_charts.py` rather
+than duplicating them):
+- `tam_full_by_country_100k.png` -- revenue choropleth at N=100,000. Visually very
+  different from the unconnected-only price heatmap: dominated by large WEALTHY
+  markets (top 3: USA $9.4B/mo, China $5.3B/mo, Germany $1.9B/mo), not underserved
+  ones, since revenue now includes captured incumbent share.
+- `tam_full_vs_satellites.png` (+ `_linear`) -- clean sigmoid, saturates at
+  **$45.6B/mo near N=257,728** (~4x the unconnected-only model's peak of ~$11.1B/mo
+  at N=33,900, as expected -- this model captures the whole world's telecom
+  spend, not just the underserved slice).
+- `tam_full_vs_satellites_by_region.png` -- stacked by World Bank region. East Asia
+  & Pacific (China-driven) and Europe & Central Asia dominate at scale -- a
+  DIFFERENT leading region than the unconnected-only model's South Asia, because
+  this model rewards large connected populations, not large unconnected ones.
+- `tam_full_vs_satellites_by_segment.png` -- **the direct payoff of the split-
+  pricing decision**: stacked incumbent-displacement vs. newly-connected revenue.
+  At peak, **91% of TAM is incumbent-displacement** -- capturing existing,
+  already-paying customers dominates the model almost everywhere once capacity
+  stops being the binding constraint; newly-connected revenue is a real but
+  secondary contribution that itself peaks (~$5B/mo) and then slightly recedes as
+  a share of the (still-growing) total.
+- `tam_full_by_country_vs_satellites.csv` / `tam_full_by_continent_vs_satellites.csv`
+  -- same wide-format shape and `SAT_BUCKETS` as the unconnected-only model's CSVs,
+  for direct side-by-side comparison.
+
+**One real, INHERITED data-quality caveat surfaced prominently in this model's
+output, flagged honestly rather than hidden**: at low N, Zimbabwe ranks 3rd-7th
+globally by TAM (e.g. $236M/mo at N=4,408, ahead of the UK) -- this is the SAME
+"thin survey sample" `_raw_arpu()` artifact already documented in Phase 6
+(Zimbabwe's raw pre-cap ARPU is ~$437/mo, implausible for that economy) and
+ASSUMPTIONS.md #4. It's not a NEW bug: this model deliberately reuses `_raw_arpu()`
+uncapped for the incumbent-switcher segment (the same function/behavior
+`country_tam_model.py` already used for its <20%-unconnected branch), but the
+full-capture design surfaces it more visibly since Zimbabwe's "incumbent" segment
+now contributes revenue regardless of its overall %-unconnected. Not fixed here --
+same open item as ASSUMPTIONS.md #4's proposed fixes (drop/cap outlier countries,
+or a regional-median fallback), not decided on unilaterally.

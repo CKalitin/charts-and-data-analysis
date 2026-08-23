@@ -140,6 +140,178 @@ live risk.
 not a navigation system; the cross-check against real orbital period suggests the
 error is small for this project's purposes.
 
+### 11. Minimum elevation angle = 25° (ground coverage radius geometry)
+**Where**: `orbital_geometry.py`, `MIN_ELEVATION_DEG = 25.0`
+**Clarification (added 2026-08-13, was unclear before)**: this is the GROUND
+TERMINAL's (the user's dish's) angle, not the satellite's — measured at the dish,
+between its local horizon and the line of sight up to the satellite. A different
+quantity from the satellite's own off-nadir/look angle (`off_nadir_angle_deg()`).
+Confirmed from Geoff Huston's source slide, titled "Looking Up," and from
+Starlink's own dish diagnostic tool reporting a `direction_elevation` field —
+elevation is something the dish measures, not a satellite-side spec. Full detail
+in `data/starlink_coverage_geometry.md`.
+**Why it exists**: user asked for satellite coverage RADIUS ("how far to the sides
+can you see"), which requires a minimum usable elevation angle — a user terminal
+can't use a satellite too close to the horizon. 25° is the long-standing, widely-
+cited Starlink minimum. Checked whether the FCC's 2026-04 STA ruling (which lowers
+the minimum to 10-20° for satellites below 500km) supersedes this: it doesn't for
+THIS project's real shells, since Gen1's shells are all ≥540km, above every lowered
+tier. Cross-validated the resulting geometry against two independently published
+figures for the 550km shell (25° → ~941km computed vs. ~900km cited; 40°, kept as
+`ALT_MIN_ELEVATION_DEG`, → ~574km computed vs. ~580km cited) — both matched closely.
+**Sourcing, dug deeper 2026-08-13 (user pushback: "that 25 degree number is not
+official from Huston, unless it cites a source but I can't see one")**: correct —
+re-checked Huston's slides directly and confirmed 25° has NO visible citation
+there, stated as a bare fact. Traced through Shkelzen Cakaj, *"The Parameters
+Comparison of the 'Starlink' LEO Satellites Constellation for Different Orbital
+Shells,"* Frontiers in Communications and Networks, vol. 2, article 643095
+(2021), whose own citation for the figure was just "Starlink (2020)" — **then,
+same day, following up on "has SpaceX through FCC released anything," pulled and
+read the actual FCC order text directly** (`docs.fcc.gov/public/attachments/fcc-21-48a1.pdf`,
+extracted with `pypdf` after WebFetch's own PDF reader failed on it): **FCC Order
+21-48**, approving SpaceX's Third Modification Application (SAT-MOD-20200417-00037,
+filed April 17, 2020 — the likely referent of "Starlink (2020)"). Footnote 3,
+verbatim: *"SpaceX is authorized to operate with earth station elevation angles
+as low as 25 degrees for user terminals and gateways, and for gateways in the
+polar regions ... as low as five degrees."* This is a primary source, not a
+summary — 25° is the actual FCC-AUTHORIZED figure, tied explicitly in the order's
+body text to the same altitude change (→540-570km) that produced this project's
+real Gen1 shells. Also reconciles an apparent conflict found along the way: an
+APNIC blog post states Starlink's ORIGINAL 2016 filing specified 40° (for
+terrestrial-microwave interference protection, a different reason) — both are
+real, just two different points on the same regulatory timeline (2016: 40°;
+2020 request / 2021 grant: lowered to 25°). **Checked what public Starlink
+tracker websites use** (the user's other question): starlink.sx has a
+user-adjustable elevation setting rather than a fixed number; orbitalradar.com
+computes elevation as a per-viewer result but doesn't publish its cutoff —
+neither site converges on a single public "the number," which is fine, since this
+project now has the primary FCC authorization directly. **Confidence: directly
+confirmed from FCC order text** — upgraded from "well-attested, traced to an
+unopened filing" a few hours earlier. Full chain and quotes in
+`data/starlink_coverage_geometry.md`.
+**Impact if wrong**: directly rescales the coverage radius (and therefore the
+range-extended satellite density charts and the per-satellite density-cap model's
+density term) — a lower elevation angle (as the 2026 ruling allows for lower
+shells) would give a LARGER radius; a stricter figure like 40° gives a ~40%
+smaller radius. Affects `charts/satellite_range_coverage.py`'s outputs directly,
+plus (as of 2026-08-12) `serviceable_customers_model.py`'s
+`sats_reaching_latitude()` / `effective_density_cap_by_latitude()` and everything
+downstream (the per-satellite-cap serviceable-customers charts and the latitude
+saturation heatmaps) — does not affect the aggregate-capacity term or any chart
+outside this family.
+
+### 12. V3 density-cap geometry uses v2 Mini's beam count/beamwidth as a placeholder
+**Where**: `capacity_density_model.py`, `V3_SCENARIO` (`beams_per_satellite=16`,
+`beamwidth_deg=1.5`, both copied from `V2_MINI_BEAD_SCENARIO`)
+**Why it exists**: user asked to switch the serviceable-customers model
+(`serviceable_customers_model.py` and its charts — NOT the earlier Phase 3/5
+`capacity_density.py` / `population_capacity_overlay.py` charts, left on v2 Mini)
+to V3. V3's TOTAL per-satellite capacity is real, sourced data (1,024 Gbps
+downlink / 200 Gbps uplink, per `satellite_capacity.md`, cross-confirmed against
+`cheatsheets.davidveksler.com`'s V1-V3 comparison). Its **beam count and
+beamwidth are not publicly disclosed** — confirmed by that same davidveksler.com
+source, which explicitly flags V3 beam-level specs as undisclosed. One single-source
+claim of "2,048 beams" (a tweet quoting SpaceX, via Sawyer Merritt) surfaced during
+research but conflicts with this project's own cross-confirmed v2 Mini beam count
+(16) by two orders of magnitude depending on interpretation, isn't independently
+corroborated, and wasn't used.
+**What was done**: reused v2 Mini's beam count (16) and beamwidth (1.5°) as an
+explicit placeholder, altitude set to V3's own real figure (345km, midpoint of the
+330-370km planned range). `downlink_gbps_per_beam` and `uplink_gbps_per_beam` are
+therefore DERIVED (1024/16 and 200/16), not independently sourced numbers.
+**Impact if wrong — asymmetric, read carefully**: `max_customers_per_satellite()`
+(the aggregate cap driving most of the serviceable-customers charts) is
+**UNAFFECTED** by this placeholder — `beams_per_satellite` and
+`downlink_gbps_per_beam` only ever appear multiplied together in that formula, and
+their product is pinned to V3's real, sourced total (1,024 Gbps), regardless of
+the true beam count. `max_customer_density_per_km2()` (the areal cap, feeding
+`effective_density_cap_by_latitude()` and the per-satellite-cap model's density
+term) **IS directly affected** — a real V3 beam count of, say, 192 or 2,048
+instead of 16 would change the per-beam footprint's implied capacity substantially,
+and this project has NOT independently derived which is closer to reality.
+Treat any DENSITY-specific V3 number in this project's output with more caution
+than the AGGREGATE-capacity numbers, until real V3 beam data is published.
+
+### 13. Household size by country — secondary-sourced, 66/217 countries on a regional fallback
+**Where**: `data/household_size_by_country.csv` (built by `build_household_size_dataset.py`),
+used in `country_tam_model.py` to convert addressable population into addressable
+subscriptions (`addressable_subscriptions = addressable_population / household_size`).
+**Why it exists**: TAM is denominated in dollars per SUBSCRIPTION (one per
+household), not per person — the user's own framing ("hence why households /
+subscriptions per person is an important metric"). No such data existed in this
+project before 2026-08-14.
+**Source**: Wikipedia's "List of countries by number of households" (itself a
+compilation of national census/survey figures, one per country, various reference
+years 1994-2023) — 151 of 217 countries matched directly; the other 66 (mostly
+small island states/territories) get a **regional median fallback** computed from
+the region's own directly-sourced countries (same `region` column used throughout
+this project), flagged per-row via a `confidence` column
+(`direct_national_census_or_survey` vs. `regional_median_fallback`) — never
+silently blended. Full detail, including why the UN Population Division's own
+(more authoritative) database wasn't used instead (an interactive portal, not a
+bulk download; a first WebFetch attempt returned an implausible value and was
+caught, not shipped), in `data/household_size_by_country.md`.
+**Not modeled**: businesses, multi-dwelling buildings needing more than one
+connection, or shared/community connections — one household = one subscription,
+uniformly, a real simplification for v1 (the user's own question: "What if it's a
+building/company?" — not yet answered with a separate mechanism).
+**Impact if wrong**: directly, linearly rescales addressable subscriptions (and
+therefore TAM$) for every country — a country using the regional-fallback value
+is more exposed to this than a directly-sourced one. The real range is large
+(regional medians span 2.45-5.24 people/household), so getting this wrong for a
+populous country materially moves that country's TAM.
+
+### 14. TAM pricing rule: existing local price below 20% unconnected, elasticity-derived price above
+**Where**: `country_tam_model.py`, `_country_price()`, `UNCONNECTED_PCT_THRESHOLD = 20.0`.
+**User-specified rule, not derived**: below 20% unconnected, price = the country's
+own existing incumbent price (`_raw_arpu()` — fixed or mobile, same selection logic
+as `equilibrium_model.py`); at/above 20% unconnected, price is instead DERIVED by
+inverting the elasticity curve (`served_population_vs_cost.py`'s
+`cost_pct_from_pct_unconnected()`) using this country's OWN capacity-constrained
+servable-% (from `country_service_model.py`) as the target "% unconnected at this
+price" — i.e., the satellite capacity constraint determines a market-clearing
+price via the demand curve, rather than assuming the existing (presumably
+too-expensive, hence the high unconnected rate) local price would hold.
+**A design choice made, not asked about**: `addressable_population =
+min(unconnected_population, servable_fraction(N) x total_population)` is applied
+identically regardless of which price branch a country falls into — the 20%
+threshold only picks WHICH PRICE to charge, not whether the capacity constraint
+applies. This seemed the only internally-consistent reading, but wasn't a separate
+explicit user decision — worth double-checking if the below-20% branch's numbers
+look off.
+**Impact if wrong**: for elasticity-priced countries specifically, price is only as
+good as the user-specified elasticity anchors themselves (0.75% cost -> 0%
+unconnected, 10% -> 100%, chosen not fit — see `charts/served_population_vs_cost.py`'s
+own docstring) AND this project's own capacity model's servable-% estimate. Errors
+compound: a wrong servable-% feeds a wrong target-%-unconnected, which feeds a
+wrong price via the (already-approximate) elasticity curve.
+
+### 15. Full-world TAM: 100% share capture inside footprint, proportional connected/unconnected split
+**Where**: `country_tam_full_model.py`, `compute_country_tam_full()`.
+**User-specified rule, confirmed via AskUserQuestion, 2026-08-16**: within a
+country's servable_fraction(N) footprint, Starlink is assumed to capture 100% of
+that population's telecom business (no switching-friction/partial-adoption curve
+-- the "just takes incumbent share" framing, taken literally). The user explicitly
+declined the offered alternative (a partial-adoption ceiling below 100%).
+**A design choice made, not separately asked about**: no sub-national data exists
+to know WHICH specific people within a density bin (a latitude x population-density
+cell) are already connected vs. unconnected, so the servable population is split
+into "incumbent" (already-connected, priced at `_raw_arpu()`) and "new" (previously
+unconnected, priced via `country_tam_model._country_price()`) segments
+PROPORTIONALLY to the country's own overall connected/unconnected ratio --
+`addressable_connected = servable_fraction x connected_population`,
+`addressable_unconnected = servable_fraction x unconnected_population`. This
+assumes Starlink's capacity-constrained reach doesn't systematically favor already-
+connected (typically denser, urban) or unconnected (typically sparser, rural)
+people within the same density bin -- plausible as a first cut, not verified.
+**Impact if wrong**: if in reality Starlink's footprint at low N disproportionately
+reaches already-connected urban areas (e.g. dense demand competes for capacity
+first) rather than a proportional mix, the "incumbent" segment's revenue share
+would be understated early in the N sweep and the "new" segment's overstated, or
+vice versa if unconnected rural areas are reached first. Does not affect the TOTAL
+addressable population (`servable_fraction x population`), only how it's split
+between the two price mechanisms.
+
 ---
 
 ## Confirmed by the user (locked in, listed for completeness only)

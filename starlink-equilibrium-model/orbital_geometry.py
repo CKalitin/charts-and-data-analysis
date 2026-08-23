@@ -166,3 +166,81 @@ def expected_sats_by_latitude(shells: list[Shell], bin_width_deg: float = 1.0):
         _, frac = latitude_density(shell, bin_width_deg=bin_width_deg)
         result[shell.shell_id] = frac * shell.total_sats
     return centers, result
+
+
+# ==========================================================================================
+# Ground coverage radius ("how far to the sides can a satellite serve a user") -- 2026-08-11.
+# Standard LEO visibility geometry: a user terminal needs the satellite above some minimum
+# elevation angle epsilon -- measured AT THE GROUND TERMINAL (the user's dish), between its
+# local horizon and the line of sight up to the satellite, NOT a property of the satellite
+# itself (that's the related-but-different off_nadir_angle_deg(), measured at the satellite's
+# end of the same line of sight). The lower epsilon is allowed to go, the farther from the
+# sub-satellite point a satellite can still serve a user -- this is what "coverage radius" or
+# "field of view" means here, NOT a single spot-beam's footprint (capacity_density_model.py's
+# ~163 km^2 figure is a much narrower, separate concept: one beam's oversubscription limit,
+# not how far the satellite can reach with ANY of its beams).
+#
+# MIN_ELEVATION_DEG = 25.0 is the FCC-AUTHORIZED Starlink Gen1 user-terminal minimum,
+# confirmed directly from FCC Order 21-48's own text (footnote 3): "SpaceX is authorized to
+# operate with earth station elevation angles as low as 25 degrees for user terminals and
+# gateways" -- granted 2021, tied explicitly to the same altitude change (->540-570km) that
+# produced this project's real Gen1 shells. Checked whether the FCC's 2026-04 ruling (STA
+# approval lowering the minimum to 10deg below 400km, 20deg for 400-500km, 5deg above 62N)
+# changes this for THIS project's real shells: it doesn't -- Gen1's shells are all >=540km,
+# above every lowered tier, so 25deg remains the applicable figure. Validated against two
+# independent published figures for the 550km shell specifically: 25deg -> ~943km computed
+# here vs. "~900km" cited; 40deg (ALT_MIN_ELEVATION_DEG -- the ORIGINAL 2016 figure, before
+# SpaceX's 2020 modification request lowered it to 25deg) -> ~578km computed here vs.
+# "~580km" cited -- both match closely, cross-confirming the geometry. Full citation chain,
+# including the primary FCC order text, in data/starlink_coverage_geometry.md and
+# ASSUMPTIONS.md #11.
+# ==========================================================================================
+
+MIN_ELEVATION_DEG = 25.0
+ALT_MIN_ELEVATION_DEG = 40.0  # stricter alternative, 550km-shell-specific ("designed horizon plane")
+
+
+def off_nadir_angle_deg(altitude_km: float, min_elevation_deg: float) -> float:
+    """Satellite's off-nadir look angle needed to reach a ground point at exactly
+    min_elevation_deg elevation -- law of sines on the Earth-center / satellite /
+    ground-station triangle (OS = Re+h, OG = Re, angle at G = 90+elevation)."""
+    ratio = EARTH_RADIUS_KM * np.cos(np.radians(min_elevation_deg)) / (EARTH_RADIUS_KM + altitude_km)
+    return np.degrees(np.arcsin(ratio))
+
+
+def ground_range_angular_radius_deg(altitude_km: float, min_elevation_deg: float = MIN_ELEVATION_DEG) -> float:
+    """Earth-central angle (degrees) from the sub-satellite point to the edge of the
+    satellite's usable coverage circle (elevation = min_elevation_deg exactly).
+    This is the coverage circle's angular radius, in every direction (a circular
+    cone intersecting a sphere gives a constant-angular-radius circle) -- including
+    along the north-south meridian, which is what latitude-only charts need."""
+    return 90.0 - min_elevation_deg - off_nadir_angle_deg(altitude_km, min_elevation_deg)
+
+
+def ground_range_km(altitude_km: float, min_elevation_deg: float = MIN_ELEVATION_DEG) -> float:
+    """Coverage circle ground radius in km -- "how far to the sides can this
+    satellite serve a user," given a minimum usable elevation angle."""
+    return EARTH_RADIUS_KM * np.radians(ground_range_angular_radius_deg(altitude_km, min_elevation_deg))
+
+
+def expected_sats_reaching_latitude(shells: list[Shell], min_elevation_deg: float = MIN_ELEVATION_DEG,
+                                     bin_width_deg: float = 1.0):
+    """Like expected_sats_by_latitude(), but counts a satellite toward EVERY
+    latitude bin its ground coverage circle reaches, not just its own
+    sub-satellite-point bin -- "how many satellites could serve a user at this
+    latitude right now," not "how many satellites are exactly overhead." A
+    satellite at latitude L covers latitudes [L-R, L+R] where R is its shell's own
+    ground_range_angular_radius_deg (real shells differ 540-570km, so R differs
+    slightly per shell) -- implemented as a boxcar convolution (sum, not average)
+    of each shell's own by-latitude histogram with a window of half-width R,
+    rounded to the nearest bin. Ignores the east-west extent of the coverage
+    circle entirely (a 1D latitude-marginal simplification, consistent with this
+    module's other latitude-only treatments)."""
+    centers, by_shell = expected_sats_by_latitude(shells, bin_width_deg=bin_width_deg)
+    result = {}
+    for shell in shells:
+        radius_deg = ground_range_angular_radius_deg(shell.altitude_km, min_elevation_deg)
+        half_width_bins = max(1, round(radius_deg / bin_width_deg))
+        kernel = np.ones(2 * half_width_bins + 1)
+        result[shell.shell_id] = np.convolve(by_shell[shell.shell_id], kernel, mode="same")
+    return centers, result

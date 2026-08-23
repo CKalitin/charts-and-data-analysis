@@ -16,7 +16,6 @@ import json
 import sys
 from pathlib import Path
 
-import matplotlib.ticker as mticker
 import numpy as np
 from matplotlib.path import Path as MplPath
 from matplotlib.patches import PathPatch
@@ -115,43 +114,9 @@ def fig_coverage_bands(shells, land_paths):
     return fig, OUT_ROOT / "coverage_bands_world_map.png"
 
 
-# --------------------------------------------------------------------------------------
-# Chart 2: expected satellites overhead by latitude, per shell (stacked)
-# --------------------------------------------------------------------------------------
-def fig_satellite_density_by_latitude(shells):
-    centers, by_shell = og.expected_sats_by_latitude(shells, bin_width_deg=1.0)
-
-    fig, ax = render.new_figure(figsize=(11, 6.5))
-    shell_order = sorted(shells, key=lambda s: s.inclination_deg)
-    stack = np.zeros_like(centers)
-    for shell in shell_order:
-        vals = by_shell[shell.shell_id]
-        color = INCLINATION_COLORS.get(round(shell.inclination_deg, 1), "#888888")
-        ax.fill_between(centers, stack, stack + vals, color=color, alpha=0.75,
-                        step=None, label=f"{shell.shell_id} ({shell.inclination_deg}deg, {shell.total_sats} sats)")
-        stack += vals
-
-    ax.set_xlabel("Latitude (degrees)")
-    ax.set_ylabel("Expected satellites overhead (instantaneous, stacked by shell)")
-    ax.set_title("Gen1 satellite density by latitude (well-sourced shells only)")
-    ax.set_xlim(-90, 90)
-    ax.invert_xaxis()  # north (positive) on the left, matching the project convention
-    ax.xaxis.set_major_locator(mticker.MultipleLocator(15))
-    ax.legend(loc="upper left", fontsize=7.5)
-
-    peak_lat = centers[stack.argmax()]
-    info_box.add_info_box(
-        ax, fig,
-        f"Peak: {stack.max():.0f} sats at {peak_lat:.0f}deg. Gen1 only. " + SOURCE_NOTE,
-        mode="on",
-    )
-    return fig, OUT_ROOT / "satellite_density_by_latitude.png"
-
-
 def figures(shells, land_paths):
     return [
         ("coverage_bands", lambda: fig_coverage_bands(shells, land_paths)),
-        ("density_by_latitude", lambda: fig_satellite_density_by_latitude(shells)),
     ]
 
 
