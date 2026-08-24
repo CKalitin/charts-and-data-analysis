@@ -1107,7 +1107,141 @@ starting at the true data minimum (~2 Gbps, Bermuda) -- the first few countries 
 individually tiny and already summarized inside that block's label, so extending the axis
 down to them added only visual noise, not information.
 
-## Next step for whoever picks this up
+## Market ladder chart revision: decluttered + multi-generation cost lines + linear version (2026-08-23, same day)
+
+User reviewed the chart above and asked for it simplified: delete the "serves all X/204
+modeled countries" text from each cost line's note, delete the info-box's "Staircase: ...
+Dashed lines: ..." paragraph, delete the "N countries at $100/mo ARPU cap" artifact-block
+label, remove the highlighted-country labels entirely (Norway/US/Mexico/Brazil/China/
+India/Fiji + their dot markers and leader lines), add reference lines for the OTHER
+Starlink generations this project has cost data for (not just v3), and add a linear-axis
+version alongside the log-log one (matching the `charts/equilibrium.py` precedent).
+
+**What changed in `charts/market_ladder.py`**: `_draw_highlights()` (+ `HIGHLIGHT_COUNTRIES`,
+`LABEL_OFFSETS`, `_DEFAULT_OFFSET`) and `_draw_artifact_cap_block()` deleted outright, not
+just their text -- an unlabeled marker dot with nothing to explain it would have been worse
+clutter than what it replaced. `_fmt_dollars()` deleted too (dead code once both callers were
+gone). The `info_box.add_info_box()` call and its `param_text` paragraph deleted; the `viz`
+import narrowed to just `render`. `_draw_v3_cost_lines()` renamed to `_draw_cost_lines()` and
+generalized: it now takes the FULL `cost_per_gbps_model.build_generation_economics()` output
+(v1.0, v2 Mini, both v3 scenarios -- the only 4 generations this project has $/Gbps data for;
+v1.5 and v2_full are still excluded project-wide for the data-availability reasons already
+documented in `cost_per_gbps_model.py`), not just the v3 subset, and no longer computes/prints
+`em.find_equilibrium()` results at all (that was the "serves all X/Y" text being deleted). New
+`GEN_COST_COLORS` dict replaces the old v3-only `V3_COST_COLORS`: blues for the older, more
+expensive-per-Gbps generations (`v1.0` `#313695`, `v2 Mini` `#4575b4`), reds kept for v3
+(`#8c1a10`/`#d73027`, unchanged from before). The secondary top x-axis stays
+v3-only (satellite-count conversion still only makes sense for v3's 1,024 Gbps/sat), per the
+module docstring's existing reasoning -- unaffected by this change.
+
+**Chart-drawing code refactored into a shared `_draw_ladder(ax, points, econ,
+v3_downlink_gbps, *, log_scale: bool)`**, called by two thin wrappers,
+`fig_market_ladder_log()` (unchanged output filename, `v3_market_ladder.png`) and the new
+`fig_market_ladder_linear()` (`v3_market_ladder_linear.png`) -- same `figures()`/`main()`
+loop-and-save pattern as `charts/equilibrium.py`, for consistency with that file's existing
+log+linear precedent in this project.
+
+**Real bug caught and fixed before shipping, not just a cosmetic tweak**: the first attempt at
+multi-generation cost-line labels used per-line `ax.annotate()` text anchored at each line's
+own y-position with a fixed point-offset -- fine for the old 2-line (v3-only) chart, but with
+4 lines it garbled illegibly on the linear-axis version specifically. Root cause: on a linear
+y-axis spanning $0-$90K, all four generation costs ($5,074 / $2,564 / $352 / $305) sit within
+~6% of each other near y=0 -- their DATA positions are all nearly identical in pixel terms, so
+a per-line point-offset stacking scheme (tried first, using a log-distance-aware "how close in
+rendered space" heuristic) still collided, because the offset was being added on top of
+already-near-identical base positions rather than replacing them. **Fixed by switching to
+`ax.legend()`** (each `axhline()` given a `label=`, one `ax.legend(loc="lower right")` call
+instead of manual per-line text placement) -- a legend box lays out N labels in a fixed
+vertical stack regardless of how close their underlying data values are, sidestepping the
+whole collision problem rather than tuning around it. Confirmed by rendering both chart
+versions and visually inspecting: log version's legend cleanly lists all 4 generations in the
+previously-empty lower-right corner (freed up by deleting the country highlight labels);
+linear version, where all 4 lines visually bunch up near y=0 as expected (documented in the
+module docstring as an inherent linear-scale tradeoff, same caveat pattern as
+`equilibrium.py`), now has a fully legible legend instead of overlapping text.
+
+**Environment note for whoever runs this next**: this container had no scientific Python
+stack at all (no matplotlib/numpy, no pip, no apt/sudo access, no `python3 -m venv` ensurepip
+support) -- different from the "already has a project `.venv`" state some earlier CLAUDE.md
+entries describe; that `.venv` did not exist here. Rebuilt it: `python3 -m venv --without-pip
+.venv`, bootstrapped pip via `curl -sL https://bootstrap.pypa.io/get-pip.py | .venv/bin/python3
+-`, then `.venv/bin/python3 -m pip install matplotlib numpy`. Run charts with
+`.venv/bin/python3 charts/<script>.py`, not bare `python3`.
+
+## Market ladder: widest-bars-labeled image + linear legend moved to top-right (2026-08-23, same day)
+
+Two more small requests on the same chart, same session. (1) User asked for the 4 LONGEST
+horizontal bars (i.e. the 4 countries with the widest `end - start` Gbps span in the
+staircase -- a capacity-size cut, not a $/Gbps-price cut) labeled, **on a separate new image,
+not merged into the already-decluttered main chart**. (2) After seeing
+`v3_market_ladder_linear.png`, asked for that chart's cost-line legend moved from bottom-right
+to top-right (bottom-right is where all 4 lines themselves bunch up on the linear axis, so a
+bottom-right legend sat on top of the data it was labeling).
+
+**Widest-4 computed directly from `equilibrium_model.build_revenue_curve()`'s existing
+output**, sorted by `end - start` (not by revenue or by hand-picked "biggest real market"
+judgment like the deleted highlight labels used) -- came out to **United States (146,829
+Gbps), Brazil (307,915 Gbps), China (345,863 Gbps -- the single widest step), India (109,533
+Gbps)**. Notably NOT the same set as the deleted `HIGHLIGHT_COUNTRIES` list (Norway, Mexico,
+Fiji dropped; this is capacity-width, not price-decade-spread). New
+`_draw_widest_bar_labels(ax, points, n=4)` in `charts/market_ladder.py`, same dot + leader-line
++ text-box visual language as the deleted `_draw_highlights()`, but labels now state the
+step's WIDTH (`{end-start:,.0f} Gbps wide`) instead of ARPU -- the thing actually being
+highlighted here. New `fig_market_ladder_widest_labeled()` -> a THIRD, separate output file,
+`v3_market_ladder_widest_bars_labeled.png`; the plain log and linear charts are untouched, per
+the user's explicit "don't replace existing" instruction. Registered in `figures()` /
+`main()` alongside the other two, so a full `python charts/market_ladder.py` run now produces
+3 PNGs, not 2.
+
+**Legend location**: `_draw_cost_lines()` gained a `loc` param (default `"lower right"`);
+`_draw_ladder()` now passes `loc="lower right" if log_scale else "upper right"` -- the log
+chart's legend stays where it already worked (empty lower-right corner since the country
+labels were deleted), only the linear chart's moved.
+
+## Market ladder: labeled the capped-block "first bar", then legend -> inline labels (2026-08-23, same day)
+
+Three more follow-ups on the same image set, same session.
+
+**(1) "Label the first one too."** Read as: on `v3_market_ladder_widest_bars_labeled.png`,
+also label the flat $100/mo-ARPU-cap plateau (the 15 merged countries described in the Phase 6
+section above) -- it's the first, leftmost bar a reader's eye lands on, and on a LOG x-axis it
+visually reads as the single longest bar in the whole image (spans ~2.7 of the plot's ~4.4
+visible decades) even though its raw Gbps width (104,219) is smaller than each of the 4
+countries already labeled by the widest-4-by-raw-width metric. New
+`_draw_capped_block_label()`, same dot+leader+textbox style, called after
+`_draw_widest_bar_labels()` in `fig_market_ladder_widest_labeled()` -- this image only, per the
+same "separate image, don't touch the plain charts" scoping as the original widest-bars ask.
+
+**(2) Cost-line labels moved from a legend box to inline text embedded just above each
+line** -- left side on the log chart, user initially asked for right side on the linear chart,
+then simplified to "nvm ... put the labels on the left [for linear too] and delete v3 starship
+end state label as it overlaps." `_draw_cost_lines()` reworked: draws each `axhline()` first
+(unlabeled), then a separate pass places `ax.annotate()` text at a fixed x-fraction (0.015
+left-aligned) with a real PIXEL-based collision-avoidance stack (see bug below), and takes a
+new `skip_labels` param -- `_draw_ladder()` passes `skip_labels=("v3 (Starship end-state)",)`
+on the linear chart only (the log chart keeps all 4 labels; its v3 pair is legible without
+skipping anything). The `v3 (Starship end-state)` DASHED LINE itself is still drawn on the
+linear chart, only its text label is omitted.
+
+**Real bug hit and fixed while building the pixel-stacking pass**: the first version stacked
+labels TOP-DOWN in descending-cost order (push each subsequent, lower-cost label down by a
+minimum pixel gap if it collides with the previous one). This works fine when there's open
+space below the lowest line, which is true on the log chart -- but badly wrong on the linear
+chart, where all 4 lines sit within a few pixels of the y=0 axis floor (confirmed by printing
+`ax.transData.transform()` pixel coordinates directly: the axis floor itself was at pixel
+y=68.75, and the v3 end-state/initial lines were at y=72.5/73.1 -- under 5px of real room
+below them). Stacking downward from there pushed the lowest label PAST the axis floor,
+overlapping both the other label and the axis border -- confirmed visually by cropping and
+zooming the rendered PNG (same "don't just eyeball the whole chart, zoom the specific region"
+lesson logged earlier this file, re-earned here). **Fixed by reversing the stacking direction
+entirely**: process ASCENDING by cost (lowest/bottom-most line first) and push each
+SUBSEQUENT, higher-cost label UPWARD if it would collide -- building the stack away from the
+crowded axis floor and into the open space toward `y_hi`, which always has room regardless of
+scale. General lesson for any future pixel-based label stacking in this project: stack away
+from the nearest boundary, not in a fixed direction chosen for one scale and assumed to work
+for both. This fix alone would have resolved the log-chart-first design intent too, but the
+user's simplification (drop the one label that still didn't fit) landed before it needed
+testing against that specific case.
 
 Phases 1-5 are done. Start **Phase 6 (derived charts)**, but two things first:
 
@@ -2415,3 +2549,113 @@ full-capture design surfaces it more visibly since Zimbabwe's "incumbent" segmen
 now contributes revenue regardless of its overall %-unconnected. Not fixed here --
 same open item as ASSUMPTIONS.md #4's proposed fixes (drop/cap outlier countries,
 or a regional-median fallback), not decided on unilaterally.
+
+## New chart: Avg $/Gbps/year vs. cumulative capacity, derived from the TAM sweeps (2026-08-23)
+
+User: take the TAM-vs-satellites charts (`country_tam_model.py` / `country_tam_full_model.py`)
+and turn them into an "avg $/Gbps vs. capacity" market-ladder-style chart, with the same
+per-generation cost reference lines as `market_ladder.py`. Confirmed via `AskUserQuestion`
+which TAM model to use -- answer: **both**.
+
+**New file: `charts/avg_price_market_ladder.py`**. For each swept satellite count N,
+`avg_price = TAM(N) x 12 / (N x 1,024 Gbps/sat)` -- a single BLENDED average price per unit
+of deployed capacity, directly comparable to `market_ladder.py`'s $/Gbps/yr axis, but derived
+from the TAM sweep (population + pricing + capacity model) rather than the per-country ARPU
+staircase. 4 outputs: `avg_price_per_gbps_vs_capacity_{unconnected,full}(_linear).png`.
+Reuses `market_ladder.py`'s `_draw_cost_lines()` and `_human()` directly (imported as a flat
+sibling module, `charts/` has no `__init__.py`, same pattern every other file in `charts/`
+already uses for cross-imports).
+
+**Real finding**: both curves cross all 4 generation cost lines somewhere in their range --
+e.g. the unconnected-only curve is $24,588/Gbps/yr at N=100, falls to $25/Gbps/yr at
+N=2,000,000, crossing v3's ~$305-352 threshold around N=150,000-200,000. This is a DIFFERENT
+cut than `market_ladder.py`'s per-country ladder (which shows the full distribution of prices
+across 204 countries at once) -- this chart instead shows what the SINGLE BLENDED average
+would need to be at each fleet size, directly against the flat cost lines, closer in spirit
+to `charts/equilibrium.py`'s revenue-vs-cost framing but built from the richer TAM model.
+
+**Environment blocker hit and resolved**: this container had the global 0.1deg population
+grid cached (`data/raw/worldpop/_grid_cache_0.1deg.npz`) but NONE of the ~215 per-country
+WorldPop GeoTIFFs the TAM model needs (`country_service_model.load_all_country_population_by_latitude()`).
+Re-ran `download_worldpop.py` (confirmed with the user first, ~0.82GB from hub.worldpop.org)
+-- also wrote a PARALLELIZED version (`ThreadPoolExecutor`, 12 workers, same
+fetch/download functions, same manifest/resumability) after the user flagged the sequential
+version as too slow; cut download time substantially since it's I/O-bound (two network
+round-trips + a courtesy sleep per country). Confirmed 215/217 countries, matching the
+historical result exactly (CHI, XKX permanently absent from WorldPop's own country list).
+
+**Second, sneakier bug**: even after the download, every chart came out empty / crashed
+(`FT_Render_Glyph ... raster overflow` -- a matplotlib font-rendering crash triggered by
+degenerate/NaN axis limits, not the real bug itself). Root cause: `population_density_grid.load_or_build_grid()`
+uses `use_cache=True` by default, and the CACHED global grid file already present in this
+container (36KB, present BEFORE any per-country raster existed here) was entirely NaN --
+built once, empty, before the download, then silently reused on every later call, poisoning
+`country_servable_fraction()` -> every TAM value -> the whole chart. Fixed by deleting the
+stale cache file and letting `load_or_build_grid()` rebuild it fresh (verified: max density
+48,210/km2 post-rebuild, matching the documented real figure exactly, vs. 100% NaN before).
+**Lesson for a future session**: a "successfully loaded" grid/raster cache is not proof it
+has real data in it -- if a TAM/serviceable-customers chart in this project ever comes back
+empty or all-zero again, check `np.isnan(grid.density).all()` before assuming the model logic
+is wrong.
+
+**Third bug, a real and persistent one, in the shared `_draw_cost_lines()` helper (used by
+both `market_ladder.py` and this new file) -- took THREE attempts to actually fix, not one**:
+v3's two cost scenarios ($352 vs $305/Gbps/yr) sit close enough in value that their labels
+collided. (1) First fix attempt: a fixed 15px, then 20px pixel gap computed via a mid-script
+`ax.figure.canvas.draw()` call -- looked right in isolated reasoning but STILL rendered
+overlapping text when actually checked with PIL pixel measurement (not just eyeballing the
+full chart, which hid it at low zoom.) Root cause: `constrained_layout` renegotiates axes
+geometry AGAIN at final `savefig()` time, so a mid-script canvas-draw pass is never guaranteed
+to match the geometry text actually renders against -- worse on this file's chart specifically
+because its secondary top axis + legend + off-plot info box compress the axes more than
+`market_ladder.py`'s own charts. (2) Second attempt: switched to AXES-FRACTION positioning
+(purely a function of `ax.get_ylim()`, no canvas-draw dependency at all) with a 0.028, then
+0.05 fraction gap -- fixed the *original* pixel-timing bug, but PIL measurement STILL showed
+labels overlapping, because 0.05 of THIS specific axes' height (~530-600px, shrunk by the
+secondary axis) is still not enough room for two 15px-tall text lines when the two cost
+VALUES themselves are only ~0.018 axes-fractions apart naturally -- there is categorically no
+way to fit two separate non-overlapping single-line labels in a gap smaller than one text
+line's own height, no matter how the offset/threshold is tuned. (3) **Actual fix**: cluster
+lines whose natural positions land within `min_gap_frac` of each other and give the whole
+cluster ONE combined multi-line label (neutral grey, since one text block can't represent
+multiple line colors) instead of trying to stack them separately. Verified this time by
+directly measuring rendered label pixel rows with PIL on the actual output files (both
+`market_ladder.py`'s and this file's charts), not by re-inspecting the same eyeballed
+screenshot repeatedly. **On the linear chart, all of v1.0/v2 Mini/v3-initial now cluster into
+one 3-line grey block** (they're all within 5% of each other near the linear axis's low end)
+-- loses per-line color-coding for those three specifically, but this is the same category of
+tradeoff as the pre-existing, user-approved "drop v3 end-state's label on the linear chart"
+call earlier in this same file: when the values are genuinely this close together, no
+labeling scheme keeps both full color-coding AND full legibility, and legibility won.
+
+**Follow-up, same day: info box removed** per user request ("Delete the TAM source note")
+-- deleted the `info_box.add_info_box()` call, the now-unused `MODEL_SOURCE_NOTE` dict, and
+the now-unused `info_box` import from `charts/avg_price_market_ladder.py`.
+
+## New chart: population connected vs. cumulative capacity deployed (2026-08-23, same day)
+
+User: "population connected vs cumulative capacity deployed / sat count." Read as: a
+population-COUNT (not $) version of the same market-ladder x-axis convention (capacity Gbps
+primary, v3 satellites secondary). Deliberately did NOT reuse the per-country TAM pipeline
+(`country_tam_model.py`/`country_tam_full_model.py`, the slow ~217-raster load) -- "population
+connected" doesn't depend on pricing, household size, or ARPU at all, only on the physical
+density-cap + aggregate-capacity model already built and charted as
+`results/population/serviceable_customers_vs_satellites_global(_linear).png`
+(`serviceable_customers_model.sweep_per_satellite_cap()`, needs only the cached GLOBAL
+population density grid -- no per-country rasters, runs in seconds not minutes).
+
+**New file: `charts/population_connected_market_ladder.py`** -> 2 outputs,
+`population_connected_vs_capacity(_linear).png`. NOT a new model -- same
+`sweep_per_satellite_cap()` call as the existing chart, just re-axed (capacity Gbps primary /
+satellites secondary, matching `market_ladder.py`/`avg_price_market_ladder.py`'s convention
+instead of the existing chart's satellites-primary/Tbps-secondary one) and given fleet
+reference lines (Gen1/current fleet) converted from satellite count to Gbps for the new x-axis.
+Same `SAT_COUNTS_LOG` (100 to 20,000,000, 46 pts) and `LINEAR_MAX_SATS` (7,000,000) ranges as
+the existing chart -- both were already tuned to this exact curve's own saturation point (~6M
+sats), no reason to re-derive.
+
+Confirms the same finding as the existing chart, now directly comparable on the same x-axis
+as the avg-price and market-ladder charts: population served rises ~linearly with capacity
+until ~100-200M Gbps deployed (~100,000-200,000 v3 satellites), then saturates at ~8.9B
+(raw global population) by ~6M satellites -- current real fleet (~10,900 sats) sits far down
+the linear-rise part of the curve, nowhere near the capacity-bound saturation point.

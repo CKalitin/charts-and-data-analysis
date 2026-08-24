@@ -1,0 +1,1 @@
+no clue how claude did the v3 market ladder disregard entirely
