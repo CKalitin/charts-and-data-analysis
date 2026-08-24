@@ -32,7 +32,7 @@ import capacity_density_model as cdm
 import population_density_grid as pdg
 import serviceable_customers_model as scm
 from market_ladder import _human
-from serviceable_customers_chart import CURRENT_FLEET_SATS, GEN1_SATS, SHELL_RATIO_NOTE, SOURCE_NOTE, _pop_formatter
+from serviceable_customers_chart import ESTIMATED_CURRENT_CAPACITY_SATS, SHELL_RATIO_NOTE, SOURCE_NOTE, _pop_formatter
 from viz import render, info_box
 
 OUT_ROOT = Path(__file__).resolve().parent.parent / "results" / "market_ladder"
@@ -46,16 +46,13 @@ LINEAR_MAX_SATS = 1_000_000  # -> ~1,024M Gbps, same reasoning
 
 
 def _add_fleet_reference_lines_capacity(ax):
-    """Same Gen1/current-fleet vertical reference lines as
+    """Same estimated-current-capacity vertical reference line as
     serviceable_customers_chart._add_fleet_reference_lines(), converted from
     satellite count to Gbps since THIS chart's x-axis is capacity, not satellites."""
-    offsets = [(4, -4), (4, -70)]
-    for (n, label), xytext in zip(
-            [(GEN1_SATS, "Gen1 (4,408)"), (CURRENT_FLEET_SATS, "Current fleet (~10,900)")], offsets):
-        x = n * GBPS_PER_SAT
-        ax.axvline(x, color="0.5", linestyle=":", linewidth=1.0, zorder=1)
-        ax.annotate(label, xy=(x, 1), xycoords=("data", "axes fraction"), xytext=xytext,
-                     textcoords="offset points", fontsize=7.5, color="0.4", ha="left", va="top", rotation=90)
+    x = ESTIMATED_CURRENT_CAPACITY_SATS * GBPS_PER_SAT
+    ax.axvline(x, color="0.5", linestyle=":", linewidth=1.0, zorder=1)
+    ax.annotate("Estimated current capacity", xy=(x, 1), xycoords=("data", "axes fraction"), xytext=(4, -4),
+                textcoords="offset points", fontsize=7.5, color="0.4", ha="left", va="top", rotation=90)
 
 
 def _draw_chart(ax, capacity_gbps, served, raw_pop, *, log_scale: bool):

@@ -20,7 +20,7 @@ import population_density_grid as pdg
 from viz import render, info_box
 
 OUT_ROOT = Path(__file__).resolve().parent.parent / "results" / "population"
-SOURCE_NOTE = "Source: WorldPop 1km pop. density ~2020, via download_worldpop.py"
+SOURCE_NOTE = "Source: WorldPop, University of Southampton"
 
 
 def _pop_formatter(x, _pos):

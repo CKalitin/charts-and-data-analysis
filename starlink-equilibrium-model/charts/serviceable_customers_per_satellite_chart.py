@@ -84,7 +84,7 @@ def fig_servable_density_vs_satellites():
         ax, fig,
         "Range-extended-satellites-weighted average density ceiling across the real\n"
         "shell profile (dominated by the 53deg shells, 72% of satellites), using\n"
-        "Starlink's ~25deg min. elevation FOV geometry (ASSUMPTIONS.md #11).\n"
+        "Starlink's ~25deg min. elevation FOV geometry (FCC Order 21-48).\n"
         + SHELL_RATIO_NOTE + ". " + SOURCE_NOTE,
         mode="on",
     )
@@ -120,7 +120,7 @@ def fig_servable_density_vs_satellites_linear():
         ax, fig,
         "Range-extended-satellites-weighted average density ceiling across the real\n"
         "shell profile (dominated by the 53deg shells, 72% of satellites), using\n"
-        "Starlink's ~25deg min. elevation FOV geometry (ASSUMPTIONS.md #11).\n"
+        "Starlink's ~25deg min. elevation FOV geometry (FCC Order 21-48).\n"
         + SHELL_RATIO_NOTE + ". " + SOURCE_NOTE,
         mode="on",
     )

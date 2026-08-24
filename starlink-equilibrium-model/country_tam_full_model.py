@@ -17,16 +17,16 @@ intact and unchanged). Models Starlink "just takes incumbent share as it expands
   through requires no new capacity modeling, just a formula change.
 - **Pricing (user-confirmed: "Split pricing")**: the servable population is split
   into two segments by price mechanism, since a straight incumbent-price swap and
-  a new-customer elasticity price are different economic events:
+  a new-customer scarcity-premium price are different economic events:
     - "Incumbent" segment: the part of the servable population that was ALREADY
       connected (paying an existing provider) -- assumed to switch to Starlink at
       roughly the price they're already paying (`_raw_arpu()`), a revenue swap,
       not new price discovery.
     - "New" segment: the part that was previously UNCONNECTED -- priced via
       country_tam_model.py's OWN `_country_price()` (the same <20%-unconnected ->
-      local price / >=20% -> elasticity-derived threshold rule), reused directly
-      rather than reimplemented, applied here to price newly-served customers
-      specifically rather than the whole country at once.
+      local price / >=20% -> local price x bounded scarcity premium rule), reused
+      directly rather than reimplemented, applied here to price newly-served
+      customers specifically rather than the whole country at once.
   No sub-national data exists to know WHICH people within a density bin are
   already connected, so the servable population is split into these two segments
   PROPORTIONALLY to the country's own overall connected/unconnected ratio -- an
@@ -80,7 +80,7 @@ class CountryTAMFull:
     price_incumbent_usd_per_month: float
     price_new_usd_per_month: float
     price_incumbent_basis: str  # "existing_local_price" | "no_price_data"
-    price_new_basis: str  # "existing_local_price" | "existing_local_price_gni_missing" | "elasticity_derived" | "no_price_data"
+    price_new_basis: str  # "existing_local_price" | "scarcity_premium_on_local_price" | "no_price_data"
     tam_incumbent_usd_per_month: float
     tam_new_usd_per_month: float
     tam_usd_per_month: float

@@ -25,14 +25,27 @@ from coverage_map import draw_world_basemap, load_land_paths
 from viz import render, info_box
 
 OUT_ROOT = Path(__file__).resolve().parent.parent / "results" / "population"
-SOURCE_NOTE = "Source: WorldPop 1km pop. density ~2020, via download_worldpop.py"
+SOURCE_NOTE = "Source: WorldPop, University of Southampton"
 
 DENSITY_FLOOR = 1.0  # people/km^2 -- below this, land is shown as basemap (uninhabited/rural)
 COLOR_TICKS = [1, 10, 100, 1000, 10_000]
 
 
+MAP_LON_RANGE = (-180, 180)
+MAP_LAT_RANGE = (-60, 85)  # WorldPop has near-zero data in Antarctica; don't render dead space
+
+
 def fig_population_density_heatmap(grid: pdg.PopulationGrid, land_paths):
-    fig, ax = render.new_figure(figsize=(16, 9))
+    # draw_world_basemap() below forces ax.set_aspect("equal") -- a figsize whose
+    # width:height ratio doesn't match the map's own lon:lat data ratio leaves the
+    # axes shrunk to the correct aspect inside an oversized figure, rendering as
+    # dead whitespace above/below (if the figure is too tall) or beside (if too
+    # wide) the actual map. Size the figure to match the data aspect exactly so the
+    # map fills the frame.
+    lon_span = MAP_LON_RANGE[1] - MAP_LON_RANGE[0]
+    lat_span = MAP_LAT_RANGE[1] - MAP_LAT_RANGE[0]
+    fig_width = 16
+    fig, ax = render.new_figure(figsize=(fig_width, fig_width * lat_span / lon_span))
     draw_world_basemap(ax, land_paths)
 
     density = np.ma.masked_where(~(grid.density >= DENSITY_FLOOR), grid.density)
@@ -51,8 +64,8 @@ def fig_population_density_heatmap(grid: pdg.PopulationGrid, land_paths):
     cbar.ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda v, _: f"{v:,.0f}"))
 
     ax.set_title("Population density (people/km2) vs. longitude and latitude")
-    ax.set_xlim(-180, 180)
-    ax.set_ylim(-60, 85)  # WorldPop has near-zero data in Antarctica; don't render dead space
+    ax.set_xlim(*MAP_LON_RANGE)
+    ax.set_ylim(*MAP_LAT_RANGE)
 
     info_box.add_info_box(
         ax, fig,

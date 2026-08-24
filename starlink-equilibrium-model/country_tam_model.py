@@ -3,22 +3,29 @@ populations only (2026-08-14, user request -- see CLAUDE.md's TAM-model section 
 the full design conversation). Country-level granularity throughout, per the user's
 explicit "note we're not going more granular than that."
 
-Pricing rule per country (user-specified):
+Pricing rule per country (user-specified <20%/>=20% branch; internals revised
+2026-08-23, see below):
   - If <20% of the population is unconnected: assume Starlink prices at whatever the
     LOCAL market already charges -- _raw_arpu() (charts/affordability.py), the same
     fixed/mobile dominant-access-mode proxy used throughout this project's
     affordability work (equilibrium_model.build_country_demand() uses the identical
     logic).
-  - If >=20% is unconnected: derive a price from the elasticity curve instead of the
-    local incumbent price (a market that expensive/uncompetitive presumably isn't a
-    reliable price signal). Take this country's OWN capacity-constrained
-    servable_fraction(N) (country_service_model.py -- the REAL satellite/population
-    model, not a guess), treat (100 - servable_fraction*100) as the implied "%
-    unconnected AT THIS PRICE," and invert the same log-linear elasticity curve
-    served_population_vs_cost.py already establishes (cost_pct_from_pct_unconnected())
-    to solve for the price (as % of monthly GNI/capita) that would leave exactly that
-    many people priced out -- i.e. the capacity constraint determines the
-    market-clearing price via the demand curve, not the other way around.
+  - If >=20% is unconnected: price = that SAME local ARPU, multiplied by a bounded
+    "scarcity premium" that scales with how little of the country Starlink's
+    capacity can currently reach -- see _country_price() below for the formula and
+    why.
+
+**Revision 2026-08-23**: this branch previously derived a price from the elasticity
+curve in served_population_vs_cost.py by inverting servable_fraction(N) through it
+-- i.e. it treated a PHYSICAL SUPPLY constraint (how many satellites exist) as if it
+were a DEMAND-side quantity (what price would leave that many people unconnected).
+That conflation produced prices tens of times the real local price at low N (e.g.
+India: $88.59/mo derived vs. $1.60/mo actually charged, at N=4,408) purely because
+capacity was scarce, which has nothing to do with what the market would bear.
+Replaced with a price anchored to each country's own real ARPU (see below) --
+user-confirmed choice among two options presented, the other being to drop the
+capacity-scaling behavior entirely and always use a straight ARPU/regional-median
+fallback.
 
 Addressable population = min(unconnected_population, servable_fraction(N) x
 total_population) -- capacity CANNOT exceed the real capacity ceiling (from the
@@ -48,11 +55,19 @@ import orbital_geometry as og
 import population_density_grid as pdg
 import serviceable_customers_model as scm
 from charts.affordability import _raw_arpu
-from charts.served_population_vs_cost import cost_pct_from_pct_unconnected
 
 DATA = Path(__file__).resolve().parent / "data"
 
-UNCONNECTED_PCT_THRESHOLD = 20.0  # user-specified: below this, use the local price; at/above, use elasticity
+UNCONNECTED_PCT_THRESHOLD = 20.0  # user-specified: below this, use the local price unmodified
+
+# Scarcity-premium ceiling for the >=20%-unconnected branch: at servable_fraction=0
+# (capacity reaches almost no one), price = ARPU x this ceiling; at
+# servable_fraction=1 (capacity reaches everyone), price = ARPU x 1 (no premium).
+# Linear in between. A bounded, LOCAL-price-anchored replacement for the previous
+# elasticity-curve-derived price (see module docstring) -- default picked as a
+# reasonable, not user-confirmed, starting point; tune this one constant if a
+# different scarcity-premium magnitude is wanted.
+SCARCITY_PRICE_MULTIPLIER_CEILING = 3.0
 
 
 @dataclass(frozen=True)
@@ -68,7 +83,7 @@ class CountryTAM:
     household_size: float
     addressable_subscriptions: float
     price_usd_per_month: float
-    price_basis: str  # "existing_local_price" | "elasticity_derived"
+    price_basis: str  # "existing_local_price" | "scarcity_premium_on_local_price" | "no_price_data"
     tam_usd_per_month: float
 
 
@@ -84,22 +99,23 @@ def load_household_size() -> dict[str, float]:
 
 def _country_price(row: dict, servable_fraction: float, pct_unconnected: float) -> tuple[float, str]:
     """(price_usd_per_month, basis) for one country, per the rule in the module
-    docstring. Falls back to the existing local price if GNI data is missing (can't
-    invert the elasticity curve without a GNI basis to apply the %-of-GNI result
-    to) -- flagged via the returned basis string, not silently substituted."""
+    docstring. Both branches anchor to the same real local ARPU -- the >=20% branch
+    additionally applies a bounded scarcity premium (see SCARCITY_PRICE_MULTIPLIER_CEILING)
+    that relaxes to 1x (no premium) as servable_fraction approaches 1 (fully served)
+    and rises to the ceiling as servable_fraction approaches 0 (capacity reaches
+    almost no one). This does NOT protect against a bad/thin-sample ARPU figure
+    (e.g. Zimbabwe's raw pre-cap ~$437/mo, ASSUMPTIONS.md #4) -- same known,
+    already-flagged data-quality caveat as the <20% branch and the rest of this
+    project's uncapped _raw_arpu() usage, not newly introduced here."""
+    arpu = _raw_arpu(row)
+    if not arpu:
+        return 0.0, "no_price_data"
     if pct_unconnected < UNCONNECTED_PCT_THRESHOLD:
-        arpu = _raw_arpu(row)
-        return (arpu, "existing_local_price") if arpu else (0.0, "no_price_data")
+        return arpu, "existing_local_price"
 
-    gni = row["gni_per_capita_ppp_usd"]
-    if not gni:
-        arpu = _raw_arpu(row)
-        return (arpu, "existing_local_price_gni_missing") if arpu else (0.0, "no_price_data")
-
-    target_pct_unconnected = 100.0 * (1.0 - servable_fraction)
-    cost_pct = float(cost_pct_from_pct_unconnected(target_pct_unconnected))
-    price = cost_pct / 100.0 * (float(gni) / 12.0)
-    return price, "elasticity_derived"
+    frac = min(max(servable_fraction, 0.0), 1.0)
+    multiplier = SCARCITY_PRICE_MULTIPLIER_CEILING - (SCARCITY_PRICE_MULTIPLIER_CEILING - 1.0) * frac
+    return arpu * multiplier, "scarcity_premium_on_local_price"
 
 
 def compute_country_tam(total_sats: float, telecom_rows: list[dict], household_size: dict[str, float],
@@ -196,10 +212,10 @@ if __name__ == "__main__":
     for n in (4_408, 10_900, 100_000):
         rows = compute_country_tam(n, telecom_rows, household_size, pop_by_lat, lat_centers, hist, dens_centers)
         total = sum(r.tam_usd_per_month for r in rows)
-        n_elastic = sum(1 for r in rows if r.price_basis == "elasticity_derived")
-        n_local = sum(1 for r in rows if r.price_basis.startswith("existing_local_price"))
+        n_premium = sum(1 for r in rows if r.price_basis == "scarcity_premium_on_local_price")
+        n_local = sum(1 for r in rows if r.price_basis == "existing_local_price")
         print(f"--- N={n:,}: {len(rows)} countries, total TAM=${total:,.0f}/mo "
-              f"({n_elastic} elasticity-priced, {n_local} local-priced) ---")
+              f"({n_premium} scarcity-premium-priced, {n_local} local-priced) ---")
         top = sorted(rows, key=lambda r: -r.tam_usd_per_month)[:8]
         for r in top:
             print(f"  {r.iso3}: TAM=${r.tam_usd_per_month:,.0f}/mo, price=${r.price_usd_per_month:,.2f} "

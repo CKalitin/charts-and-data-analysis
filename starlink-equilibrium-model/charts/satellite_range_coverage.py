@@ -30,7 +30,7 @@ import population_density_grid as pdg
 from viz import render, info_box
 
 OUT_ROOT = Path(__file__).resolve().parent.parent / "results" / "population"
-SOURCE_NOTE = "Source: starlink_shells.md + orbital_geometry.py (see ASSUMPTIONS.md #11)"
+SOURCE_NOTE = "Source: FCC satellite constellation filings; FCC Order 21-48 (min. elevation angle)"
 
 
 def _pop_formatter(x, _pos):

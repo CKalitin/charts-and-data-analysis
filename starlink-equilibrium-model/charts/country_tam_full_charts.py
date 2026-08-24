@@ -99,7 +99,7 @@ def fig_revenue_heatmap_by_country(rows: list[ctmf.CountryTAMFull], country_path
 # --------------------------------------------------------------------------------------
 def fig_tam_full_vs_satellites(sat_counts, tam):
     fig, ax = render.new_figure(figsize=(12, 7.5))
-    ax.plot(sat_counts, tam, color="#762a83", linewidth=2, label="Total TAM (full world, $/mo)")
+    ax.plot(sat_counts, tam, color="#762a83", linewidth=2, label="Total Addressable Market ($/mo)")
     _add_fleet_reference_lines(ax)
 
     ax.set_xscale("log")
@@ -107,7 +107,7 @@ def fig_tam_full_vs_satellites(sat_counts, tam):
     _add_capacity_secondary_axis(ax)
     ax.set_xlabel("Total satellites (V3, log scale)")
     ax.set_ylabel("Total addressable market (USD/month, log scale)")
-    ax.set_title("Total addressable market (full world) vs. total satellites")
+    ax.set_title("Total addressable market vs. total satellites")
     ax.xaxis.set_major_formatter(mticker.FuncFormatter(lambda v, _: f"{v:,.0f}"))
     ax.yaxis.set_major_formatter(mticker.FuncFormatter(_usd_formatter))
     ax.yaxis.set_minor_formatter(mticker.NullFormatter())
@@ -127,7 +127,7 @@ TAM_LINEAR_MAX_SATS = 200_000
 
 def fig_tam_full_vs_satellites_linear(sat_counts, tam):
     fig, ax = render.new_figure(figsize=(12, 7.5))
-    ax.plot(sat_counts, tam, color="#762a83", linewidth=2, label="Total TAM (full world, $/mo)")
+    ax.plot(sat_counts, tam, color="#762a83", linewidth=2, label="Total Addressable Market ($/mo)")
     _add_fleet_reference_lines(ax)
 
     ax.set_xlim(0, TAM_LINEAR_MAX_SATS)
@@ -135,7 +135,7 @@ def fig_tam_full_vs_satellites_linear(sat_counts, tam):
     _add_capacity_secondary_axis(ax)
     ax.set_xlabel("Total satellites (V3, linear scale)")
     ax.set_ylabel("Total addressable market (USD/month, linear scale)")
-    ax.set_title("Total addressable market (full world) vs. total satellites (linear)")
+    ax.set_title("Total addressable market vs. total satellites (linear)")
     ax.xaxis.set_major_formatter(mticker.FuncFormatter(lambda v, _: f"{v:,.0f}"))
     ax.yaxis.set_major_formatter(mticker.FuncFormatter(_usd_formatter))
     ax.legend(loc="upper right", fontsize=8.5)
@@ -164,7 +164,7 @@ def fig_tam_full_vs_satellites_stacked_by_region(sat_counts, by_region: dict[str
     _add_capacity_secondary_axis(ax)
     ax.set_xlabel("Total satellites (V3, log scale)")
     ax.set_ylabel("Total addressable market (USD/month)")
-    ax.set_title("Total addressable market (full world) by region vs. total satellites")
+    ax.set_title("Total addressable market by region vs. total satellites")
     ax.xaxis.set_major_formatter(mticker.FuncFormatter(lambda v, _: f"{v:,.0f}"))
     ax.yaxis.set_major_formatter(mticker.FuncFormatter(_usd_formatter))
     ax.legend(loc="upper right", fontsize=7.5, ncol=1)
@@ -173,9 +173,7 @@ def fig_tam_full_vs_satellites_stacked_by_region(sat_counts, by_region: dict[str
     peak_n = sat_counts[np.argmax(total)]
     info_box.add_info_box(
         ax, fig,
-        f"Peak total TAM {_usd_formatter(total.max(), None)}/mo near N={peak_n:,.0f}.\n"
-        "Stacked, biggest region at bottom -- each band's OWN height is that\n"
-        "region's TAM, not cumulative.\n" + FULL_MODEL_NOTE,
+        f"Peak total TAM {_usd_formatter(total.max(), None)}/mo near N={peak_n:,.0f}.\n" + FULL_MODEL_NOTE,
         mode="on",
     )
     return fig, OUT_ROOT / "tam_full_vs_satellites_by_region.png"
@@ -196,7 +194,7 @@ def fig_tam_full_vs_satellites_stacked_by_segment(sat_counts, by_segment: dict[s
     _add_capacity_secondary_axis(ax)
     ax.set_xlabel("Total satellites (V3, log scale)")
     ax.set_ylabel("Total addressable market (USD/month)")
-    ax.set_title("Total addressable market (full world) by segment vs. total satellites")
+    ax.set_title("Total addressable market by segment vs. total satellites")
     ax.xaxis.set_major_formatter(mticker.FuncFormatter(lambda v, _: f"{v:,.0f}"))
     ax.yaxis.set_major_formatter(mticker.FuncFormatter(_usd_formatter))
     ax.legend(loc="upper right", fontsize=8.5)

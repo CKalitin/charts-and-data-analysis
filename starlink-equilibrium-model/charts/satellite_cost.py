@@ -61,7 +61,7 @@ def fig_cost_per_gbps_by_generation():
     info_box.add_info_box(
         ax, fig,
         "v1.5, v2 full excluded: no published capacity figure.\n"
-        "Source: starlink_satellite_cost.md, cost_per_gbps_model.py",
+        "Source: Quilty Space (SpaceNews); New Space Economy",
         mode="on",
     )
     return fig, OUT_ROOT / "cost_per_gbps_by_generation.png"
@@ -99,7 +99,7 @@ def fig_cost_per_gbps_trend(rows):
     info_box.add_info_box(
         ax, fig,
         "Industry-wide trend, not Starlink-specific. 2028 is a forecast.\n"
-        "Source: starlink_satellite_cost.md",
+        "Source: Gale Pooley (Cato Institute); ARK Invest",
         mode="on",
     )
     return fig, OUT_ROOT / "satellite_cost_per_gbps_trend.png"

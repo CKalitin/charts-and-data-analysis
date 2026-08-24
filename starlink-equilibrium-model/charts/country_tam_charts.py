@@ -55,7 +55,7 @@ OUT_ROOT = Path(__file__).resolve().parent.parent / "results" / "market"
 # Short, explicitly \n-wrapped -- an overlong unwrapped info-box line has repeatedly
 # collapsed constrained_layout in this project (see CLAUDE.md); always prepend "\n"
 # at the call site, never append this inline onto another sentence.
-TAM_SOURCE_NOTE = "Source: telecom_market_by_country.md +\nhousehold_size_by_country.md"
+TAM_SOURCE_NOTE = "Source: World Bank; Wikipedia (household size)"
 
 PRICE_MAP_SATS = 100_000  # user-specified N for the price heatmap
 
@@ -92,16 +92,15 @@ def fig_price_heatmap_by_country(rows: list[ctm.CountryTAM], country_paths):
     ax.set_xlabel("Longitude")
     ax.set_ylabel("Latitude")
 
-    n_elastic = sum(1 for r in rows if r.price_basis == "elasticity_derived")
-    n_local = sum(1 for r in rows if r.price_basis.startswith("existing_local_price"))
+    n_premium = sum(1 for r in rows if r.price_basis == "scarcity_premium_on_local_price")
+    n_local = sum(1 for r in rows if r.price_basis == "existing_local_price")
     n_missing = len({r.iso3 for r in rows}) - len(prices)
     info_box.add_info_box(
         ax, fig,
-        f"{len(prices)} countries priced ({n_elastic} elasticity-derived,\n"
+        f"{len(prices)} countries priced ({n_premium} scarcity-premium,\n"
         f"{n_local} existing local price, {n_missing} missing price data).\n"
         "Grey = no price data or no 110m country polygon (~50 small\n"
         "states/territories excluded from the basemap resolution).\n"
-        "<20% unconnected -> existing local price; >=20% -> elasticity-derived.\n"
         + TAM_SOURCE_NOTE,
         mode="on",
     )
@@ -113,15 +112,15 @@ def fig_price_heatmap_by_country(rows: list[ctm.CountryTAM], country_paths):
 # --------------------------------------------------------------------------------------
 def fig_tam_vs_satellites(sat_counts, tam):
     fig, ax = render.new_figure(figsize=(12, 7.5))
-    ax.plot(sat_counts, tam, color="#2ca25f", linewidth=2, label="Total TAM (unconnected populations, $/mo)")
+    ax.plot(sat_counts, tam, color="#2ca25f", linewidth=2, label="Unconnected Addressable Market ($/mo)")
     _add_fleet_reference_lines(ax)
 
     ax.set_xscale("log")
     ax.set_yscale("log")
     _add_capacity_secondary_axis(ax)
     ax.set_xlabel("Total satellites (V3, log scale)")
-    ax.set_ylabel("Total addressable market (USD/month, log scale)")
-    ax.set_title("Total addressable market (unconnected populations) vs. total satellites")
+    ax.set_ylabel("Unconnected addressable market (USD/month, log scale)")
+    ax.set_title("Unconnected addressable market vs. total satellites")
     ax.xaxis.set_major_formatter(mticker.FuncFormatter(lambda v, _: f"{v:,.0f}"))
     ax.yaxis.set_major_formatter(mticker.FuncFormatter(_usd_formatter))
     ax.yaxis.set_minor_formatter(mticker.NullFormatter())
@@ -130,8 +129,8 @@ def fig_tam_vs_satellites(sat_counts, tam):
     peak_n = sat_counts[np.argmax(tam)]
     info_box.add_info_box(
         ax, fig,
-        f"Peak TAM {_usd_formatter(tam.max(), None)}/mo near N={peak_n:,.0f} --\n"
-        "NOT monotonic: rising servable-% can collapse elasticity-derived\n"
+        f"Peak UAM {_usd_formatter(tam.max(), None)}/mo near N={peak_n:,.0f} --\n"
+        "NOT monotonic: rising servable-% can collapse scarcity-premium\n"
         "prices faster than subscriber growth compensates.\n" + TAM_SOURCE_NOTE,
         mode="on",
     )
@@ -143,15 +142,15 @@ TAM_LINEAR_MAX_SATS = 200_000
 
 def fig_tam_vs_satellites_linear(sat_counts, tam):
     fig, ax = render.new_figure(figsize=(12, 7.5))
-    ax.plot(sat_counts, tam, color="#2ca25f", linewidth=2, label="Total TAM (unconnected populations, $/mo)")
+    ax.plot(sat_counts, tam, color="#2ca25f", linewidth=2, label="Unconnected Addressable Market ($/mo)")
     _add_fleet_reference_lines(ax)
 
     ax.set_xlim(0, TAM_LINEAR_MAX_SATS)
     ax.set_ylim(0, tam.max() * 1.08)
     _add_capacity_secondary_axis(ax)
     ax.set_xlabel("Total satellites (V3, linear scale)")
-    ax.set_ylabel("Total addressable market (USD/month, linear scale)")
-    ax.set_title("Total addressable market (unconnected populations) vs. total satellites (linear)")
+    ax.set_ylabel("Unconnected addressable market (USD/month, linear scale)")
+    ax.set_title("Unconnected addressable market vs. total satellites (linear)")
     ax.xaxis.set_major_formatter(mticker.FuncFormatter(lambda v, _: f"{v:,.0f}"))
     ax.yaxis.set_major_formatter(mticker.FuncFormatter(_usd_formatter))
     ax.legend(loc="upper right", fontsize=8.5)
@@ -159,7 +158,7 @@ def fig_tam_vs_satellites_linear(sat_counts, tam):
     peak_n = sat_counts[np.argmax(tam)]
     info_box.add_info_box(
         ax, fig,
-        f"Peak TAM {_usd_formatter(tam.max(), None)}/mo near N={peak_n:,.0f} --\n"
+        f"Peak UAM {_usd_formatter(tam.max(), None)}/mo near N={peak_n:,.0f} --\n"
         "NOT monotonic, see the log version's info box.\n" + TAM_SOURCE_NOTE,
         mode="on",
     )
@@ -228,8 +227,8 @@ def fig_tam_vs_satellites_stacked_by_region(sat_counts, by_region: dict[str, np.
     ax.set_xscale("log")
     _add_capacity_secondary_axis(ax)
     ax.set_xlabel("Total satellites (V3, log scale)")
-    ax.set_ylabel("Total addressable market (USD/month)")
-    ax.set_title("Total addressable market by region vs. total satellites")
+    ax.set_ylabel("Unconnected addressable market (USD/month)")
+    ax.set_title("Unconnected addressable market by region vs. total satellites")
     ax.xaxis.set_major_formatter(mticker.FuncFormatter(lambda v, _: f"{v:,.0f}"))
     ax.yaxis.set_major_formatter(mticker.FuncFormatter(_usd_formatter))
     ax.legend(loc="upper right", fontsize=7.5, ncol=1)
@@ -238,9 +237,7 @@ def fig_tam_vs_satellites_stacked_by_region(sat_counts, by_region: dict[str, np.
     peak_n = sat_counts[np.argmax(total)]
     info_box.add_info_box(
         ax, fig,
-        f"Peak total TAM {_usd_formatter(total.max(), None)}/mo near N={peak_n:,.0f}.\n"
-        "Stacked, biggest region at bottom -- each band's OWN height is that\n"
-        "region's TAM, not cumulative.\n" + TAM_SOURCE_NOTE,
+        f"Peak total UAM {_usd_formatter(total.max(), None)}/mo near N={peak_n:,.0f}.\n" + TAM_SOURCE_NOTE,
         mode="on",
     )
     return fig, OUT_ROOT / "tam_vs_satellites_by_region.png"

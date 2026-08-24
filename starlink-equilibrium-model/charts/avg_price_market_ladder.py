@@ -58,8 +58,8 @@ SAT_COUNTS_LINEAR = np.linspace(1, 200_000, 60)
 
 CURVE_COLOR = {"unconnected": "#2ca25f", "full": "#6a51a3"}
 CURVE_LABEL = {
-    "unconnected": "Avg $/Gbps/yr (TAM, currently-unconnected population)",
-    "full": "Avg $/Gbps/yr (TAM, full incumbent-displacement)",
+    "unconnected": "Avg $/Gbps/yr (Unconnected Addressable Market)",
+    "full": "Avg $/Gbps/yr (Total Addressable Market)",
 }
 def _avg_price_per_gbps_yr(tam_usd_per_month: np.ndarray, sat_counts: np.ndarray) -> np.ndarray:
     capacity_gbps = sat_counts * GBPS_PER_SAT

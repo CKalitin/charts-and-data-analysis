@@ -28,7 +28,7 @@ from viz import render, info_box
 LAND_GEOJSON = Path(__file__).resolve().parent.parent / "data" / "raw" / "ne_110m_land.geojson"
 OUT_ROOT = Path(__file__).resolve().parent.parent / "results" / "coverage"
 
-SOURCE_NOTE = "Source: starlink_shells.md"
+SOURCE_NOTE = "Source: Natural Earth; FCC satellite filings"
 
 # One representative color per distinct inclination present in the well-sourced shells.
 INCLINATION_COLORS = {

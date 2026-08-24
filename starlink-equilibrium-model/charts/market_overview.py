@@ -24,7 +24,7 @@ from regions import REGION_COLORS, REGION_SHORT
 DATA_CSV = Path(__file__).resolve().parent.parent / "data" / "telecom_market_by_country.csv"
 OUT_ROOT = Path(__file__).resolve().parent.parent / "results" / "market"
 
-SOURCE_NOTE = "Source: telecom_market_by_country.csv"
+SOURCE_NOTE = "Source: World Bank; broadband.co.uk; bestbroadbanddeals.co.uk"
 
 
 def _pop_formatter(x, _pos):
@@ -215,7 +215,14 @@ def fig_unconnected_vs_broadband_gb(rows):
         ax.annotate(c, xy=(u, gb), xytext=(6, 6), textcoords="offset points", fontsize=7.5,
                     arrowprops=dict(arrowstyle="-", color="0.4", lw=0.5, alpha=0.6))
 
-    info_box.add_info_box(ax, fig, f"{len(pts)} countries. Wired $/GB is illustrative (see .md). " + SOURCE_NOTE, mode="on")
+    info_box.add_info_box(
+        ax, fig,
+        f"{len(pts)} countries. Wired $/GB is illustrative: derived from a flat\n"
+        "300 GB/month usage assumption, not real per-GB billing (wired plans\n"
+        "are typically unlimited/flat-rate). Compare its SHAPE to mobile\n"
+        f"$/GB, not absolute values. {SOURCE_NOTE}",
+        mode="on",
+    )
     return fig, OUT_ROOT / "unconnected_pop_vs_broadband_gb_cost.png"
 
 

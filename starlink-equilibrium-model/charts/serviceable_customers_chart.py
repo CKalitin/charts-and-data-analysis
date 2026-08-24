@@ -23,12 +23,28 @@ import matplotlib.ticker as mticker
 
 import capacity_density_model as cdm
 
-# Known real constellation sizes, for reference lines (see starlink_shells.md / CLAUDE.md).
-GEN1_SATS = 4408
-CURRENT_FLEET_SATS = 10_900
+# Estimated current max capacity, expressed as an equivalent V3-satellite count (this
+# chart family's x-axis unit) rather than a raw satellite count. The real ~10,900-
+# satellite fleet is NOT V3-class hardware -- as of the sourcing in
+# starlink_shells.md, zero V3 (Starship-launched) satellites are operational yet, so
+# plotting the raw ~10,900 figure against a "Total satellites (V3)" axis would
+# overstate today's real capacity by more than 10x. Instead: split the real fleet
+# into its actual generations (4,408 Gen1 v1.0/v1.5 + ~6,492 Gen2 v2-Mini-class,
+# starlink_shells.md's constellation-wide total), apply each generation's own real
+# per-satellite downlink (satellite_capacity.csv: 20 / 96 Gbps respectively; V3's
+# 1,024 Gbps has zero satellites in orbit to multiply by), sum to a total capacity in
+# Gbps, then re-express that capacity as the count of V3 satellites that would
+# deliver it -- directly comparable to this chart family's real V3-equivalent axis.
+_REAL_GEN1_SATS = 4408
+_REAL_GEN2_SATS = 10_900 - _REAL_GEN1_SATS
+_GEN1_GBPS_PER_SAT = 20.0
+_GEN2_GBPS_PER_SAT = 96.0
+_V3_GBPS_PER_SAT = cdm.V3_SCENARIO.downlink_gbps_per_beam * cdm.V3_SCENARIO.beams_per_satellite
+_CURRENT_CAPACITY_GBPS = _REAL_GEN1_SATS * _GEN1_GBPS_PER_SAT + _REAL_GEN2_SATS * _GEN2_GBPS_PER_SAT
+ESTIMATED_CURRENT_CAPACITY_SATS = _CURRENT_CAPACITY_GBPS / _V3_GBPS_PER_SAT  # ~695
 
 SHELL_RATIO_NOTE = "Real Gen1 shells: 53.0/53.2/70.0/97.6deg"
-SOURCE_NOTE = "Source: WorldPop pop. density + capacity_density_model.py + orbital_geometry.py"
+SOURCE_NOTE = "Source: WorldPop; FCC satellite filings; X-Lab/Penn State"
 
 
 def _pop_formatter(x, _pos):
@@ -41,16 +57,10 @@ def _pop_formatter(x, _pos):
 
 
 def _add_fleet_reference_lines(ax):
-    # Vertical stagger (-4, -70) so the two labels never overlap even when both lines
-    # sit within a few pixels of each other -- happens on a wide linear axis where
-    # 4,408 and 10,900 are both essentially "at the left edge" (e.g. a multi-million
-    # sat_counts range); a log axis spreads them out enough that this never showed up.
-    offsets = [(4, -4), (4, -70)]
-    for (n, label), xytext in zip([(GEN1_SATS, "Gen1 (4,408)"), (CURRENT_FLEET_SATS, "Current fleet (~10,900)")],
-                                   offsets):
-        ax.axvline(n, color="0.5", linestyle=":", linewidth=1.0, zorder=1)
-        ax.annotate(label, xy=(n, 1), xycoords=("data", "axes fraction"), xytext=xytext,
-                    textcoords="offset points", fontsize=7.5, color="0.4", ha="left", va="top", rotation=90)
+    ax.axvline(ESTIMATED_CURRENT_CAPACITY_SATS, color="0.5", linestyle=":", linewidth=1.0, zorder=1)
+    ax.annotate("Estimated current capacity", xy=(ESTIMATED_CURRENT_CAPACITY_SATS, 1),
+                xycoords=("data", "axes fraction"), xytext=(4, -4), textcoords="offset points",
+                fontsize=7.5, color="0.4", ha="left", va="top", rotation=90)
 
 
 def _draw_curve(ax, sat_counts, served, color, label, linestyle="-"):

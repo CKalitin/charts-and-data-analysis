@@ -36,7 +36,8 @@ import population_density_grid as pdg
 import serviceable_customers_model as scm
 from coverage_map import draw_world_basemap, load_land_paths
 from serviceable_customers_chart import (
-    SHELL_RATIO_NOTE, SOURCE_NOTE, _add_capacity_secondary_axis, _add_fleet_reference_lines, CURRENT_FLEET_SATS,
+    SHELL_RATIO_NOTE, SOURCE_NOTE, _add_capacity_secondary_axis, _add_fleet_reference_lines,
+    ESTIMATED_CURRENT_CAPACITY_SATS,
 )
 from viz import render, info_box
 
@@ -69,13 +70,6 @@ def fig_utilization_vs_satellites(hist, dens_centers, lat_centers):
     ax.yaxis.set_minor_formatter(mticker.NullFormatter())
     ax.legend(loc="lower left", fontsize=8.5)
 
-    info_box.add_info_box(
-        ax, fig,
-        f"Peak utilization {util.max():.1%} near N={sat_counts[util.argmax()]:,.0f}.\n"
-        "Monotonically decaying for this scenario -- V3's huge per-satellite\n"
-        "capacity means demand, not supply, is scarce almost everywhere. " + SOURCE_NOTE,
-        mode="on",
-    )
     return fig, OUT_ROOT / "utilization_vs_satellites.png"
 
 
@@ -100,19 +94,13 @@ def fig_utilization_vs_satellites_linear(hist, dens_centers, lat_centers):
     ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda v, _: f"{v:.0%}"))
     ax.legend(loc="upper right", fontsize=8.5)
 
-    info_box.add_info_box(
-        ax, fig,
-        "Same data as the log version, linear axes -- most of the visible\n"
-        "range already sits near the low-utilization tail. " + SOURCE_NOTE,
-        mode="on",
-    )
     return fig, OUT_ROOT / "utilization_vs_satellites_linear.png"
 
 
 # --------------------------------------------------------------------------------------
 # Chart 2: world-map utilization heatmap at one fixed N (latitude-striped, see module docstring)
 # --------------------------------------------------------------------------------------
-UTIL_MAP_SATS = CURRENT_FLEET_SATS  # today's real constellation size -- concrete, not arbitrary
+UTIL_MAP_SATS = ESTIMATED_CURRENT_CAPACITY_SATS  # today's real capacity, in V3-equivalent satellites
 
 
 def fig_utilization_heatmap_world(hist, dens_centers, lat_centers, land_paths):
@@ -134,7 +122,7 @@ def fig_utilization_heatmap_world(hist, dens_centers, lat_centers, land_paths):
     cbar.set_label("% of available satellite capacity used")
     cbar.ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda v, _: f"{v:.0%}"))
 
-    ax.set_title(f"Satellite capacity utilization by latitude, world map (N={UTIL_MAP_SATS:,} satellites)")
+    ax.set_title(f"Satellite capacity utilization by latitude, world map (N={UTIL_MAP_SATS:,.0f} satellites)")
     ax.set_xlim(-180, 180)
     ax.set_ylim(-60, 85)
 

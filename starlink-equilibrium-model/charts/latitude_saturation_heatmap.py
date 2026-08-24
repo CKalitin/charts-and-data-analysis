@@ -31,7 +31,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import population_density_grid as pdg
 import serviceable_customers_model as scm
 from serviceable_customers_chart import (
-    GEN1_SATS, CURRENT_FLEET_SATS, SHELL_RATIO_NOTE, SOURCE_NOTE, _add_capacity_secondary_axis,
+    ESTIMATED_CURRENT_CAPACITY_SATS, SHELL_RATIO_NOTE, SOURCE_NOTE, _add_capacity_secondary_axis,
 )
 from viz import render, info_box
 
@@ -45,6 +45,18 @@ LAT_ANNOTATIONS = [
 
 
 LOG_COLOR_FLOOR = 1e-4  # 0.01% -- LogNorm can't take exact 0, so exact-0 cells are clipped up to this
+
+
+def _mask_uncovered_bands(frac_masked):
+    """Bands with real population that sit permanently beyond every shell's coverage
+    (e.g. ~83deg, just past the near-polar shell's ~82.4deg reach) read as 0% served
+    at every satellite count in the sweep -- rendered as a solid dark-purple line
+    running the full width of the chart, which reads as a rendering glitch rather
+    than a real result. Mask those rows the same way as true no-population rows
+    (grey), since "never reachable regardless of fleet size" and "no one lives here"
+    both mean the same thing for this chart's purpose: nothing to show."""
+    never_served = ~frac_masked.mask.all(axis=1) & (np.ma.filled(frac_masked, 0).max(axis=1) == 0)
+    return np.ma.masked_where(np.broadcast_to(never_served[:, None], frac_masked.shape), frac_masked)
 
 
 def _draw_saturation_heatmap(ax, fig, frac_masked, sat_counts, lat_centers, *, log_color: bool):
@@ -63,16 +75,15 @@ def _draw_saturation_heatmap(ax, fig, frac_masked, sat_counts, lat_centers, *, l
         pcm = ax.pcolormesh(sat_counts, lat_centers, frac_masked, cmap=cmap, vmin=0, vmax=1, shading="nearest")
 
     halo = [path_effects.withStroke(linewidth=2.5, foreground="black")]
-    for n, _label in [(GEN1_SATS, "Gen1 (4,408)"), (CURRENT_FLEET_SATS, "Current fleet (~10,900)")]:
-        ax.axvline(n, color="white", linestyle=":", linewidth=1.1, alpha=0.85, zorder=3)
+    ax.axvline(ESTIMATED_CURRENT_CAPACITY_SATS, color="white", linestyle=":", linewidth=1.1, alpha=0.85, zorder=3)
     for lat, label in LAT_ANNOTATIONS:
         ax.axhline(lat, color="white", linestyle="--", linewidth=0.8, alpha=0.6, zorder=3)
         ax.annotate(label, xy=(sat_counts[-1], lat), xytext=(-6, 4), textcoords="offset points",
                     fontsize=8, color="white", ha="right", va="bottom", path_effects=halo)
-    # Fleet labels drawn after the latitude ones so their own halo isn't covered.
-    for n, label in [(GEN1_SATS, "Gen1"), (CURRENT_FLEET_SATS, "Current fleet")]:
-        ax.annotate(label, xy=(n, 88), xytext=(4, 0), textcoords="offset points",
-                    fontsize=7.5, color="white", ha="left", va="top", rotation=90, path_effects=halo)
+    # Fleet label drawn after the latitude ones so its own halo isn't covered.
+    ax.annotate("Estimated current capacity", xy=(ESTIMATED_CURRENT_CAPACITY_SATS, 88), xytext=(4, 0),
+                textcoords="offset points", fontsize=7.5, color="white", ha="left", va="top", rotation=90,
+                path_effects=halo)
 
     ax.set_xscale("log")
     ax.set_xlim(sat_counts[0], sat_counts[-1])
@@ -88,6 +99,7 @@ def fig_latitude_saturation_heatmap(hist, dens_centers, lat_centers):
     sat_counts = np.geomspace(100, 8_000_000, 70)
     frac = scm.sweep_served_fraction_by_latitude(sat_counts, hist, dens_centers, lat_centers)
     frac_masked = np.ma.masked_invalid(frac.T)  # (n_lat, n_sats); NaN (no pop in band) -> transparent
+    frac_masked = _mask_uncovered_bands(frac_masked)
 
     fig, ax = render.new_figure(figsize=(13, 8))
     pcm = _draw_saturation_heatmap(ax, fig, frac_masked, sat_counts, lat_centers, log_color=False)
@@ -100,8 +112,9 @@ def fig_latitude_saturation_heatmap(hist, dens_centers, lat_centers):
 
     info_box.add_info_box(
         ax, fig,
-        "Grey = no population in that band. Almost all of the N=2M-6M tail is\n"
-        "aggregate-capacity-bound (not density-cap-bound) -- see CLAUDE.md.\n"
+        "Grey = no population, or permanently beyond satellite coverage.\n"
+        "Almost all of the N=2M-6M tail is aggregate-capacity-bound,\n"
+        "not density-cap-bound.\n"
         + SHELL_RATIO_NOTE + ". " + SOURCE_NOTE,
         mode="on",
     )
@@ -112,6 +125,7 @@ def fig_latitude_saturation_heatmap_log(hist, dens_centers, lat_centers):
     sat_counts = np.geomspace(100, 8_000_000, 70)
     frac = scm.sweep_served_fraction_by_latitude(sat_counts, hist, dens_centers, lat_centers)
     frac_masked = np.ma.masked_invalid(frac.T)
+    frac_masked = _mask_uncovered_bands(frac_masked)
 
     fig, ax = render.new_figure(figsize=(13, 8))
     pcm = _draw_saturation_heatmap(ax, fig, frac_masked, sat_counts, lat_centers, log_color=True)
@@ -129,7 +143,8 @@ def fig_latitude_saturation_heatmap_log(hist, dens_centers, lat_centers):
     info_box.add_info_box(
         ax, fig,
         "Log color scale -- reveals low-%-served structure the linear version hides.\n"
-        f"0% clipped to {LOG_COLOR_FLOOR:.2%} (LogNorm floor). Grey = no population.\n"
+        f"0% clipped to {LOG_COLOR_FLOOR:.2%} (LogNorm floor).\n"
+        "Grey = no population, or permanently beyond satellite coverage.\n"
         + SHELL_RATIO_NOTE + ". " + SOURCE_NOTE,
         mode="on",
     )

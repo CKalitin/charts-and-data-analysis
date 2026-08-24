@@ -6,7 +6,7 @@ cap let bad-survey-data outlier countries rank above every real high-income mark
 in the shipped model -- it's the exploratory groundwork the user asked for so they
 can pick a cap themselves.
 
-Three charts:
+Four charts:
   1. gdp_vs_gni_per_capita.png -- do GDP and GNI per capita actually differ? Log-log
      scatter with a y=x reference line; countries far off the line are exactly the
      profit-shifting (GDP >> GNI, e.g. Ireland/Luxembourg) or remittance/resource-
@@ -17,6 +17,8 @@ Three charts:
      This uses each country's OWN raw, uncapped ARPU-proxy price -- unlike the
      equilibrium model's ARPU, nothing here is capped, because the point is to see
      how burdensome the real price actually is.
+  2b. connectivity_cost_pct_income_ranked_gni_only.png -- same as #2, GNI basis only,
+     no GDP series (user-requested standalone version, 2026-08-23).
   3. affordability_cap_elasticity.png -- the requested elasticity chart. Sweeps
      equilibrium_model.build_country_demand(income_cap_pct=...) across a range of
      per-country income caps (replacing the flat $100 cap with X% of each country's
@@ -136,7 +138,7 @@ def fig_gdp_vs_gni():
 
 
 # --------------------------------------------------------------------------------------
-# Chart 2: connectivity cost as % of income, ALL countries, ranked, vs. real benchmarks
+# Chart 2: connectivity cost as % of income, ALL countries, ranked (GNI + GDP basis)
 # --------------------------------------------------------------------------------------
 def fig_cost_pct_income_ranked():
     rows = _load_rows()
@@ -161,19 +163,42 @@ def fig_cost_pct_income_ranked():
     ax.set_yscale("log")
     ax.set_xlabel(f"Country rank, by cost as % of monthly GNI/capita (1 = most burdensome, n={len(pts)})")
     ax.set_ylabel("Connectivity cost, % of monthly income (log scale)")
-    ax.set_title("Connectivity cost as % of income -- every country, ranked")
+    ax.set_title("Connectivity cost as % of income")
     # ":g" (not ":.0f") -- fixed-decimal rounding collapses every value below 0.5%
     # to a duplicate "0%" tick label, the same class of bug already hit and fixed in
     # charts/phase6.py (log axis + fixed-decimal formatter is a recurring trap).
     ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda v, _: f"{v:g}%"))
     ax.legend(loc="upper right", fontsize=9)
-
-    info_box.add_info_box(
-        ax, fig,
-        "Raw incumbent price,\nuncapped.",
-        mode="off", off_side="right", off_frac=0.14,
-    )
     return fig, OUT_ROOT / "connectivity_cost_pct_income_ranked.png"
+
+
+# --------------------------------------------------------------------------------------
+# Chart 2b: same as above, GNI basis ONLY -- no GDP series
+# --------------------------------------------------------------------------------------
+def fig_cost_pct_income_ranked_gni_only():
+    rows = _load_rows()
+    pts = []
+    for r in rows:
+        arpu = _raw_arpu(r)
+        gni = r["gni_per_capita_ppp_usd"]
+        if arpu and gni:
+            pct_gni = 100 * (arpu * 12) / float(gni)
+            pts.append((r["country"], pct_gni))
+
+    pts.sort(key=lambda p: -p[1])
+    ranks = list(range(1, len(pts) + 1))
+    gni_vals = [p[1] for p in pts]
+
+    fig, ax = render.new_figure(figsize=(12, 7.5))
+    ax.scatter(ranks, gni_vals, s=10, color="#4575b4", label="% of monthly GNI/capita", zorder=3)
+
+    ax.set_yscale("log")
+    ax.set_xlabel(f"Country rank, by cost as % of monthly GNI/capita (1 = most burdensome, n={len(pts)})")
+    ax.set_ylabel("Connectivity cost, % of monthly income (log scale)")
+    ax.set_title("Connectivity cost as % of income")
+    ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda v, _: f"{v:g}%"))
+    ax.legend(loc="upper right", fontsize=9)
+    return fig, OUT_ROOT / "connectivity_cost_pct_income_ranked_gni_only.png"
 
 
 # --------------------------------------------------------------------------------------
@@ -213,7 +238,7 @@ def fig_affordability_elasticity(econ):
 
     info_box.add_info_box(
         ax, fig,
-        "Replaces flat $100 cap with X% of\neach country's own GNI/capita.\nSource: equilibrium_model.py",
+        "Replaces flat $100 cap with X% of\neach country's own GNI/capita.\nSource: World Bank; Quilty Space (SpaceNews)",
         mode="on",
     )
     return fig, OUT_ROOT / "affordability_cap_elasticity.png"
@@ -223,6 +248,7 @@ def figures(econ):
     return [
         ("gdp_vs_gni", fig_gdp_vs_gni),
         ("cost_pct_income_ranked", fig_cost_pct_income_ranked),
+        ("cost_pct_income_ranked_gni_only", fig_cost_pct_income_ranked_gni_only),
         ("affordability_elasticity", lambda: fig_affordability_elasticity(econ)),
     ]
 
