@@ -107,11 +107,51 @@ to buy schedule margin at increasing energy cost.
 - **MCC ΔV(ψ)**: rises gently from ~43 m/s (ψ=-90°) to ~60 m/s across most
   of the range, then rises sharply above ψ≈75° to >110 m/s (mean) / >220 m/s
   (P95) as the departure geometry becomes more radial and less tangential.
+  **Mean vs. P95**: at each ψ, `mcc.mcc_budget` runs a Monte Carlo (2000
+  draws by default) of TMI execution error, each draw producing one MCC
+  ΔV. "Mean" is the average of those draws — the typical correction cost.
+  "P95" is the 95th percentile — the cost exceeded only 5% of the time,
+  i.e. the number a mission would actually hold propellant margin against
+  (you don't get to re-fly a shortfall, so real budgets target P95/P99, not
+  the mean). The mean-to-P95 gap roughly doubles near ψ=90°, meaning that
+  region isn't just worse on average — its tail is fatter, a sign of a more
+  nonlinear/sensitive targeting geometry there.
 - **Mars arrival**: v∞ = 2.83 km/s; for a 500 km flyby periapsis altitude,
   periapsis velocity 5.48 km/s, turn angle 70.6° — and, per the point above,
   these numbers are the same for every ψ.
 
-Charts: `outputs/departure/`, `outputs/mcc/`, `outputs/trajectory/`.
+## Geometry illustrations (`charts/departure_geometry_3d.py`, `charts/mcc_trajectory.py`)
+
+Beyond the quantitative sweeps, four Earth-centered 3D charts make the ψ
+definition and the departure burn concrete:
+
+- `outputs/geometry/01_earth_polar_orbit_plain.png` — Earth, `v_Earth`, and
+  the polar parking orbit, viewed close-in (~1.8 Earth radii half-extent —
+  tight enough that Earth and the orbit fill the frame; view angle is
+  chosen automatically to look mostly down the orbit-plane normal so the
+  orbit reads as a clear ellipse rather than an edge-on line).
+- `02_earth_polar_orbit_plane_highlighted.png` — same, with the orbital
+  plane itself drawn as a translucent patch, making it visually obvious
+  that `v_Earth` lies flat within it (by construction — see the ψ
+  derivation above).
+- `03_departure_psi_-60_cheapest.png` / `04_departure_psi_-45_15deg_off.png`
+  — the original circular parking orbit plus the post-burn hyperbola, burn
+  point, and ΔV vector, at ψ=-60° (the cheapest point in the sweep) and
+  ψ=-45° (15° off it, toward ψ=0). The burn point, hyperbola direction, and
+  ΔV magnitude (4.28 vs. 4.56 km/s) visibly shift between the two — this is
+  the geometric mechanism behind the departure-ΔV(ψ) curve, not just a
+  number on a plot axis.
+- `outputs/mcc/mcc_trajectory_psi_-60.png` — answers "is that where the MCC
+  burns are?": plots the full heliocentric Earth→Mars transfer with the MCC
+  burn point marked at TMI+10 days. It's near Earth, not out near Mars —
+  only ~5% of the way through the 193-day transit. Because the resulting
+  position miss (tens of thousands of km) is invisible against the ~150
+  million km heliocentric scale, a zoomed inset shows the nominal vs.
+  uncorrected point for one concrete, deterministic 1-sigma execution error
+  (not a random Monte Carlo draw, so the chart is reproducible), together
+  with the miss distance and the resulting MCC ΔV for that specific case.
+
+Charts: `outputs/departure/`, `outputs/mcc/`, `outputs/trajectory/`, `outputs/geometry/`.
 
 ## References
 

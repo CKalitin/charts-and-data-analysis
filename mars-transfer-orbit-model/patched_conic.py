@@ -86,6 +86,7 @@ class InjectionBurn:
     periapsis_radius_km: float
     true_anomaly_burn_deg: float
     branch: str
+    orbit_normal: np.ndarray  # plane normal of the RESULTING hyperbola (generally != geom.n_hat)
 
 
 def _solve_branch(r_hat, r_p, vinf_hat, vinf_mag, n_hat, mu, branch_name):
@@ -181,6 +182,7 @@ def solve_injection_burn(geom: BurnPointGeometry, v_inf_required, mu_earth=confi
                 v_after=v_after, delta_v=dv_vec, delta_v_mag=dv_mag,
                 eccentricity=e, periapsis_radius_km=r_peri,
                 true_anomaly_burn_deg=np.degrees(nu_burn), branch=branch_name,
+                orbit_normal=n_hat,
             )
             if best is None or dv_mag < best.delta_v_mag:
                 best = result

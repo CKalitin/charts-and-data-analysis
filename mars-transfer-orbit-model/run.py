@@ -4,10 +4,10 @@ import time
 
 import config
 import derived
-from charts import departure_dv, mcc_dv, trajectory_overview
+from charts import departure_dv, departure_geometry_3d, mcc_dv, mcc_trajectory, trajectory_overview
 from viz import render
 
-CHART_MODULES = [departure_dv, mcc_dv, trajectory_overview]
+CHART_MODULES = [departure_dv, mcc_dv, trajectory_overview, departure_geometry_3d, mcc_trajectory]
 
 
 def main():
