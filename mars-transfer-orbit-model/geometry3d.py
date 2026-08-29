@@ -48,6 +48,19 @@ def conic_points(peri_hat, n_hat, e, p, nu_min, nu_max, n=200):
     return dirs * r[:, None]
 
 
+def project_2d(points, right_hat, up_hat):
+    """Orthogonal projection of an (N,3) or (3,) array onto the 2D screen
+    basis {right_hat, up_hat} (both unit vectors, mutually perpendicular).
+    Used for the "top-down, v_Earth-points-left" charts: build right_hat =
+    -v_Earth_hat and up_hat = e_t0_hat so a vector exactly in that plane
+    projects losslessly, and anything with an out-of-plane component is
+    foreshortened (its projected length < true magnitude)."""
+    points = np.asarray(points)
+    x = points @ right_hat
+    y = points @ up_hat
+    return np.stack([x, y], axis=-1) if points.ndim > 1 else np.array([x, y])
+
+
 def set_axes_equal_box(ax, half_extent, center=(0, 0, 0)):
     cx, cy, cz = center
     ax.set_xlim(cx - half_extent, cx + half_extent)

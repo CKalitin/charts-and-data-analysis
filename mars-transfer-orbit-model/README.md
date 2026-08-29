@@ -155,25 +155,37 @@ to buy schedule margin at increasing energy cost.
 
 ## Geometry illustrations (`charts/departure_geometry_3d.py`, `charts/mcc_trajectory.py`)
 
-Beyond the quantitative sweeps, four Earth-centered 3D charts make the ψ
-definition and the departure burn concrete:
+Beyond the quantitative sweeps, `outputs/geometry/` makes the ψ definition
+and the departure burn concrete:
 
-- `outputs/geometry/01_earth_polar_orbit_plain.png` — Earth, `v_Earth`, and
-  the polar parking orbit, viewed close-in (~1.8 Earth radii half-extent —
-  tight enough that Earth and the orbit fill the frame; view angle is
-  chosen automatically to look mostly down the orbit-plane normal so the
-  orbit reads as a clear ellipse rather than an edge-on line).
+- `01_earth_polar_orbit_plain.png` — Earth, `v_Earth`, and the polar
+  parking orbit, viewed close-in (~1.8 Earth radii half-extent — tight
+  enough that Earth and the orbit fill the frame; view angle is chosen
+  automatically to look mostly down the orbit-plane normal so the orbit
+  reads as a clear ellipse rather than an edge-on line).
 - `02_earth_polar_orbit_plane_highlighted.png` — same, with the orbital
   plane itself drawn as a translucent patch, making it visually obvious
   that `v_Earth` lies flat within it (by construction — see the ψ
   derivation above).
-- `03_departure_psi_-60_cheapest.png` / `04_departure_psi_-45_15deg_off.png`
-  — the original circular parking orbit plus the post-burn hyperbola, burn
-  point, and ΔV vector, at ψ=-60° (the cheapest point in the sweep) and
-  ψ=-45° (15° off it, toward ψ=0). The burn point, hyperbola direction, and
-  ΔV magnitude (4.28 vs. 4.56 km/s) visibly shift between the two — this is
-  the geometric mechanism behind the departure-ΔV(ψ) curve, not just a
-  number on a plot axis.
+- `03`–`06_departure_3d_psi_*.png` — the comparison set spanning the "why
+  isn't the burn tangent" story (see below): the original circular parking
+  orbit plus the post-burn hyperbola, burn point, ΔV vector, `v_Earth`,
+  **and `v_infinity`** (added so the angle between the two — the actual
+  cause of the off-tangent burn — is visible directly on the chart), at
+  ψ=-60° (cheapest), ψ=-45° (15° off it), ψ=0° (the naive "v_Earth
+  in-plane" expectation), and ψ=+90° (perpendicular extreme). ΔV visibly
+  climbs (4.28 → 4.56 → 7.48 → 13.30 km/s) as the burn direction swings
+  further from tangential.
+- `07`–`10_departure_topdown_psi_*.png` — the same four cases as a true
+  **orthographic top-down projection onto the orbital plane** (not a
+  perspective 3D shot): screen-x = `-v_Earth_hat` (so `v_Earth` always
+  points left, as requested) and screen-y = the in-plane direction
+  perpendicular to it. The parking orbit, `v_Earth`, and the burn point
+  project losslessly (they're exactly in this plane); `v_infinity`, the
+  post-burn hyperbola, and the ΔV vector generally are NOT exactly in this
+  plane (that's the whole finding), so their projected lengths/positions
+  are a real foreshortening — each is labeled with its true out-of-plane
+  angle rather than silently distorting it.
 - `outputs/mcc/mcc_trajectory_psi_-60.png` — answers "is that where the MCC
   burns are?": plots the full heliocentric Earth→Mars transfer with the MCC
   burn point marked at TMI+10 days. It's near Earth, not out near Mars —
@@ -183,6 +195,8 @@ definition and the departure burn concrete:
   uncorrected point for one concrete, deterministic 1-sigma execution error
   (not a random Monte Carlo draw, so the chart is reproducible), together
   with the miss distance and the resulting MCC ΔV for that specific case.
+  The same nominal MCC point is also marked on the main
+  `outputs/trajectory/transfer_overview_*.png` chart.
 
 Charts: `outputs/departure/`, `outputs/mcc/`, `outputs/trajectory/`, `outputs/geometry/`.
 
