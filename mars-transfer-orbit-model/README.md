@@ -1,124 +1,70 @@
-# Mars transfer orbit model: departure ΔV vs. heliocentric injection azimuth
+# Mars transfer orbit model: departure ΔV vs. parking-orbit RAAN
 
 Patched-conic model of a polar-parking-orbit departure to Mars, studying how
-**ψ (psi), the "heliocentric injection azimuth"** — the angle between the
-spacecraft's velocity at the trans-Mars-injection (TMI) burn point and
-Earth's own heliocentric velocity vector — drives departure ΔV, mid-course-
-correction (MCC) ΔV budget, and Mars arrival/flyby geometry.
+the parking orbit's **RAAN (right ascension of ascending node)** — which
+great-circle plane, out of all the polar-type planes around Earth, the
+departure burn happens in — drives the achievable departure ΔV.
+
+This is a plane-selection study, not a burn-point-phasing study: for each
+candidate plane, the model reports the *best possible* injection ΔV
+achievable from anywhere in that plane (burn point and parking-orbit
+traversal direction both optimized away), so what's left is purely the cost
+of the plane's orientation.
 
 ## The core idea
 
-A polar (i=90°) parking orbit's plane always contains Earth's spin axis, so
-its RAAN can always be chosen to also contain Earth's heliocentric velocity
-vector, `v_Earth`. Within that plane, ψ is defined by:
+A polar orbit is only "polar" relative to *something*. This model sweeps two
+different families of planes, both loosely called "polar," which agree only
+at one shared reference plane:
 
-```
-v_hat(psi) = cos(psi) * v_Earth_hat + sin(psi) * e_t0_hat      # burn velocity direction
-r_hat(psi) = v_hat(psi) x n_hat                                # burn position direction
-```
-(`n_hat` = plane normal, `e_t0_hat` = in-plane direction ⊥ `v_Earth`; see
-`patched_conic.py` docstring for the full derivation.) ψ=0° → burn velocity
-parallel to `v_Earth`; ψ=±90° → perpendicular to it. Swept over **[-90°, +90°]**
-by design: the excluded [90°,270°] range is the antiparallel half, which is
-never cheaper than its ψ=0-side mirror and adds nothing to the study.
+- **Equatorial family** — the plane contains Earth's spin axis. This is what
+  "polar orbit" means in ordinary usage: inclination is exactly 90° to
+  Earth's *equator*, for every RAAN. These are the real, physically
+  launchable polar orbits.
+- **Ecliptic family** — the plane contains the ecliptic normal instead of
+  Earth's spin axis. Inclination to Earth's actual equator now *varies with
+  RAAN* (since the ecliptic normal is tilted 23.44° from Earth's spin axis)
+  — this is "polar relative to the solar system," not a real polar orbit in
+  the standard sense, but it's the natural frame if you define "polar" by
+  looking straight down on the plane of the ecliptic and asking for orbits
+  perpendicular to *that* view instead of Earth's own spin.
 
-The required outgoing hyperbolic excess velocity, **v∞**, comes from a
-Lambert solve on the *heliocentric* Earth→Mars leg and is **independent of
-ψ** — ψ only controls how expensively the Earth-centered departure burn
-reaches that fixed target. Because the parking-orbit plane contains
-`v_Earth` but not, in general, `v∞` itself, even the best ψ pays a real
-plane-misalignment penalty over the unconstrained (plane ∥ v∞) minimum —
-that gap is the headline number this model quantifies.
+For each family, RAAN is swept over the full 360°, reported as **ΔRAAN**:
+the offset from that family's own plane that happens to contain Earth's
+heliocentric velocity vector `v_Earth` (ΔRAAN=0 is a natural, shared
+reference point for both curves, not a claim that the planes coincide there
+— they don't, except at that one point). Both families have an exact
+180°-periodicity — ΔRAAN and ΔRAAN+180° are the identical great-circle plane
+once inclination is fixed at exactly 90° to the family's own reference axis
+— checked explicitly (`validate.py` check 7), not assumed.
 
-**A direct consequence worth stating plainly: in this idealized construction,
-ψ does not change the nominal heliocentric transfer, arrival date, or
-arrival v∞/flyby geometry at all** — only the departure ΔV and (see below)
-the MCC sensitivity depend on it. That's not a simplification; it falls out
-of the patched-conic construction exactly, and turned out to be one of the
-more interesting findings.
+**What's swept vs. held fixed.** The heliocentric transfer itself (the
+Lambert-solved Earth→Mars trajectory, and therefore the required departure
+`v∞`) is completely independent of RAAN — the plane choice only affects how
+expensively the Earth-centered departure burn reaches that fixed target.
+Within each candidate plane, the burn point and the parking orbit's
+traversal direction (prograde or retrograde, in that plane) are *both*
+optimized to find the plane's own best case (`injection.minimum_delta_v_for_plane`)
+— so the reported curve isolates the ΔV cost of plane orientation alone,
+with everything else already minimized out.
 
-### Why the burn is never actually tangent to the parking orbit
+## Why plane orientation matters at all
 
-It's tempting to assume ψ=0° (`v_Earth` in-plane) is the free lunch — but
-for the baseline transfer the burn is off-tangent at *every* ψ, including
-ψ=0°, and ψ=0° isn't even close to the minimum (it costs 7.48 km/s vs. the
-4.28 km/s optimum at ψ=-60°). The reason is a distinction that's easy to
-miss: **`n_hat` (the orbital-plane normal) is fixed by `v_Earth` alone and
-does not depend on ψ at all** — confirmed numerically, it's identical
-across the whole sweep. ψ only moves the burn point *within* that one fixed
-plane; it never re-orients the plane itself.
+The cheapest possible burn (the unconstrained floor, ignoring any
+polar-type-plane constraint) happens when the parking-orbit plane contains
+`v∞` itself, letting the whole injection burn be a single tangential
+speed-up. Neither family can achieve that in general, because `v∞` isn't
+exactly `v_Earth`: it's `v_transfer,depart − v_Earth` from the Lambert
+solve, and for the baseline transfer it sits **14.7°** away from `v_Earth`'s
+own direction. A plane chosen to contain `v_Earth` (ΔRAAN=0) therefore still
+carries a real misalignment against `v∞` — and away from ΔRAAN=0 that
+penalty only grows, up to the point where the plane and `v∞` are badly
+misaligned.
 
-A burn is tangent (the cheap, scalar-ΔV case) only when the required
-outgoing v∞ lies **in that same plane**. But v∞ is not `v_Earth` — it's
-`v_transfer,depart − v_Earth` from the Lambert solve, and for the baseline
-transfer it sits **14.7° away from `v_Earth`'s own direction**, with
-**7.9° of that lying out of the very plane `v_Earth` defines**. Since the
-plane's orientation never changes with ψ, that 7.9° gap can't be closed by
-picking a different ψ — it's a fixed misalignment tax paid by every burn in
-the family. What ψ actually controls is only how much *extra* the burn
-must fight that fixed 7.9° tilt: at ψ=-60° the required burn deviates only
-12.4° from the local tangential direction; at ψ=0° it's 40.4°; at ψ=+90° it's
-85.8° (nearly radial). ΔV tracks that deviation angle almost exactly.
-
-So the original intuition — "put `v_Earth` in the plane, that's obviously
-the cheap case" — implicitly assumes v∞ points the same way `v_Earth`
-does. It doesn't, and the 14.7° gap decomposes cleanly into two effects,
-verified numerically (not just asserted):
-
-**1. This is not a Hohmann transfer — the transfer angle is 142.8°, not
-180°.** A textbook Hohmann transfer (purely tangential departure, exactly
-parallel to the departure planet's velocity) requires *both* a coplanar,
-circular target orbit *and* a transfer angle of exactly 180°. Ours is
-neither, by construction: the search in `search.py` finds the minimum-C3
-transfer that actually rendezvouses with Mars's real position on a real
-arrival date within the real 2020 launch window — a fixed-time boundary
-value problem (Lambert's problem), not a free choice of target geometry.
-Proof this alone matters, independent of inclination: artificially
-flattening Mars onto the ecliptic (same heliocentric distance and
-longitude, zero latitude) but keeping the same 142.8° transfer angle still
-gives a **3.0° misalignment** between v∞ and `v_Earth` — a non-tangential
-departure is inherent to any Lambert transfer whose angle isn't 180°, even
-in the fully idealized 2D coplanar case.
-
-**2. Mars's real orbital inclination supplies the rest, and it's a strongly
-amplified effect.** Mars sits at only **0.95° ecliptic latitude** at the
-arrival epoch (out of its ~1.85° max inclination — it isn't at its extreme
-point on this date). Swept from 0% to 100% of that true latitude while
-re-solving Lambert each time, the v∞/`v_Earth` angle scales smoothly and
-monotonically from 3.0° to 14.7° (0.24° latitude → 4.8°; 0.47° → 7.9°; 0.71°
-→ 11.3°; 0.95° → 14.7°) — checked specifically to rule out this being a
-bug rather than a real, if strong, sensitivity of the Lambert-solved
-velocity *direction* to small out-of-plane target perturbations (this
-sensitivity is a known feature of Lambert geometry: r1×r2, which defines
-the transfer plane, shrinks toward zero as the transfer angle approaches
-180°, so a transfer angle already most of the way there — sin(142.8°) =
-0.61 — makes the transfer plane genuinely more sensitive to small
-out-of-plane target displacements than a 90° transfer would be).
-
-Putting `v_Earth` in the parking-orbit plane guarantees only that *one* of
-the two relevant vectors is in-plane — and, per the above, it's essentially
-never the one a tangential burn actually needs. (Real missions describe
-the resulting v∞ tilt as the "declination of the launch asymptote.")
-
-### A note on the "top-down" geometry charts
-
-If you looked at `outputs/geometry/07`–`10_departure_topdown_*.png` and
-expected a polar orbit to appear edge-on (a line) — that's the right
-instinct for looking straight down **Earth's spin axis** (the everyday
-"map of Earth from the north pole" view), and in that view a polar orbit
-genuinely would be a line, since Earth's axis lies *in* the polar orbit's
-plane by definition. But that's deliberately not what these charts show.
-They look face-on to the **orbital plane itself** — down its normal vector
-`n_hat = z_hat × v_Earth_hat`, which is perpendicular to Earth's spin axis,
-not aligned with it (confirmed numerically: `n_hat` always has zero
-z-component). That vantage point is effectively from Earth's equator,
-looking sideways at the polar orbit's own great circle face-on — which is
-exactly why it renders as a circle. This view was chosen deliberately,
-because it's the only one that shows `v_Earth`, v∞, the orbit, and the
-burn geometry all without collapsing any of them: a literal down-the-axis
-view would flatten the polar orbit to a line (as expected) but would also
-badly foreshorten `v_Earth` and v∞, which both sit close to the ecliptic,
-far from Earth's spin axis.
+Both families' minima end up close to the ΔRAAN=0 reference plane (within
+one 5° sweep step of it, given `v∞` is only 14.7° from `v_Earth`), but not
+exactly at it and not exactly equal to each other, since the two families'
+planes only coincide with each other at isolated points around the sweep.
 
 ## Pipeline
 
@@ -129,43 +75,60 @@ far from Earth's spin axis.
    `lamberthub` package, done in the ecliptic frame so `prograde=True`
    correctly selects the Type-1 (<180°) transfer.
 3. **Window search** (`search.py`) — grid search over the real Mars 2020
-   (Perseverance-era) launch period for the minimum-C3 Type-1 transfer.
-4. **Departure burn** (`patched_conic.py`) — for each ψ, the *exact* single-
-   impulse hyperbolic-injection solve (not the textbook tangential-burn
-   special case): given the fixed burn point and the fixed target v∞
-   vector, solves for the orbital-plane orientation and eccentricity that
-   reach it, across both geometric branches (short-way/long-way, analogous
-   to Lambert's own ambiguity), and returns the global-minimum-ΔV solution.
-5. **Mid-course correction** (`mcc.py`) — Monte Carlo over TMI execution
-   error (magnitude + pointing), each sample propagated out to the
-   asymptotic regime, patched to the heliocentric frame, coasted to a
-   fixed MCC epoch, then re-targeted to Mars via a **fresh Lambert solve**
-   (not a linearized sensitivity matrix) — the MCC ΔV is what that
-   re-targeting costs.
-6. **Mars arrival** (`arrival.py`) — hyperbolic flyby geometry (periapsis
-   velocity, turn angle, B-plane impact parameter) for the fixed arrival v∞.
+   (Perseverance-era) launch period for the minimum-C3 Type-1 transfer. This
+   fixes the baseline transfer (and therefore `v∞`) once, independent of the
+   RAAN sweep below.
+4. **Exact injection solve** (`injection.py`) — for a given burn point (a
+   position + pre-burn circular velocity on the 400 km parking orbit) and
+   the fixed target `v∞` vector, the *exact* single-impulse hyperbolic-
+   injection solve (not the textbook tangential-burn special case): solves
+   for the orbital eccentricity and orientation that reach the target
+   asymptote from that exact burn point, across both geometric branches
+   (short-way/long-way, analogous to Lambert's own ambiguity). Also provides
+   `minimum_delta_v_for_plane`, which scans burn-point true anomaly around
+   the full circle **and both parking-orbit traversal directions** (see
+   validation note below) to find a given plane's own best-achievable ΔV.
+5. **RAAN sweep** (`raan_sweep.py`) — calls `minimum_delta_v_for_plane` for
+   both plane families, at 5° steps of ΔRAAN over the full [-180°, +180°]
+   range, and caches the result.
 
 ## Validation (`validate.py` — run it, don't take this on faith)
 
-13 independent checks, all passing as of this writeup:
-
 - The universal-variable Kepler propagator (`kepler.py`) exactly returns a
   circular orbit to its start after one period, and round-trips a
-  hyperbolic state forward+backward to ~1e-9 km / ~1e-12 km/s.
+  hyperbolic state forward+backward to ~1e-6 km / ~1e-9 km/s.
 - The ephemeris method was cross-checked against **live JPL Horizons DE441**
-  vectors: Earth to ~4 km / ~1 mm/s, Mars to ~4 km / ~1.8 m/s — this also
-  caught and fixed a real bug (astropy's `HeliocentricMeanEcliptic` frame
-  transform was silently introducing a ~1.3 million km error; the fix was
-  direct ICRS-frame barycentric subtraction plus a manual fixed-obliquity
-  rotation, which is what `frames.py` and `ephemeris.py` now do).
+  vectors: Earth to ~4 km / ~1 mm/s — this also caught and fixed a real bug
+  (astropy's `HeliocentricMeanEcliptic` frame transform was silently
+  introducing a ~1.3 million km error; the fix was direct ICRS-frame
+  barycentric subtraction plus a manual fixed-obliquity rotation, which is
+  what `frames.py` and `ephemeris.py` now do).
 - Every Lambert solution is independently re-validated by propagating
   (r1, v1) forward with the Kepler propagator and confirming it reproduces
-  r2 (residual ~1e-7 km for the baseline transfer).
+  r2.
+- The equatorial↔ecliptic rotation matrix is checked to be a proper
+  orthonormal rotation (orthogonal, determinant +1).
 - The exact hyperbolic-injection solver reduces to the textbook closed-form
   answer in the periapsis-tangential special case (exact match to 1e-13
-  relative precision), and every ψ's solved burn was independently
-  cross-checked by propagating 90 days forward and confirming the resulting
-  asymptotic velocity direction matches the required v∞ to <1e-4 degrees.
+  relative precision).
+- The plane-minimum burn (`minimum_delta_v_for_plane`) is independently
+  cross-checked by propagating its solved post-burn state 90 days forward
+  with the Kepler propagator and confirming the resulting asymptotic
+  velocity direction matches the required `v∞` to well under 1e-2 degrees.
+- The RAAN sweep's 180°-periodicity is checked explicitly across the whole
+  swept range for both families, not assumed from the geometry argument alone.
+
+**A real gap caught and fixed during development**: `minimum_delta_v_for_plane`
+initially scanned only one parking-orbit traversal direction per plane
+(one sign convention for the orbit's angular momentum). Flipping that sign
+traces the *same* burn positions but reverses the pre-burn velocity —
+a genuinely different, physically valid design choice (which way you park
+in that plane), not a redundant duplicate. Checked directly: for the
+`v_Earth`-containing equatorial plane, the two traversal directions gave
+4.2765 km/s vs. 4.2764 km/s — only ~0.15 m/s apart *here*, but that gap was
+not verified to stay small across the rest of the sweep, so the fix (both
+directions are now scanned explicitly at every burn point, not assumed
+symmetric) was made rather than left as an undocumented approximation.
 
 ## Baseline transfer used
 
@@ -182,100 +145,28 @@ to buy schedule margin at increasing energy cost.
 
 ## Key results
 
-- **Departure ΔV(ψ)**: ranges from ~4.28 km/s (ψ=-60°, the cheapest point in
-  the swept range) up to ~13.8 km/s (ψ≈+78°) — a >3x spread driven purely by
-  burn-point phasing. Even at the ψ optimum, that's ~14% above the
-  unconstrained (plane ∥ v∞) theoretical floor of 3.77 km/s — the
-  irreducible cost of being confined to "plane contains v_Earth."
-- **MCC ΔV(ψ)**: rises gently from ~43 m/s (ψ=-90°) to ~60 m/s across most
-  of the range, then rises sharply above ψ≈75° to >110 m/s (mean) / >220 m/s
-  (P95) as the departure geometry becomes more radial and less tangential.
-  **Mean vs. P95**: at each ψ, `mcc.mcc_budget` runs a Monte Carlo (2000
-  draws by default) of TMI execution error, each draw producing one MCC
-  ΔV. "Mean" is the average of those draws — the typical correction cost.
-  "P95" is the 95th percentile — the cost exceeded only 5% of the time,
-  i.e. the number a mission would actually hold propellant margin against
-  (you don't get to re-fly a shortfall, so real budgets target P95/P99, not
-  the mean). The mean-to-P95 gap roughly doubles near ψ=90°, meaning that
-  region isn't just worse on average — its tail is fatter, a sign of a more
-  nonlinear/sensitive targeting geometry there.
-- **Mars arrival**: v∞ = 2.83 km/s; for a 500 km flyby periapsis altitude,
-  periapsis velocity 5.48 km/s, turn angle 70.6° — and, per the point above,
-  these numbers are the same for every ψ.
+- **Equatorial family**: minimum ΔV ≈ 3.78 km/s, near ΔRAAN ≈ -10°.
+- **Ecliptic family**: minimum ΔV ≈ 3.80 km/s, near ΔRAAN ≈ -5°.
+- Both sit only a few percent above the unconstrained (plane ∥ v∞) floor of
+  ≈3.77 km/s — consistent with `v∞` being just 14.7° from `v_Earth`, so a
+  plane deliberately chosen to contain `v_Earth` already comes close to the
+  best possible orientation for either family.
+- The two families' minima are close but not identical, and sit at slightly
+  different ΔRAAN offsets — expected, since "contains Earth's spin axis"
+  and "contains the ecliptic normal" are different constraints that only
+  coincide with each other at isolated points around the sweep.
 
-## Geometry illustrations (`charts/departure_geometry_3d.py`, `charts/departure_geometry_sweep.py`, `charts/mcc_trajectory.py`)
+(Exact values as generated: see `outputs/raan/raan_dv_<dep_epoch>.png`,
+regenerated by `raan_sweep.py` — re-run it after any change rather than
+trusting the numbers quoted above, which are a snapshot.)
 
-Beyond the quantitative sweeps, `outputs/geometry/` makes the ψ definition
-and the departure burn concrete:
+## Chart (`charts/raan_dv.py`)
 
-- `01_earth_polar_orbit_plain.png` — Earth, `v_Earth`, and the polar
-  parking orbit, viewed close-in (~1.8 Earth radii half-extent — tight
-  enough that Earth and the orbit fill the frame; view angle is chosen
-  automatically to look mostly down the orbit-plane normal so the orbit
-  reads as a clear ellipse rather than an edge-on line).
-- `02_earth_polar_orbit_plane_highlighted.png` — same, with the orbital
-  plane itself drawn as a translucent patch, making it visually obvious
-  that `v_Earth` lies flat within it (by construction — see the ψ
-  derivation above).
-- `03`–`06_departure_3d_psi_*.png` — the comparison set spanning the "why
-  isn't the burn tangent" story (see below): the original circular parking
-  orbit plus the post-burn hyperbola, burn point, ΔV vector, `v_Earth`,
-  **and `v_infinity`** (added so the angle between the two — the actual
-  cause of the off-tangent burn — is visible directly on the chart), at
-  ψ=-60° (cheapest), ψ=-45° (15° off it), ψ=0° (the naive "v_Earth
-  in-plane" expectation), and ψ=+90° (perpendicular extreme). ΔV visibly
-  climbs (4.28 → 4.56 → 7.48 → 13.30 km/s) as the burn direction swings
-  further from tangential.
-- `07`–`10_departure_topdown_psi_*.png` — the same four cases as a true
-  **orthographic top-down projection onto the orbital plane** (not a
-  perspective 3D shot): screen-x = `-v_Earth_hat` (so `v_Earth` always
-  points left, as requested) and screen-y = the in-plane direction
-  perpendicular to it. The parking orbit, `v_Earth`, and the burn point
-  project losslessly (they're exactly in this plane); `v_infinity`, the
-  post-burn hyperbola, and the ΔV vector generally are NOT exactly in this
-  plane (that's the whole finding), so their projected lengths/positions
-  are a real foreshortening — each is labeled with its true out-of-plane
-  angle rather than silently distorting it.
-- `11a_departure_sweep_ecliptic_view.png` / `11b_departure_sweep_orbital_plane_view.png`
-  — the same sanity-check content (all 13 ψ values, -90° to +90° in 15°
-  steps, color-coded, each with its burn point and the first ~40° of its
-  hyperbola, `v_Earth`/`v_infinity` drawn once since they don't depend on
-  ψ, cheapest case starred) rendered as **two different projections of the
-  same 3D scene**, for direct comparison:
-  - **11b (orbital-plane view)** — screen = the plane that actually
-    contains the parking orbit and `v_Earth`. The orbit is an exact circle
-    and ψ is an exact angle here — the right view for *what ψ is*. The
-    vantage point is near Earth's **equator**, looking sideways — not
-    "down" from anywhere, since the orbit-plane normal has zero component
-    along Earth's spin axis (checked numerically). Confirms the solver
-    behaves continuously across the whole sweep: the burn point marches
-    smoothly around the circle and the hyperbolas fan out with no jumps.
-  - **11a (ecliptic view)** — screen = the actual ecliptic plane (viewing
-    axis = the ecliptic normal — a literal bird's-eye view of the solar
-    system). `v_Earth` is still undistorted (it defines the ecliptic), but
-    the orbit is now a real, moderately squashed **ellipse** — minor/major
-    axis ratio **35.8%** (checked, not "nearly a line": the orbit-plane
-    normal sits 111° from the ecliptic normal, not close to 90°). This
-    view is also the complementary half of the v∞/v_Earth story: v∞'s
-    large (~14.4°) out-of-ecliptic tilt is *invisible here by
-    construction* (that component points straight at the viewer) — only
-    its small (~3.1°) in-ecliptic component survives, so v∞ and `v_Earth`
-    look almost parallel in this view even though they're 14.7° apart in
-    3D. The dominant part of that gap would only show up in a *radial*
-    (Sun-looking-at-Earth) view — not yet built as of this writeup.
-- `outputs/mcc/mcc_trajectory_psi_-60.png` — answers "is that where the MCC
-  burns are?": plots the full heliocentric Earth→Mars transfer with the MCC
-  burn point marked at TMI+10 days. It's near Earth, not out near Mars —
-  only ~5% of the way through the 193-day transit. Because the resulting
-  position miss (tens of thousands of km) is invisible against the ~150
-  million km heliocentric scale, a zoomed inset shows the nominal vs.
-  uncorrected point for one concrete, deterministic 1-sigma execution error
-  (not a random Monte Carlo draw, so the chart is reproducible), together
-  with the miss distance and the resulting MCC ΔV for that specific case.
-  The same nominal MCC point is also marked on the main
-  `outputs/trajectory/transfer_overview_*.png` chart.
-
-Charts: `outputs/departure/`, `outputs/mcc/`, `outputs/trajectory/`, `outputs/geometry/`.
+`outputs/raan/raan_dv_<dep_epoch>.png` — both families' minimum-achievable
+ΔV plotted against ΔRAAN on one shared axis, each family's global minimum
+marked, and a reference line at ΔRAAN=0 (the plane containing `v_Earth`
+exactly). An info box on the chart reports the baseline transfer's
+parameters (C3, v∞, dates) and each family's minimum ΔV and location.
 
 ## References
 
@@ -288,10 +179,8 @@ Charts: `outputs/departure/`, `outputs/mcc/`, `outputs/trajectory/`, `outputs/ge
   Dynamical Astronomy* 121:1 — the Lambert algorithm used (via `lamberthub`).
 - Curtis, *Orbital Mechanics for Engineering Students* — cross-check reference
   for worked patched-conic examples.
-- Kizner, W. (1961), "A Method of Describing Miss Distances for Lunar and
-  Interplanetary Trajectories," JPL TR 32-138 — B-plane/flyby geometry.
 - Sergeyevsky, Snyder, Cunniff, *Interplanetary Mission Design Handbook, Vol.
-  I* (JPL 82-43) — real-mission C3/v∞/MCC-budget context.
+  I* (JPL 82-43) — real-mission C3/v∞ context.
 - JPL Horizons System (`ssd.jpl.nasa.gov/api/horizons.api`), DE441 — primary
   ephemeris source.
 
@@ -301,26 +190,26 @@ Charts: `outputs/departure/`, `outputs/mcc/`, `outputs/trajectory/`, `outputs/ge
 pip install -r requirements.txt
 python3 validate.py   # re-run all correctness checks
 python3 run.py         # regenerate all charts into outputs/
-python3 derived.py     # (re)compute the sweep results cache directly
+python3 raan_sweep.py  # (re)compute the RAAN sweep cache directly
 ```
 
-Delete `cache/derived_results.npz` (or pass `--force` to `run.py`) to force
-a recompute; delete `cache/horizons_*.json` to force fresh ephemeris fetches.
-Both regenerate automatically as needed.
+Pass `--force` to `run.py` to force a recompute of the baseline transfer;
+delete `cache/raan_sweep.npz` to force a fresh RAAN sweep; delete
+`cache/horizons_*.json` to force fresh ephemeris fetches. All regenerate
+automatically as needed.
 
 ## Known simplifications (stated, not hidden)
 
 - **Zero-SOI-radius patched conic**: the heliocentric "patch point" position
-  is taken as Earth's position exactly (the ~6,371-9,24,000 km geocentric
+  is taken as Earth's position exactly (the ~6,371–924,000 km geocentric
   offset is dropped), standard practice in this method and small (~0.6% of
   the SOI radius vs. the Earth-Sun distance) next to the effects studied here.
 - **ICRS ≈ mean equator/equinox of J2000**: the ~tens-of-milliarcsecond frame
   bias between them is not modeled; negligible next to ephemeris-level
   uncertainty already in play.
-- **Circular, 400 km, polar parking orbit** — altitude and inclination are
-  fixed; only ψ (burn phasing) is swept. Extending to a parking-altitude
-  sweep would be a natural next step.
-- **MCC model** re-targets to Mars' *position* at the original arrival date
-  via a fresh Lambert solve, rather than a full B-plane target-plane
-  formalism — simpler to implement correctly, and still a legitimate,
-  standard simplification for a ΔV-budget estimate.
+- **Circular, 400 km parking orbit** — altitude is fixed; only plane
+  orientation (RAAN, within each of the two "polar" families) is swept.
+  Extending to a parking-altitude sweep would be a natural next step.
+- **RAAN sweep resolution**: 5° steps, 180 burn-point/traversal-direction
+  samples per plane. Sufficient to resolve the smooth minima reported above,
+  but a finer grid would sharpen the exact ΔRAAN location of each minimum.

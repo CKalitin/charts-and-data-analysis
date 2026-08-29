@@ -10,7 +10,9 @@ import numpy as np
 import config
 import ephemeris
 import frames
+import injection as inj
 import kepler
+import raan_sweep
 import search
 
 PASS = "PASS"
@@ -66,6 +68,63 @@ def main():
     ok = (np.allclose(frames.R_EQ_TO_ECL @ frames.R_EQ_TO_ECL.T, np.eye(3), atol=1e-12)
           and abs(np.linalg.det(frames.R_EQ_TO_ECL) - 1) < 1e-12)
     check("equatorial<->ecliptic rotation matrix is a proper orthonormal rotation", ok)
+
+    print("\n5. Exact hyperbolic-injection solver (injection.py) vs closed-form periapsis-tangential case")
+    r_p = 6771.0
+    vinf_mag = 3.5
+    e_expected = 1 + r_p * vinf_mag ** 2 / mu
+    v_after_expected = np.sqrt(vinf_mag ** 2 + 2 * mu / r_p)
+    dv_expected = v_after_expected - np.sqrt(mu / r_p)
+    nu_inf_expected = np.arccos(-1 / e_expected)
+    r_hat = np.array([1.0, 0.0, 0.0])
+    n_test = np.array([0.0, 0.0, 1.0])
+    t_hat = np.cross(n_test, r_hat)
+    vinf_hat = np.cos(nu_inf_expected) * r_hat + np.sin(nu_inf_expected) * t_hat
+    res = inj.solve_injection_burn(r_p * r_hat, np.sqrt(mu / r_p) * t_hat, vinf_mag * vinf_hat, mu)
+    check("recovers known eccentricity for a burn forced to periapsis",
+          abs(res.eccentricity - e_expected) < 1e-6,
+          f"e_solved={res.eccentricity:.6f}, e_expected={e_expected:.6f}")
+    check("recovers closed-form delta-v for the periapsis-tangential case",
+          abs(res.delta_v_mag - dv_expected) < 1e-6,
+          f"dV_solved={res.delta_v_mag:.6f}, dV_expected={dv_expected:.6f} km/s")
+
+    print("\n6. Injection solve cross-checked against independent long-time propagation")
+    baseline = search.find_minimum_c3_transfer(verbose=False)
+    v_earth_hat = baseline.v_earth_eq / np.linalg.norm(baseline.v_earth_eq)
+    n_hat_polar = np.cross(np.array([0.0, 0.0, 1.0]), v_earth_hat)
+    n_hat_polar /= np.linalg.norm(n_hat_polar)
+    r_park = config.R_EARTH + config.PARKING_ALTITUDE_KM
+    best_dv, best_nu = inj.minimum_delta_v_for_plane(n_hat_polar, baseline.v_inf_dep_eq, r_park, mu, n_scan=360)
+    ref = np.array([1.0, 0.0, 0.0])
+    if abs(np.dot(ref, n_hat_polar)) > 0.9:
+        ref = np.array([0.0, 1.0, 0.0])
+    e1 = np.cross(n_hat_polar, ref)
+    e1 /= np.linalg.norm(e1)
+    e2 = np.cross(n_hat_polar, e1)
+    r_burn = r_park * (np.cos(best_nu) * e1 + np.sin(best_nu) * e2)
+    v_before = np.sqrt(mu / r_park) * (-np.sin(best_nu) * e1 + np.cos(best_nu) * e2)
+    best_res = inj.solve_injection_burn(r_burn, v_before, baseline.v_inf_dep_eq, mu)
+    _, v_long = kepler.propagate(r_burn, best_res.v_after, 90 * 86400.0, mu)
+    vhat_num = v_long / np.linalg.norm(v_long)
+    vhat_req = baseline.v_inf_dep_eq / np.linalg.norm(baseline.v_inf_dep_eq)
+    ang_err = np.degrees(np.arccos(np.clip(np.dot(vhat_num, vhat_req), -1, 1)))
+    check("best-in-plane burn's propagated asymptote direction matches target v_infinity",
+          ang_err < 1e-2, f"angle error={ang_err:.2e} deg, min dV over this plane={best_dv:.3f} km/s")
+
+    print("\n7. RAAN sweep periodicity (Omega and Omega+180 deg must trace the identical plane)")
+    sweep = raan_sweep.load(baseline)
+    n = len(sweep.delta_raan_deg)
+    half = n // 2
+    # delta_raan_deg runs -180..+180; index i and index (i+half) are 180 deg apart
+    max_diff_eq = 0.0
+    max_diff_ecl = 0.0
+    for i in range(half):
+        max_diff_eq = max(max_diff_eq, abs(sweep.dv_equatorial_kms[i] - sweep.dv_equatorial_kms[i + half]))
+        max_diff_ecl = max(max_diff_ecl, abs(sweep.dv_ecliptic_kms[i] - sweep.dv_ecliptic_kms[i + half]))
+    check("equatorial family: dV(Omega) == dV(Omega+180) across the whole sweep",
+          max_diff_eq < 1e-2, f"max diff={max_diff_eq:.2e} km/s (scan resolution sets this floor, not zero)")
+    check("ecliptic family: dV(Omega) == dV(Omega+180) across the whole sweep",
+          max_diff_ecl < 1e-2, f"max diff={max_diff_ecl:.2e} km/s (scan resolution sets this floor, not zero)")
 
     n_fail = sum(1 for _, ok, _ in results if not ok)
     print(f"\n{len(results)-n_fail}/{len(results)} checks passed.")

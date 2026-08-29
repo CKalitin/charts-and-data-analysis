@@ -4,10 +4,10 @@ import time
 
 import config
 import derived
-from charts import trajectory_overview
+from charts import raan_dv, trajectory_overview
 from viz import render
 
-CHART_MODULES = [trajectory_overview]
+CHART_MODULES = [trajectory_overview, raan_dv]
 
 
 def main():
