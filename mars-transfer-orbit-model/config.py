@@ -1,4 +1,4 @@
-"""All tunables for the Mars transfer / heliocentric-injection-azimuth model.
+"""All tunables for the Mars transfer model.
 
 Nothing tunable is hardcoded at a call site below this file.
 """
@@ -17,8 +17,9 @@ GM_MARS = 42828.314258067
 
 # Earth: keep consistent with supersyncronous-transfer-modelling/model.py
 # (MU_EARTH=398600 rounded, R_EARTH=6371 mean radius) for cross-project consistency;
-# the ~0.1% difference from equatorial radius (6378.137 km) is negligible next to the
-# psi-driven delta-v effects (tens-hundreds of m/s on km/s-scale burns) this model studies.
+# the ~0.1% difference from the equatorial radius (6378.137 km) is negligible next
+# to the departure-geometry effects (tens-hundreds of m/s on km/s-scale burns) this
+# model studies.
 R_EARTH = 6371.0  # km, mean radius
 R_MARS = 3389.5  # km, mean radius (source: JPL Mars fact sheet)
 
@@ -29,11 +30,6 @@ OBLIQUITY_J2000_DEG = 23.4392911111
 # --- Parking orbit -----------------------------------------------------------
 PARKING_ALTITUDE_KM = 400.0  # circular polar parking orbit altitude
 PARKING_INCLINATION_DEG = 90.0
-
-# --- Heliocentric injection azimuth (psi) sweep ------------------------------
-PSI_MIN_DEG = -90.0
-PSI_MAX_DEG = 90.0
-PSI_STEPS = 181  # 1-degree resolution
 
 # --- Real Mars transfer window (Jul 2020 - Feb 2021) -------------------------
 # Actual Mars 2020 (Perseverance) launch period per JPL press kit:
@@ -47,13 +43,6 @@ DEPARTURE_SEARCH_STEP_DAYS = 1
 ARRIVAL_WINDOW_START = "2021-01-15"
 ARRIVAL_WINDOW_END = "2021-04-15"
 ARRIVAL_SEARCH_STEP_DAYS = 2
-
-# --- Mid-course correction ----------------------------------------------------
-MCC_EPOCH_OFFSET_DAYS = 10.0  # days after TMI burn
-MCC_INJECTION_DV_ERROR_KMS = 0.001  # 1 m/s 1-sigma execution error, magnitude
-MCC_INJECTION_POINTING_ERROR_DEG = 0.5  # 1-sigma pointing error
-MCC_PSI_STEP_DEG = 5.0  # coarser grid than the departure-dV sweep (Monte Carlo per point)
-MCC_N_SAMPLES = 2000
 
 # --- Mars arrival / flyby -----------------------------------------------------
 FLYBY_PERIAPSIS_ALT_KM = 500.0  # target flyby periapsis altitude above Mars

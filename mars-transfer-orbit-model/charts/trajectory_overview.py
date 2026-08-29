@@ -41,11 +41,7 @@ def transfer_tracks(baseline):
     return r_earth_ecl, r_mars_ecl, earth_track, mars_track, transfer_track
 
 
-def draw(ax, results, mcc_point_ecl=None, title_suffix="", show_info_box=True):
-    """mcc_point_ecl: optional (x, y, z) ecliptic position to mark as the MCC
-    burn (see charts/mcc_trajectory.py, which reuses this as its base layer).
-    show_info_box=False lets a caller (mcc_trajectory.py) substitute its own,
-    more specific info box instead of stacking two."""
+def draw(ax, results, title_suffix="", show_info_box=True):
     baseline = results.baseline
     r_earth_ecl, r_mars_ecl, earth_track, mars_track, transfer_track = transfer_tracks(baseline)
 
@@ -59,15 +55,11 @@ def draw(ax, results, mcc_point_ecl=None, title_suffix="", show_info_box=True):
                label=f"Earth @ departure ({baseline.dep_epoch})")
     ax.scatter([r_mars_ecl[0]], [r_mars_ecl[1]], color="#C1440E", s=50, zorder=5,
                label=f"Mars @ arrival ({baseline.arr_epoch})")
-    if mcc_point_ecl is not None:
-        ax.scatter([mcc_point_ecl[0]], [mcc_point_ecl[1]], color="#111111", s=70, marker="D",
-                   zorder=6, label=f"MCC burn (TMI + {config.MCC_EPOCH_OFFSET_DAYS:.0f} d)")
 
     ax.set_xlabel("Ecliptic X (km, heliocentric J2000)")
     ax.set_ylabel("Ecliptic Y (km, heliocentric J2000)")
     ax.set_title(f"Earth->Mars transfer trajectory, {baseline.tof_days:.0f}-day time of flight\n"
-                 "(ecliptic plan view; psi affects only the departure burn, not this trajectory)"
-                 + title_suffix)
+                 "(ecliptic plan view)" + title_suffix)
     ax.set_aspect("equal")
     ax.legend(loc="upper left", fontsize=8)
 
@@ -84,21 +76,10 @@ def draw(ax, results, mcc_point_ecl=None, title_suffix="", show_info_box=True):
         info_box.add_info_box(ax, ax.figure, text, mode="on")
 
 
-def nominal_mcc_point_ecl(baseline):
-    """Where the MCC burn sits on the NOMINAL trajectory (no injection error)
-    -- this only depends on the transfer itself, not on psi, since psi only
-    changes the departure burn, not the resulting heliocentric trajectory."""
-    r_earth_ecl = frames.eq_to_ecl(baseline.r_earth_eq)
-    v_transfer_dep_ecl = frames.eq_to_ecl(baseline.v_transfer_dep_eq)
-    mcc_dt_s = config.MCC_EPOCH_OFFSET_DAYS * 86400.0
-    r_mcc, _ = kepler.propagate(r_earth_ecl, v_transfer_dep_ecl, mcc_dt_s, config.GM_SUN)
-    return r_mcc
-
-
 def figures(results):
     def build():
         fig, ax = render.new_figure(figsize=(9, 9))
-        draw(ax, results, mcc_point_ecl=nominal_mcc_point_ecl(results.baseline))
+        draw(ax, results)
         return fig, config.OUTPUT_ROOT / "trajectory" / f"transfer_overview_{results.baseline.dep_epoch}.png"
     return [("trajectory_overview", build)]
 

@@ -11,7 +11,6 @@ import config
 import ephemeris
 import frames
 import kepler
-import patched_conic as pc
 import search
 
 PASS = "PASS"
@@ -63,41 +62,7 @@ def main():
     check("baseline C3 is in the physically expected range for this window",
           5.0 < baseline.C3 < 30.0, f"C3={baseline.C3:.2f} km^2/s^2")
 
-    print("\n4. Exact hyperbolic-injection solver vs closed-form periapsis-tangential case")
-    r_p = 6771.0
-    vinf_mag = 3.5
-    e_expected = 1 + r_p * vinf_mag ** 2 / mu
-    v_after_expected = np.sqrt(vinf_mag ** 2 + 2 * mu / r_p)
-    dv_expected = v_after_expected - np.sqrt(mu / r_p)
-
-    nu_inf_expected = np.arccos(-1 / e_expected)
-    r_hat = np.array([1.0, 0.0, 0.0])
-    n_test = np.array([0.0, 0.0, 1.0])
-    t_hat = np.cross(n_test, r_hat)
-    vinf_hat = np.cos(nu_inf_expected) * r_hat + np.sin(nu_inf_expected) * t_hat
-    geom = pc.BurnPointGeometry(psi_deg=0.0, n_hat=n_test, r_hat=r_hat, v_hat=t_hat,
-                                 r_burn=r_p * r_hat, v_before=np.sqrt(mu / r_p) * t_hat)
-    burn = pc.solve_injection_burn(geom, vinf_mag * vinf_hat, mu_earth=mu)
-    check("recovers known eccentricity for a burn forced to periapsis",
-          abs(burn.eccentricity - e_expected) < 1e-6,
-          f"e_solved={burn.eccentricity:.6f}, e_expected={e_expected:.6f}")
-    check("recovers closed-form delta-v for the periapsis-tangential case",
-          abs(burn.delta_v_mag - dv_expected) < 1e-6,
-          f"dV_solved={burn.delta_v_mag:.6f}, dV_expected={dv_expected:.6f} km/s")
-
-    print("\n5. Injection-burn solve cross-checked against independent long-time propagation")
-    v_earth_eq = baseline.v_earth_eq
-    for psi in [-90, -45, 0, 45, 90]:
-        geom = pc.burn_point_geometry(v_earth_eq, psi)
-        burn = pc.solve_injection_burn(geom, baseline.v_inf_dep_eq)
-        _, v_long = kepler.propagate(geom.r_burn, burn.v_after, 90 * 86400.0, config.GM_EARTH)
-        vhat_num = v_long / np.linalg.norm(v_long)
-        vhat_req = baseline.v_inf_dep_eq / np.linalg.norm(baseline.v_inf_dep_eq)
-        ang_err = np.degrees(np.arccos(np.clip(np.dot(vhat_num, vhat_req), -1, 1)))
-        check(f"psi={psi:4d} deg: propagated asymptote direction matches target v_infinity",
-              ang_err < 1e-2, f"angle error={ang_err:.2e} deg")
-
-    print("\n6. Frame rotation orthonormality")
+    print("\n4. Frame rotation orthonormality")
     ok = (np.allclose(frames.R_EQ_TO_ECL @ frames.R_EQ_TO_ECL.T, np.eye(3), atol=1e-12)
           and abs(np.linalg.det(frames.R_EQ_TO_ECL) - 1) < 1e-12)
     check("equatorial<->ecliptic rotation matrix is a proper orthonormal rotation", ok)
