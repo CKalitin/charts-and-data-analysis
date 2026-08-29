@@ -37,6 +37,39 @@ the MCC sensitivity depend on it. That's not a simplification; it falls out
 of the patched-conic construction exactly, and turned out to be one of the
 more interesting findings.
 
+### Why the burn is never actually tangent to the parking orbit
+
+It's tempting to assume ψ=0° (`v_Earth` in-plane) is the free lunch — but
+for the baseline transfer the burn is off-tangent at *every* ψ, including
+ψ=0°, and ψ=0° isn't even close to the minimum (it costs 7.48 km/s vs. the
+4.28 km/s optimum at ψ=-60°). The reason is a distinction that's easy to
+miss: **`n_hat` (the orbital-plane normal) is fixed by `v_Earth` alone and
+does not depend on ψ at all** — confirmed numerically, it's identical
+across the whole sweep. ψ only moves the burn point *within* that one fixed
+plane; it never re-orients the plane itself.
+
+A burn is tangent (the cheap, scalar-ΔV case) only when the required
+outgoing v∞ lies **in that same plane**. But v∞ is not `v_Earth` — it's
+`v_transfer,depart − v_Earth` from the Lambert solve, and for the baseline
+transfer it sits **14.7° away from `v_Earth`'s own direction**, with
+**7.9° of that lying out of the very plane `v_Earth` defines**. Since the
+plane's orientation never changes with ψ, that 7.9° gap can't be closed by
+picking a different ψ — it's a fixed misalignment tax paid by every burn in
+the family. What ψ actually controls is only how much *extra* the burn
+must fight that fixed 7.9° tilt: at ψ=-60° the required burn deviates only
+12.4° from the local tangential direction; at ψ=0° it's 40.4°; at ψ=+90° it's
+85.8° (nearly radial). ΔV tracks that deviation angle almost exactly.
+
+So the original intuition — "put `v_Earth` in the plane, that's obviously
+the cheap case" — implicitly assumes v∞ points the same way `v_Earth`
+does. It doesn't: Mars is ~1.85° inclined to the ecliptic and at a
+different heliocentric phase/distance, so the Lambert-required departure
+asymptote picks up a genuine 3D tilt away from `v_Earth` (the classical
+literature calls this the declination of the launch asymptote). Putting
+`v_Earth` in the plane guarantees only that *one* of the two relevant
+vectors is in-plane — and it's not the one a tangential burn actually
+needs.
+
 ## Pipeline
 
 1. **Ephemeris** (`ephemeris.py`) — Earth/Mars heliocentric state vectors,

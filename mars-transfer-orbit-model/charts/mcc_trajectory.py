@@ -2,9 +2,12 @@
 it, answering "is that where the burns are?" -- yes: MCC_EPOCH_OFFSET_DAYS
 after TMI, which is still deep in the transfer, not near Earth or Mars.
 
-The position miss this model corrects (tens of thousands of km) is
-invisible at heliocentric scale (spacecraft is ~150 million km out by then)
--- hence the zoomed inset around the MCC point.
+Reuses trajectory_overview.draw() for the base layer (Earth/Mars orbits,
+transfer trajectory, Sun/Earth/Mars markers) instead of duplicating that
+track-plotting code, then adds the MCC-specific layer: the burn marker and
+a zoomed inset, since the position miss this model corrects (tens of
+thousands of km) is invisible at heliocentric scale (spacecraft is ~150
+million km out by then).
 """
 import sys
 from pathlib import Path
@@ -12,11 +15,12 @@ from pathlib import Path
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # for trajectory_overview (sibling module)
 
 import config
 import frames
-import kepler
 import mcc
+import trajectory_overview as traj
 from viz import render, info_box
 
 # A single, deterministic, illustrative 1-sigma execution error (not a random
@@ -26,11 +30,6 @@ from viz import render, info_box
 ILLUSTRATIVE_DMAG_KMS = config.MCC_INJECTION_DV_ERROR_KMS
 ILLUSTRATIVE_TIP_RAD = np.radians(config.MCC_INJECTION_POINTING_ERROR_DEG)
 ILLUSTRATIVE_TILT_RAD = 0.0
-
-
-def _track(r0, v0, mu, t_end_s, n=300):
-    ts = np.linspace(0, t_end_s, n)
-    return np.array([kepler.propagate(r0, v0, t, mu)[0] for t in ts])
 
 
 def draw(ax, results, psi_deg=None):
@@ -43,43 +42,14 @@ def draw(ax, results, psi_deg=None):
         baseline.r_mars_eq, baseline.tof_days,
         ILLUSTRATIVE_DMAG_KMS, ILLUSTRATIVE_TIP_RAD, ILLUSTRATIVE_TILT_RAD,
     )
-
-    r_earth_ecl = frames.eq_to_ecl(baseline.r_earth_eq)
-    v_earth_ecl = frames.eq_to_ecl(baseline.v_earth_eq)
-    r_mars_ecl = frames.eq_to_ecl(baseline.r_mars_eq)
-    v_mars_ecl = frames.eq_to_ecl(baseline.v_mars_eq)
-    v_transfer_dep_ecl = frames.eq_to_ecl(baseline.v_transfer_dep_eq)
-
-    earth_track = _track(r_earth_ecl, v_earth_ecl, config.GM_SUN, 2 * np.pi * np.sqrt(
-        np.linalg.norm(r_earth_ecl) ** 3 / config.GM_SUN))
-    mars_track = _track(r_mars_ecl, v_mars_ecl, config.GM_SUN, 2 * np.pi * np.sqrt(
-        np.linalg.norm(r_mars_ecl) ** 3 / config.GM_SUN))
-
-    tof_s = baseline.tof_days * 86400.0
-    transfer_track = _track(r_earth_ecl, v_transfer_dep_ecl, config.GM_SUN, tof_s, n=400)
-
-    mcc_epoch_s = config.MCC_EPOCH_OFFSET_DAYS * 86400.0
     r_mcc_nom_ecl = frames.eq_to_ecl(corr.r_mcc_nominal)
     r_mcc_act_ecl = frames.eq_to_ecl(corr.r_mcc_actual)
 
-    ax.plot(earth_track[:, 0], earth_track[:, 1], color="#2775B6", lw=1.0, label="Earth orbit")
-    ax.plot(mars_track[:, 0], mars_track[:, 1], color="#C1440E", lw=1.0, label="Mars orbit")
-    ax.plot(transfer_track[:, 0], transfer_track[:, 1], color="#3FA34D", lw=1.8,
-            label="Nominal transfer trajectory")
-    ax.scatter([0], [0], color="#F5B700", s=100, marker="*", zorder=5, label="Sun")
-    ax.scatter([r_earth_ecl[0]], [r_earth_ecl[1]], color="#2775B6", s=45, zorder=5,
-               label="Earth @ departure")
-    ax.scatter([r_mars_ecl[0]], [r_mars_ecl[1]], color="#C1440E", s=45, zorder=5,
-               label="Mars @ arrival")
-    ax.scatter([r_mcc_nom_ecl[0]], [r_mcc_nom_ecl[1]], color="#111111", s=45, marker="D",
-               zorder=6, label=f"MCC burn (TMI + {config.MCC_EPOCH_OFFSET_DAYS:.0f} d)")
-
-    ax.set_xlabel("Ecliptic X (km, heliocentric J2000)")
-    ax.set_ylabel("Ecliptic Y (km, heliocentric J2000)")
-    ax.set_title(f"MCC burn location on the Earth->Mars transfer (psi={psi_deg:.0f} deg)\n"
-                 "Not near Earth or Mars: still ~10 days / a few % of the way into the transfer")
-    ax.set_aspect("equal")
-    ax.legend(loc="upper left", fontsize=8)
+    traj.draw(ax, results, mcc_point_ecl=r_mcc_nom_ecl,
+              title_suffix=f"\n(psi={psi_deg:.0f} deg -- MCC point zoomed below: "
+                            f"not near Earth or Mars, ~{config.MCC_EPOCH_OFFSET_DAYS:.0f} d "
+                            f"/ {100*config.MCC_EPOCH_OFFSET_DAYS/baseline.tof_days:.0f}% into transit)",
+              show_info_box=False)
 
     # zoomed inset around the MCC point: nominal vs uncorrected-actual position.
     # Native ax.inset_axes (fractions of the parent axes bbox) rather than the
