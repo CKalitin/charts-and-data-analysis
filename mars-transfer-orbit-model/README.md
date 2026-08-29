@@ -62,13 +62,63 @@ must fight that fixed 7.9° tilt: at ψ=-60° the required burn deviates only
 
 So the original intuition — "put `v_Earth` in the plane, that's obviously
 the cheap case" — implicitly assumes v∞ points the same way `v_Earth`
-does. It doesn't: Mars is ~1.85° inclined to the ecliptic and at a
-different heliocentric phase/distance, so the Lambert-required departure
-asymptote picks up a genuine 3D tilt away from `v_Earth` (the classical
-literature calls this the declination of the launch asymptote). Putting
-`v_Earth` in the plane guarantees only that *one* of the two relevant
-vectors is in-plane — and it's not the one a tangential burn actually
-needs.
+does. It doesn't, and the 14.7° gap decomposes cleanly into two effects,
+verified numerically (not just asserted):
+
+**1. This is not a Hohmann transfer — the transfer angle is 142.8°, not
+180°.** A textbook Hohmann transfer (purely tangential departure, exactly
+parallel to the departure planet's velocity) requires *both* a coplanar,
+circular target orbit *and* a transfer angle of exactly 180°. Ours is
+neither, by construction: the search in `search.py` finds the minimum-C3
+transfer that actually rendezvouses with Mars's real position on a real
+arrival date within the real 2020 launch window — a fixed-time boundary
+value problem (Lambert's problem), not a free choice of target geometry.
+Proof this alone matters, independent of inclination: artificially
+flattening Mars onto the ecliptic (same heliocentric distance and
+longitude, zero latitude) but keeping the same 142.8° transfer angle still
+gives a **3.0° misalignment** between v∞ and `v_Earth` — a non-tangential
+departure is inherent to any Lambert transfer whose angle isn't 180°, even
+in the fully idealized 2D coplanar case.
+
+**2. Mars's real orbital inclination supplies the rest, and it's a strongly
+amplified effect.** Mars sits at only **0.95° ecliptic latitude** at the
+arrival epoch (out of its ~1.85° max inclination — it isn't at its extreme
+point on this date). Swept from 0% to 100% of that true latitude while
+re-solving Lambert each time, the v∞/`v_Earth` angle scales smoothly and
+monotonically from 3.0° to 14.7° (0.24° latitude → 4.8°; 0.47° → 7.9°; 0.71°
+→ 11.3°; 0.95° → 14.7°) — checked specifically to rule out this being a
+bug rather than a real, if strong, sensitivity of the Lambert-solved
+velocity *direction* to small out-of-plane target perturbations (this
+sensitivity is a known feature of Lambert geometry: r1×r2, which defines
+the transfer plane, shrinks toward zero as the transfer angle approaches
+180°, so a transfer angle already most of the way there — sin(142.8°) =
+0.61 — makes the transfer plane genuinely more sensitive to small
+out-of-plane target displacements than a 90° transfer would be).
+
+Putting `v_Earth` in the parking-orbit plane guarantees only that *one* of
+the two relevant vectors is in-plane — and, per the above, it's essentially
+never the one a tangential burn actually needs. (Real missions describe
+the resulting v∞ tilt as the "declination of the launch asymptote.")
+
+### A note on the "top-down" geometry charts
+
+If you looked at `outputs/geometry/07`–`10_departure_topdown_*.png` and
+expected a polar orbit to appear edge-on (a line) — that's the right
+instinct for looking straight down **Earth's spin axis** (the everyday
+"map of Earth from the north pole" view), and in that view a polar orbit
+genuinely would be a line, since Earth's axis lies *in* the polar orbit's
+plane by definition. But that's deliberately not what these charts show.
+They look face-on to the **orbital plane itself** — down its normal vector
+`n_hat = z_hat × v_Earth_hat`, which is perpendicular to Earth's spin axis,
+not aligned with it (confirmed numerically: `n_hat` always has zero
+z-component). That vantage point is effectively from Earth's equator,
+looking sideways at the polar orbit's own great circle face-on — which is
+exactly why it renders as a circle. This view was chosen deliberately,
+because it's the only one that shows `v_Earth`, v∞, the orbit, and the
+burn geometry all without collapsing any of them: a literal down-the-axis
+view would flatten the polar orbit to a line (as expected) but would also
+badly foreshorten `v_Earth` and v∞, which both sit close to the ecliptic,
+far from Earth's spin axis.
 
 ## Pipeline
 

@@ -254,8 +254,9 @@ def draw_departure_topdown(ax, results, psi_deg):
 
     ax.set_xlabel("In-plane, opposite v_Earth (km)")
     ax.set_ylabel("In-plane, perpendicular to v_Earth (km)")
-    ax.set_title(f"Top-down view of the orbital plane, psi = {psi_deg:.0f} deg\n"
-                 "(orthographic; v_Earth points left by construction)")
+    ax.set_title(f"Face-on to the ORBITAL plane (not Earth's equator), psi = {psi_deg:.0f} deg\n"
+                 "Orthographic, v_Earth points left. Looking down Earth's spin axis instead\n"
+                 "would show this polar orbit edge-on -- see README for why this view is used.")
     ax.set_xlim(-VIEW_HALF_EXTENT_KM, VIEW_HALF_EXTENT_KM)
     ax.set_ylim(-VIEW_HALF_EXTENT_KM, VIEW_HALF_EXTENT_KM)
     ax.set_aspect("equal")
