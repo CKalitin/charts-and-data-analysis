@@ -108,12 +108,23 @@ def solve_injection_burn(r_burn, v_before, v_inf_required, mu_earth=config.GM_EA
     return best
 
 
-def minimum_delta_v_for_plane(n_hat, v_inf_required, r_park=config.R_EARTH + config.PARKING_ALTITUDE_KM,
+@dataclass
+class PlaneMinimum:
+    delta_v_mag: float
+    true_anomaly_burn_rad: float
+    sign: float  # +1: v_before = +v_circ*v_hat (prograde about +n_hat); -1: retrograde
+    r_burn: np.ndarray
+    v_before: np.ndarray
+    injection: InjectionResult
+
+
+def solve_best_burn_for_plane(n_hat, v_inf_required, r_park=config.R_EARTH + config.PARKING_ALTITUDE_KM,
                                mu_earth=config.GM_EARTH, n_scan=180):
-    """The cheapest achievable injection delta-v from ANY point on a circular
+    """The cheapest achievable injection burn from ANY point on a circular
     parking orbit in the plane with normal n_hat -- scans burn-point true
-    anomaly around the full circle and returns the minimum (an apples-to-
-    apples score for "how good is this plane", independent of burn phasing).
+    anomaly around the full circle and returns the full state of the best
+    one found (an apples-to-apples score for "how good is this plane",
+    independent of burn phasing).
 
     For each burn point, BOTH parking-orbit traversal senses (prograde and
     retrograde relative to n_hat) are tried. These are physically distinct
@@ -133,8 +144,7 @@ def minimum_delta_v_for_plane(n_hat, v_inf_required, r_park=config.R_EARTH + con
     e2 = np.cross(n_hat, e1)
 
     v_circ = np.sqrt(mu_earth / r_park)
-    best_dv = np.inf
-    best_nu = None
+    best = None
     for nu in np.linspace(0.0, 2 * np.pi, n_scan, endpoint=False):
         r_hat = np.cos(nu) * e1 + np.sin(nu) * e2
         v_hat = -np.sin(nu) * e1 + np.cos(nu) * e2
@@ -142,7 +152,17 @@ def minimum_delta_v_for_plane(n_hat, v_inf_required, r_park=config.R_EARTH + con
         for sign in (1.0, -1.0):
             v_before = sign * v_circ * v_hat
             result = solve_injection_burn(r_burn, v_before, v_inf_required, mu_earth)
-            if result is not None and result.delta_v_mag < best_dv:
-                best_dv = result.delta_v_mag
-                best_nu = nu
-    return best_dv, best_nu
+            if result is not None and (best is None or result.delta_v_mag < best.delta_v_mag):
+                best = PlaneMinimum(delta_v_mag=result.delta_v_mag, true_anomaly_burn_rad=nu,
+                                     sign=sign, r_burn=r_burn, v_before=v_before, injection=result)
+    return best
+
+
+def minimum_delta_v_for_plane(n_hat, v_inf_required, r_park=config.R_EARTH + config.PARKING_ALTITUDE_KM,
+                               mu_earth=config.GM_EARTH, n_scan=180):
+    """Thin wrapper around solve_best_burn_for_plane for callers (the RAAN
+    sweep) that only need the scalar minimum, not the full burn state."""
+    best = solve_best_burn_for_plane(n_hat, v_inf_required, r_park, mu_earth, n_scan)
+    if best is None:
+        return np.inf, None
+    return best.delta_v_mag, best.true_anomaly_burn_rad

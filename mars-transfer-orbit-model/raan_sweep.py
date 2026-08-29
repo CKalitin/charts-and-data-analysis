@@ -60,12 +60,31 @@ def _plane_normal(delta_deg, raan0_deg, frame):
     return n
 
 
-def compute(baseline, verbose=True):
-    v_earth_hat_eq = baseline.v_earth_eq / np.linalg.norm(baseline.v_earth_eq)
-    raan0_eq = np.degrees(np.arctan2(v_earth_hat_eq[1], v_earth_hat_eq[0]))
+def raan0_for_family(baseline, family):
+    """The actual RAAN (family's own build frame) of the plane containing
+    v_Earth exactly -- the shared ΔRAAN=0 reference point for that family."""
+    if family == "equatorial":
+        v_hat = baseline.v_earth_eq / np.linalg.norm(baseline.v_earth_eq)
+    elif family == "ecliptic":
+        v_hat = frames.eq_to_ecl(baseline.v_earth_eq)
+    else:
+        raise ValueError(f"unknown family: {family!r}")
+    return np.degrees(np.arctan2(v_hat[1], v_hat[0]))
 
-    v_earth_ecl = frames.eq_to_ecl(baseline.v_earth_eq)
-    raan0_ecl = np.degrees(np.arctan2(v_earth_ecl[1], v_earth_ecl[0]))
+
+def plane_normal(baseline, family, delta_raan_deg):
+    """Public helper: the plane normal (equatorial/ICRS frame, as injection.py
+    expects) for `family` ('equatorial' or 'ecliptic') at RAAN offset
+    delta_raan_deg from that family's own v_Earth-containing reference plane
+    -- reconstructs exactly the planes compute() scores, for reuse by the
+    geometry illustration charts."""
+    raan0 = raan0_for_family(baseline, family)
+    return _plane_normal(delta_raan_deg, raan0, family)
+
+
+def compute(baseline, verbose=True):
+    raan0_eq = raan0_for_family(baseline, "equatorial")
+    raan0_ecl = raan0_for_family(baseline, "ecliptic")
 
     r_park = config.R_EARTH + config.PARKING_ALTITUDE_KM
     deltas = np.arange(-180.0, 180.0 + 1e-9, RAAN_SWEEP_STEP_DEG)

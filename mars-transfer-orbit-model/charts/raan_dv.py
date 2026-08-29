@@ -32,7 +32,7 @@ def draw(ax, results, sweep):
     ax.set_ylabel("Minimum injection ΔV over the whole plane (km/s)")
     ax.set_title("Minimum departure ΔV vs RAAN, both orbital-plane families\n"
                  "(each point: best achievable burn anywhere in that one plane)")
-    ax.set_xlim(-180, 180)
+    ax.set_xlim(-90, 90)
     ax.legend(loc="upper center", fontsize=8)
 
     params = {

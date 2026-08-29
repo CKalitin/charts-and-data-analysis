@@ -94,22 +94,13 @@ def main():
     n_hat_polar = np.cross(np.array([0.0, 0.0, 1.0]), v_earth_hat)
     n_hat_polar /= np.linalg.norm(n_hat_polar)
     r_park = config.R_EARTH + config.PARKING_ALTITUDE_KM
-    best_dv, best_nu = inj.minimum_delta_v_for_plane(n_hat_polar, baseline.v_inf_dep_eq, r_park, mu, n_scan=360)
-    ref = np.array([1.0, 0.0, 0.0])
-    if abs(np.dot(ref, n_hat_polar)) > 0.9:
-        ref = np.array([0.0, 1.0, 0.0])
-    e1 = np.cross(n_hat_polar, ref)
-    e1 /= np.linalg.norm(e1)
-    e2 = np.cross(n_hat_polar, e1)
-    r_burn = r_park * (np.cos(best_nu) * e1 + np.sin(best_nu) * e2)
-    v_before = np.sqrt(mu / r_park) * (-np.sin(best_nu) * e1 + np.cos(best_nu) * e2)
-    best_res = inj.solve_injection_burn(r_burn, v_before, baseline.v_inf_dep_eq, mu)
-    _, v_long = kepler.propagate(r_burn, best_res.v_after, 90 * 86400.0, mu)
+    best = inj.solve_best_burn_for_plane(n_hat_polar, baseline.v_inf_dep_eq, r_park, mu, n_scan=360)
+    _, v_long = kepler.propagate(best.r_burn, best.injection.v_after, 90 * 86400.0, mu)
     vhat_num = v_long / np.linalg.norm(v_long)
     vhat_req = baseline.v_inf_dep_eq / np.linalg.norm(baseline.v_inf_dep_eq)
     ang_err = np.degrees(np.arccos(np.clip(np.dot(vhat_num, vhat_req), -1, 1)))
     check("best-in-plane burn's propagated asymptote direction matches target v_infinity",
-          ang_err < 1e-2, f"angle error={ang_err:.2e} deg, min dV over this plane={best_dv:.3f} km/s")
+          ang_err < 1e-2, f"angle error={ang_err:.2e} deg, min dV over this plane={best.delta_v_mag:.3f} km/s")
 
     print("\n7. RAAN sweep periodicity (Omega and Omega+180 deg must trace the identical plane)")
     sweep = raan_sweep.load(baseline)
