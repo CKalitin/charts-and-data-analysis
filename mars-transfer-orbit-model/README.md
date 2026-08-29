@@ -203,7 +203,7 @@ to buy schedule margin at increasing energy cost.
   periapsis velocity 5.48 km/s, turn angle 70.6° — and, per the point above,
   these numbers are the same for every ψ.
 
-## Geometry illustrations (`charts/departure_geometry_3d.py`, `charts/mcc_trajectory.py`)
+## Geometry illustrations (`charts/departure_geometry_3d.py`, `charts/departure_geometry_sweep.py`, `charts/mcc_trajectory.py`)
 
 Beyond the quantitative sweeps, `outputs/geometry/` makes the ψ definition
 and the departure burn concrete:
@@ -236,6 +236,17 @@ and the departure burn concrete:
   plane (that's the whole finding), so their projected lengths/positions
   are a real foreshortening — each is labeled with its true out-of-plane
   angle rather than silently distorting it.
+- `11_departure_sweep_overlay.png` — a single-image sanity check: all 13
+  psi values from -90° to +90° (15° steps) overlaid on one face-on-to-plane
+  view, color-coded by ψ, each with its burn point and the first ~40° of
+  its hyperbola. `v_Earth` and `v_infinity` are drawn once (they don't
+  depend on ψ); the cheapest case is starred. The point of this chart is
+  what a curve like `departure_dv.py`'s can't show directly: the burn point
+  sweeps smoothly around the fixed circle and the hyperbolas fan out
+  continuously as ψ varies, with no jumps or discontinuities — a visual
+  check that the exact injection-burn solver (`patched_conic.py`) behaves
+  sanely across the whole swept range, not just at the handful of ψ values
+  spot-checked individually elsewhere.
 - `outputs/mcc/mcc_trajectory_psi_-60.png` — answers "is that where the MCC
   burns are?": plots the full heliocentric Earth→Mars transfer with the MCC
   burn point marked at TMI+10 days. It's near Earth, not out near Mars —
