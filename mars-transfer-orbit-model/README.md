@@ -236,17 +236,33 @@ and the departure burn concrete:
   plane (that's the whole finding), so their projected lengths/positions
   are a real foreshortening — each is labeled with its true out-of-plane
   angle rather than silently distorting it.
-- `11_departure_sweep_overlay.png` — a single-image sanity check: all 13
-  psi values from -90° to +90° (15° steps) overlaid on one face-on-to-plane
-  view, color-coded by ψ, each with its burn point and the first ~40° of
-  its hyperbola. `v_Earth` and `v_infinity` are drawn once (they don't
-  depend on ψ); the cheapest case is starred. The point of this chart is
-  what a curve like `departure_dv.py`'s can't show directly: the burn point
-  sweeps smoothly around the fixed circle and the hyperbolas fan out
-  continuously as ψ varies, with no jumps or discontinuities — a visual
-  check that the exact injection-burn solver (`patched_conic.py`) behaves
-  sanely across the whole swept range, not just at the handful of ψ values
-  spot-checked individually elsewhere.
+- `11a_departure_sweep_ecliptic_view.png` / `11b_departure_sweep_orbital_plane_view.png`
+  — the same sanity-check content (all 13 ψ values, -90° to +90° in 15°
+  steps, color-coded, each with its burn point and the first ~40° of its
+  hyperbola, `v_Earth`/`v_infinity` drawn once since they don't depend on
+  ψ, cheapest case starred) rendered as **two different projections of the
+  same 3D scene**, for direct comparison:
+  - **11b (orbital-plane view)** — screen = the plane that actually
+    contains the parking orbit and `v_Earth`. The orbit is an exact circle
+    and ψ is an exact angle here — the right view for *what ψ is*. The
+    vantage point is near Earth's **equator**, looking sideways — not
+    "down" from anywhere, since the orbit-plane normal has zero component
+    along Earth's spin axis (checked numerically). Confirms the solver
+    behaves continuously across the whole sweep: the burn point marches
+    smoothly around the circle and the hyperbolas fan out with no jumps.
+  - **11a (ecliptic view)** — screen = the actual ecliptic plane (viewing
+    axis = the ecliptic normal — a literal bird's-eye view of the solar
+    system). `v_Earth` is still undistorted (it defines the ecliptic), but
+    the orbit is now a real, moderately squashed **ellipse** — minor/major
+    axis ratio **35.8%** (checked, not "nearly a line": the orbit-plane
+    normal sits 111° from the ecliptic normal, not close to 90°). This
+    view is also the complementary half of the v∞/v_Earth story: v∞'s
+    large (~14.4°) out-of-ecliptic tilt is *invisible here by
+    construction* (that component points straight at the viewer) — only
+    its small (~3.1°) in-ecliptic component survives, so v∞ and `v_Earth`
+    look almost parallel in this view even though they're 14.7° apart in
+    3D. The dominant part of that gap would only show up in a *radial*
+    (Sun-looking-at-Earth) view — not yet built as of this writeup.
 - `outputs/mcc/mcc_trajectory_psi_-60.png` — answers "is that where the MCC
   burns are?": plots the full heliocentric Earth→Mars transfer with the MCC
   burn point marked at TMI+10 days. It's near Earth, not out near Mars —
