@@ -117,6 +117,34 @@ def main():
     check("ecliptic family: dV(Omega) == dV(Omega+180) across the whole sweep",
           max_diff_ecl < 1e-2, f"max diff={max_diff_ecl:.2e} km/s (scan resolution sets this floor, not zero)")
 
+    print("\n8. Inclination sweep shortcut: best-RAAN plane really is the cheapest plane")
+    # compute_inclination_sweep scores ONE plane per inclination -- the RAAN minimising
+    # the out-of-plane angle of v_inf -- instead of brute-forcing (inclination x RAAN).
+    # That is only valid if dV increases monotonically with that angle. Check it directly.
+    vinf = baseline.v_inf_dep_eq
+    vinf_hat = vinf / np.linalg.norm(vinf)
+    r_park = config.R_EARTH + config.PARKING_ALTITUDE_KM
+    dla = abs(np.degrees(np.arcsin(np.clip(vinf_hat[2], -1.0, 1.0))))
+
+    def _dv(n):
+        n = np.asarray(n, dtype=float)
+        return inj.minimum_delta_v_for_plane(n / np.linalg.norm(n), vinf, r_park,
+                                              config.GM_EARTH, n_scan=120)[0]
+
+    for inc in (5.0, 15.0, 45.0):
+        n_best, _, resid, closed = raan_sweep.best_raan_normal(vinf_hat, inc)
+        dv_best = _dv(n_best)
+        brute = min(_dv(raan_sweep._normal_from_inc_raan(np.radians(inc), np.radians(o)))
+                    for o in np.linspace(0.0, 360.0, 13, endpoint=False))
+        check(f"i={inc:.0f} deg: analytic best-RAAN plane is no worse than a brute-force RAAN scan",
+              dv_best <= brute + 3e-3, f"analytic={dv_best:.4f}, brute={brute:.4f} km/s")
+        check(f"i={inc:.0f} deg: residual out-of-plane angle matches closed form max(0, |DLA|-i)",
+              abs(resid - closed) < 1e-2, f"scan={resid:.3f} deg, closed form={closed:.3f} deg")
+    check("floor is reachable for every inclination at or above |DLA|",
+          abs(_dv(raan_sweep.best_raan_normal(vinf_hat, dla + 5.0)[0])
+              - _dv(raan_sweep.best_raan_normal(vinf_hat, 90.0)[0])) < 1e-3,
+          f"|DLA|={dla:.2f} deg")
+
     n_fail = sum(1 for _, ok, _ in results if not ok)
     print(f"\n{len(results)-n_fail}/{len(results)} checks passed.")
     if n_fail:

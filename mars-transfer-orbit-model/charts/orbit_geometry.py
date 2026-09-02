@@ -19,7 +19,7 @@ import config
 import geometry3d as geo
 import injection as inj
 import raan_sweep
-from viz import render
+from viz import depth3d, info_box, render
 
 
 def _new_3d_figure(figsize=(8, 8)):
@@ -36,6 +36,7 @@ def _new_3d_figure(figsize=(8, 8)):
 
 
 VIEW_HALF_EXTENT_KM = 1.8 * config.R_EARTH  # ~1.8 Earth radii half-extent
+EARTH_MESH_N = 36  # sphere mesh resolution; also how round the limb the curves split on looks
 ARROW_LEN_KM = 1.55 * config.R_EARTH
 EARTH_COLOR = "#2775B6"
 HYPERBOLA_COLOR = "#D64545"
@@ -43,6 +44,18 @@ VEC_COLOR = "#F5B700"
 VINF_COLOR = "#9B59B6"
 FAMILY_COLOR = {"equatorial": "#2775B6", "ecliptic": "#C1440E"}
 FAMILY_PLANE_COLOR = {"equatorial": "#8ECFE0", "ecliptic": "#F0B090"}
+# Title name for each family. The "(Earth-Polar)" / "(Solar-System-Polar)" qualifier
+# stays in the TITLE: "Equatorial family" and "Ecliptic family" are internal names that
+# do not say what the thing is, so the qualifier is part of the subject's identity, not
+# a caveat. The precise geometric constraint below is the separate, info-box fact.
+FAMILY_TITLE = {"equatorial": "Equatorial Family (Earth-Polar)",
+                "ecliptic": "Ecliptic Family (Solar-System-Polar)"}
+
+# The defining constraint of each family, short enough for an info-box line --
+# FAMILY_LABEL's full prose is legend material and makes the box too wide to
+# place cleanly on a busy chart.
+FAMILY_CONSTRAINT = {"equatorial": "Earth's spin axis", "ecliptic": "the ecliptic normal"}
+
 FAMILY_LABEL = {
     "equatorial": "Equatorial family (real polar orbit, contains Earth's spin axis)",
     "ecliptic": "Ecliptic family (\"solar-system-polar\", contains the ecliptic normal)",
@@ -50,8 +63,23 @@ FAMILY_LABEL = {
 
 
 def _draw_earth(ax):
-    x, y, z = geo.sphere_surface(config.R_EARTH, n=36)
-    ax.plot_surface(x, y, z, color=EARTH_COLOR, alpha=0.55, linewidth=0, shade=True)
+    """Draw Earth and RETURN the surface artist -- _fix_earth_occlusion needs it to
+    know which zorder the near/far halves of each curve go either side of."""
+    x, y, z = geo.sphere_surface(config.R_EARTH, n=EARTH_MESH_N)
+    return ax.plot_surface(x, y, z, color=EARTH_COLOR, alpha=0.55, linewidth=0, shade=True)
+
+
+def _fix_earth_occlusion(ax, earth):
+    """Split every 3D curve at Earth's limb so the near half is painted over the
+    planet and the far half under it.
+
+    mplot3d would otherwise paint every Line3D behind every surface no matter
+    where it is (see viz/depth3d.py), which reads as the whole orbit being behind
+    Earth. Call after the limits / box aspect / view angle are final and before
+    ax.legend().
+    """
+    depth3d.apply_depth_order(ax, [depth3d.Occluder(
+        depth3d.Sphere(center=(0.0, 0.0, 0.0), radius=config.R_EARTH), artist=earth)])
 
 
 def _draw_arrow_3d(ax, direction_hat, length, color, label, label_color, label_scale=1.15):
@@ -96,6 +124,19 @@ def _best_burn(results, family, delta_raan_deg=None):
     return n_hat, delta_raan_deg, best
 
 
+def _family_params(baseline, family, delta_raan, best):
+    """Inputs behind a single-family departure chart. These used to be crammed into
+    the title; the title now names the subject and these live in the info box."""
+    return {
+        "departure epoch": baseline.dep_epoch,
+        "parking orbit": f"{config.PARKING_ALTITUDE_KM:.0f} km circular",
+        "plane contains": FAMILY_CONSTRAINT[family],
+        "dRAAN (own minimum)": f"{delta_raan:.0f}°",
+        "best in-plane ΔV": f"{best.injection.delta_v_mag:.3f} km/s",
+        "C3": f"{baseline.C3:.2f} km²/s²",
+    }
+
+
 def draw_families_overview(ax, results):
     """Both families' own optimal planes together in one scene -- makes the
     two plane-family definitions, and how differently they orient
@@ -104,7 +145,7 @@ def draw_families_overview(ax, results):
     v_earth_hat = baseline.v_earth_eq / np.linalg.norm(baseline.v_earth_eq)
     v_inf_hat = baseline.v_inf_dep_eq / np.linalg.norm(baseline.v_inf_dep_eq)
 
-    _draw_earth(ax)
+    earth = _draw_earth(ax)
     _draw_arrow_3d(ax, v_earth_hat, ARROW_LEN_KM, VEC_COLOR,
                     f"v_Earth\n{np.linalg.norm(baseline.v_earth_eq):.2f} km/s", "#B38600")
     _draw_arrow_3d(ax, v_inf_hat, ARROW_LEN_KM, VINF_COLOR,
@@ -128,11 +169,20 @@ def draw_families_overview(ax, results):
     ax.set_xlabel("Earth-equatorial X (km)")
     ax.set_ylabel("Earth-equatorial Y (km)")
     ax.set_zlabel("Earth-equatorial Z (km)")
-    ax.set_title("The two 'polar' plane families, each at its own minimum-dV RAAN")
+    ax.set_title("Equatorial (Earth-Polar) vs Ecliptic (Solar-System-Polar) Departure Planes")
     geo.set_axes_equal_box(ax, VIEW_HALF_EXTENT_KM)
     elev, azim = _default_view(n_hat_ref)
     ax.view_init(elev=elev, azim=azim)
+    _fix_earth_occlusion(ax, earth)
     ax.legend(loc="upper left", fontsize=7)
+    params = {
+        "departure epoch": baseline.dep_epoch,
+        "parking orbit": f"{config.PARKING_ALTITUDE_KM:.0f} km circular",
+        "C3": f"{baseline.C3:.2f} km²/s²",
+        "v∞ (departure)": f"{np.linalg.norm(baseline.v_inf_dep_eq):.3f} km/s",
+    }
+    info_box.add_info_box(ax, ax.figure, "\n".join(f"{k}: {v}" for k, v in params.items()),
+                          mode="on", fontsize=7.5)
 
 
 def draw_departure_3d(ax, results, family):
@@ -140,7 +190,7 @@ def draw_departure_3d(ax, results, family):
     n_hat, delta_raan, best = _best_burn(results, family)
     v_earth_hat = baseline.v_earth_eq / np.linalg.norm(baseline.v_earth_eq)
 
-    _draw_earth(ax)
+    earth = _draw_earth(ax)
     _draw_arrow_3d(ax, v_earth_hat, ARROW_LEN_KM, VEC_COLOR,
                     f"v_Earth\n{np.linalg.norm(baseline.v_earth_eq):.2f} km/s", "#B38600")
 
@@ -180,13 +230,16 @@ def draw_departure_3d(ax, results, family):
     ax.set_xlabel("Earth-equatorial X (km)")
     ax.set_ylabel("Earth-equatorial Y (km)")
     ax.set_zlabel("Earth-equatorial Z (km)")
-    ax.set_title(f"{FAMILY_LABEL[family]}\n"
-                 f"Best burn at its own minimum-dV RAAN (dRAAN={delta_raan:.0f} deg): "
-                 f"{best.injection.delta_v_mag:.3f} km/s")
+    ax.set_title(f"{FAMILY_TITLE[family]} Departure Geometry")
     geo.set_axes_equal_box(ax, VIEW_HALF_EXTENT_KM)
     elev, azim = _default_view(n_hat)
     ax.view_init(elev=elev, azim=azim)
+    _fix_earth_occlusion(ax, earth)
     ax.legend(loc="upper left", fontsize=8)
+    info_box.add_info_box(
+        ax, ax.figure,
+        "\n".join(f"{k}: {v}" for k, v in _family_params(baseline, family, delta_raan, best).items()),
+        mode="on", fontsize=7.5)
 
 
 def draw_departure_topdown(ax, results, family):
@@ -275,13 +328,15 @@ def draw_departure_topdown(ax, results, family):
 
     ax.set_xlabel("In-plane, ~opposite v_Earth's in-plane component (km)")
     ax.set_ylabel("In-plane, perpendicular to that (km)")
-    ax.set_title(f"Face-on to the {family} family's own minimum-dV plane "
-                 f"(dRAAN={delta_raan:.0f} deg)\n"
-                 f"Best-in-plane burn: {best.injection.delta_v_mag:.3f} km/s. Orthographic.")
+    ax.set_title(f"{FAMILY_TITLE[family]} In-Plane Burn Geometry")
     ax.set_xlim(-VIEW_HALF_EXTENT_KM, VIEW_HALF_EXTENT_KM)
     ax.set_ylim(-VIEW_HALF_EXTENT_KM, VIEW_HALF_EXTENT_KM)
     ax.set_aspect("equal")
     ax.legend(loc="upper right", fontsize=7.5)
+    info_box.add_info_box(
+        ax, ax.figure,
+        "\n".join(f"{k}: {v}" for k, v in _family_params(baseline, family, delta_raan, best).items()),
+        mode="on", fontsize=7.5)
 
 
 def figures(results):

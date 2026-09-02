@@ -23,6 +23,9 @@ GM_MARS = 42828.314258067
 R_EARTH = 6371.0  # km, mean radius
 R_MARS = 3389.5  # km, mean radius (source: JPL Mars fact sheet)
 
+# IAU 2012 definition of the astronomical unit (exact). km.
+AU_KM = 1.495978707e8
+
 # J2000 mean obliquity of the ecliptic (IAU 2006), used for the validated
 # equatorial(ICRS)<->ecliptic rotation. degrees.
 OBLIQUITY_J2000_DEG = 23.4392911111
@@ -30,6 +33,16 @@ OBLIQUITY_J2000_DEG = 23.4392911111
 # --- Parking orbit -----------------------------------------------------------
 PARKING_ALTITUDE_KM = 400.0  # circular polar parking orbit altitude
 PARKING_INCLINATION_DEG = 90.0
+
+# Benchmark parking orbit for the "what would a normal mission do?" comparison:
+# a due-east launch from Cape Canaveral. Representative of a standard US
+# interplanetary departure, and deliberately NOT polar.
+STANDARD_PARKING_INCLINATION_DEG = 28.5
+
+# Parking-orbit inclination sweep (0..90 deg covers EVERY possible plane: a plane
+# of inclination i is the same geometric plane as one of 180-i at RAAN+180, and
+# injection.py already scans both traversal senses).
+INCLINATION_SWEEP_STEP_DEG = 2.5
 
 # --- Real Mars transfer window (Jul 2020 - Feb 2021) -------------------------
 # Actual Mars 2020 (Perseverance) launch period per JPL press kit:

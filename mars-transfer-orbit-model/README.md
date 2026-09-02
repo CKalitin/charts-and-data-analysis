@@ -169,6 +169,19 @@ trusting the numbers quoted above, which are a snapshot.)
   minimum marked, and a reference line at ΔRAAN=0 (the plane containing
   `v_Earth` exactly). An info box reports the baseline transfer's parameters
   (C3, v∞, dates) and each family's minimum ΔV and location.
+- **`charts/raan_dv.py`** also emits
+  `outputs/raan/raan_dv_vs_nonpolar_<dep_epoch>.png`: the same sweep with
+  horizontal reference lines for the non-polar parking orbits a normal
+  mission would use. The governing quantity is **DLA**, the declination of
+  the departure `v∞` relative to Earth's equator (+22.85° for this window).
+  A circular parking orbit of inclination `i` can be oriented by choice of
+  RAAN to *contain* `v∞` iff `i >= |DLA|`, and every plane containing `v∞`
+  reaches the same single-impulse floor (3.766 km/s), because the geometry
+  is invariant under rotation about the `v∞` axis. So the floor is **not** a
+  polar result — an ordinary i=28.5° Cape Canaveral parking orbit reaches it
+  exactly, and the whole polar constraint costs only ~18 m/s. Below `|DLA|`
+  no RAAN works and a real plane-change penalty appears: an ecliptic-plane
+  parking orbit pays 5.038 km/s and an equatorial one 6.127 km/s.
 - **`charts/orbit_geometry.py`** — `outputs/geometry/`: Earth-centered 2D/3D
   illustrations of the geometry at each family's own minimum-ΔV RAAN (not a
   sweep visualization — the point is to make the abstract family/RAAN
@@ -189,6 +202,25 @@ trusting the numbers quoted above, which are a snapshot.)
     degrees off 0) `v_Earth` itself has a small, real out-of-plane
     component too, so its projected arrow is a genuine foreshortening,
     labeled explicitly (as is `v∞`'s) rather than hidden.
+
+- **`charts/inclination.py`** — `outputs/geometry/mars_ecliptic_inclination_<arr_epoch>.png`:
+  why the Lambert solve has to be done in 3D. Two panels at two
+  magnifications. The top panel is a **true-scale** edge-on view looking
+  straight down Mars' line of nodes: in that projection the ecliptic
+  collapses to a horizontal line, Mars' orbit plane collapses to a line
+  tilted by exactly its inclination (~1.85°), and both nodes lie along the
+  line of sight so they project onto the Sun. Nothing is exaggerated — the
+  angle measured off the screen is the real one. The bottom panel converts
+  that angle into distance: Mars' height above/below the ecliptic over one
+  Mars year (up to ~8×10⁶ km), with heliocentric latitude (which peaks at
+  exactly the inclination) on the twin axis and the nodes marked. The
+  inclination, RAAN and node geometry come from `elements.from_state()` on
+  the ephemeris state, so the chart is a check on the ephemeris too: it
+  reproduces the published Mars values (i = 1.848°, Ω = 49.5°).
+  Also emitted standalone as
+  `mars_ecliptic_inclination_edge_on_<arr_epoch>.png`: the top panel alone,
+  same geometry at the same true scale, framed with headroom above so the
+  info box has somewhere to sit.
 
 ## References
 

@@ -7,48 +7,50 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import config
+import elements
 import frames
 import kepler
 from viz import render, info_box
 
 
-def _orbit_track(r0, v0, mu, n_points=300):
-    """Sample one full osculating period starting from (r0, v0)."""
-    period = 2 * np.pi * np.sqrt((1 / (2 / np.linalg.norm(r0) - np.linalg.norm(v0) ** 2 / mu)) ** 3 / mu)
-    ts = np.linspace(0, period, n_points)
-    pts = np.array([kepler.propagate(r0, v0, t, mu)[0] for t in ts])
-    return pts
-
-
-def transfer_tracks(baseline):
+def transfer_tracks(baseline, full_transfer_orbit=False):
     """Ecliptic-frame Earth/Mars/transfer tracks for the baseline transfer --
     the shared geometry both trajectory_overview and mcc_trajectory plot, so
-    it's computed in one place."""
+    it's computed in one place.
+
+    With full_transfer_orbit=True the transfer leg is sampled over one full
+    osculating period instead of just the time of flight, so the closed
+    transfer ellipse is drawn rather than the Earth->Mars arc alone."""
     r_earth_ecl = frames.eq_to_ecl(baseline.r_earth_eq)
     v_earth_ecl = frames.eq_to_ecl(baseline.v_earth_eq)
     r_mars_ecl = frames.eq_to_ecl(baseline.r_mars_eq)
     v_mars_ecl = frames.eq_to_ecl(baseline.v_mars_eq)
     v_transfer_dep_ecl = frames.eq_to_ecl(baseline.v_transfer_dep_eq)
 
-    earth_track = _orbit_track(r_earth_ecl, v_earth_ecl, config.GM_SUN)
-    mars_track = _orbit_track(r_mars_ecl, v_mars_ecl, config.GM_SUN)
+    earth_track = elements.orbit_track(r_earth_ecl, v_earth_ecl, config.GM_SUN)
+    mars_track = elements.orbit_track(r_mars_ecl, v_mars_ecl, config.GM_SUN)
 
-    tof_s = baseline.tof_days * 86400.0
-    ts = np.linspace(0, tof_s, 300)
-    transfer_track = np.array([
-        kepler.propagate(r_earth_ecl, v_transfer_dep_ecl, t, config.GM_SUN)[0] for t in ts
-    ])
+    if full_transfer_orbit:
+        transfer_track = elements.orbit_track(r_earth_ecl, v_transfer_dep_ecl, config.GM_SUN)
+    else:
+        tof_s = baseline.tof_days * 86400.0
+        ts = np.linspace(0, tof_s, 300)
+        transfer_track = np.array([
+            kepler.propagate(r_earth_ecl, v_transfer_dep_ecl, t, config.GM_SUN)[0] for t in ts
+        ])
     return r_earth_ecl, r_mars_ecl, earth_track, mars_track, transfer_track
 
 
-def draw(ax, results, title_suffix="", show_info_box=True):
+def draw(ax, results, title_suffix="", show_info_box=True, full_transfer_orbit=False):
     baseline = results.baseline
-    r_earth_ecl, r_mars_ecl, earth_track, mars_track, transfer_track = transfer_tracks(baseline)
+    r_earth_ecl, r_mars_ecl, earth_track, mars_track, transfer_track = transfer_tracks(
+        baseline, full_transfer_orbit=full_transfer_orbit)
 
     ax.plot(earth_track[:, 0], earth_track[:, 1], color="#2775B6", lw=1.2, label="Earth orbit")
     ax.plot(mars_track[:, 0], mars_track[:, 1], color="#C1440E", lw=1.2, label="Mars orbit")
     ax.plot(transfer_track[:, 0], transfer_track[:, 1], color="#3FA34D", lw=2.0,
-            label="Transfer trajectory")
+            label="Transfer orbit (full period)" if full_transfer_orbit
+                  else "Transfer trajectory")
 
     ax.scatter([0], [0], color="#F5B700", s=120, marker="*", zorder=5, label="Sun")
     ax.scatter([r_earth_ecl[0]], [r_earth_ecl[1]], color="#2775B6", s=50, zorder=5,
@@ -58,12 +60,14 @@ def draw(ax, results, title_suffix="", show_info_box=True):
 
     ax.set_xlabel("Ecliptic X (km, heliocentric J2000)")
     ax.set_ylabel("Ecliptic Y (km, heliocentric J2000)")
-    ax.set_title(f"Earth->Mars transfer trajectory, {baseline.tof_days:.0f}-day time of flight\n"
-                 "(ecliptic plan view)" + title_suffix)
+    ax.set_title(("Earth→Mars Transfer Orbit" if full_transfer_orbit
+                  else "Earth→Mars Transfer Trajectory") + title_suffix)
     ax.set_aspect("equal")
     ax.legend(loc="upper left", fontsize=8)
 
     params = {
+        "departure / arrival": f"{baseline.dep_epoch} / {baseline.arr_epoch}",
+        "time of flight": f"{baseline.tof_days:.0f} days",
         "C3": f"{baseline.C3:.2f} km²/s²",
         "departure v∞": f"{np.linalg.norm(baseline.v_inf_dep_eq):.3f} km/s",
         "arrival v∞": f"{np.linalg.norm(baseline.v_inf_arr_eq):.3f} km/s",
@@ -81,7 +85,15 @@ def figures(results):
         fig, ax = render.new_figure(figsize=(9, 9))
         draw(ax, results)
         return fig, config.OUTPUT_ROOT / "trajectory" / f"transfer_overview_{results.baseline.dep_epoch}.png"
-    return [("trajectory_overview", build)]
+
+    def build_full_orbit():
+        fig, ax = render.new_figure(figsize=(9, 9))
+        draw(ax, results, full_transfer_orbit=True)
+        return fig, (config.OUTPUT_ROOT / "trajectory"
+                     / f"transfer_overview_full_orbit_{results.baseline.dep_epoch}.png")
+
+    return [("trajectory_overview", build),
+            ("trajectory_overview_full_orbit", build_full_orbit)]
 
 
 if __name__ == "__main__":

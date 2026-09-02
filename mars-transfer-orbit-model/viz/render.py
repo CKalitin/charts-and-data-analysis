@@ -69,6 +69,19 @@ def new_figure(figsize=None, dpi=None):
     return fig, ax
 
 
+def new_figure_grid(nrows=1, ncols=1, figsize=None, dpi=None, **gridspec_kw):
+    """Fresh Figure + an (nrows x ncols) grid of Axes via the OO API.
+
+    Same contract as new_figure(), for multi-panel charts. Use this rather than
+    calling fig.add_subplot() after new_figure() — that layers a second axes over
+    the first and leaves the orphan showing matplotlib's default 0-1 ticks.
+    """
+    fig = Figure(figsize=figsize or FIGSIZE, dpi=dpi or DPI)
+    FigureCanvasAgg(fig)
+    axes = fig.subplots(nrows, ncols, gridspec_kw=gridspec_kw or None)
+    return fig, axes
+
+
 def save_fig(fig, path: Path | str, dpi: int | None = None,
              compress_level: int | None = None) -> Path:
     """Write `fig` to `path` (parent dirs created). Cheap path: fixed layout, tuned PNG zlib.

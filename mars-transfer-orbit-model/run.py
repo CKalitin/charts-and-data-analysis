@@ -4,10 +4,12 @@ import time
 
 import config
 import derived
-from charts import orbit_geometry, raan_dv, trajectory_overview
+from charts import (inclination, orbit_geometry, parking_inclination, raan_dv,
+                    trajectory_overview)
 from viz import render
 
-CHART_MODULES = [trajectory_overview, raan_dv, orbit_geometry]
+CHART_MODULES = [trajectory_overview, raan_dv, parking_inclination, orbit_geometry,
+                 inclination]
 
 
 def main():
