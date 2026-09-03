@@ -109,6 +109,7 @@ def main() -> None:
     lcsw = derived.load_capex_sweep(grid)
     lcsw_lcoe = derived.load_capex_sweep_lcoe(grid)
     lplane = derived.load_plane(grid)
+    lplane_budget = derived.load_plane_budget(grid)
     sf_sweeps = [derived.solar_fraction_sweep(grid, T)
                  for T in cfg.SOLAR_FRACTION_TOTAL_UNITS]
 
@@ -127,6 +128,7 @@ def main() -> None:
         *daily_timeseries_chart.figures_daily(data, grid),
         *utilization_vs_load_capex.figures(lcsw, lcsw_lcoe, grid),
         *load_plane_chart.figures(lplane, grid),
+        *load_plane_chart.figures_budget(lplane_budget, grid),
         *income_profiles_chart.figures(lplane, grid),
         *load_capex_profiles_chart.figures(lplane, grid),
         *solar_fraction_chart.figures(sf_sweeps, grid),

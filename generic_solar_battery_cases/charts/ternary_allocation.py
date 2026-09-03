@@ -1,22 +1,24 @@
-"""Ternary allocation — how to split a FIXED $ budget between load, solar,
-and battery capex.
+"""Ternary allocation — how to split a FIXED $/yr budget between load, solar,
+and battery spend.
 
 Every other chart in this project asks "given a load, what's the optimal
 hardware?" (an argmax). This one asks a different question: given a constant
-number of dollars, what's the best 3-way SPLIT of that budget across load /
-solar / battery capex? Each point in the triangle is one such split — it
-directly fixes a build (L, S, B), with no optimizer choosing among builds.
-The heatmap is therefore the RESULTANT utilization/profit that split
-produces, not an optimal one.
+annual dollar rate, what's the best 3-way SPLIT of that budget across load /
+solar / battery spend? Each point in the triangle is one such split — it
+directly fixes a build (L, S, B) via the ANNUALIZED $/(unit·yr) cost of each
+component (matching the $/yr budget's units), with no optimizer choosing
+among builds. The heatmap is therefore the RESULTANT utilization/profit that
+split produces, not an optimal one.
 
 Layout: 100% load at the top vertex ("load on the bottom" — read via
 horizontal gridlines), 100% solar at bottom-left, 100% battery at
 bottom-right.
 
-Total budget is fixed at config.TERNARY_TOTAL_BUDGET across every case, so
-the two cases are directly comparable — only the load's own capex and income
-per kWh change between them (see config.TERNARY_CASES). Solar/battery
-$/unit costs stay at project defaults in every case.
+Total budget is fixed at config.TERNARY_TOTAL_BUDGET ($/yr) across every
+case, so the two cases are directly comparable — only the load's own
+annualized cost and income per kWh change between them (see
+config.TERNARY_CASES). Solar/battery $/(unit·yr) costs stay at project
+defaults in every case.
 """
 
 from __future__ import annotations
@@ -109,7 +111,11 @@ def _draw_ternary_frame(ax) -> None:
 # Draw functions
 # --------------------------------------------------------------------------- #
 def draw_utilization(ax, ta: derived.TernaryAllocation, *, show_contours: bool = True):
-    """Resultant (not optimized) utilization at every budget split."""
+    """Resultant (not optimized) utilization at every budget split. The
+    profit-optimal split (same point marked on the profit/LVOE panels) is
+    marked here too, labeled with ITS utilization — utilization is resultant,
+    not optimized, so the profit-best point isn't necessarily the highest
+    utilization on the triangle."""
     x, y = _to_xy(ta.f_load, ta.f_solar, ta.f_battery)
     z = ta.utilization * 100.0
     triang = mtri.Triangulation(x, y)
@@ -121,6 +127,14 @@ def draw_utilization(ax, ta: derived.TernaryAllocation, *, show_contours: bool =
         cs = ax.tricontour(triang, z, levels=levels, colors="black",
                            linewidths=0.8, alpha=0.85, zorder=3)
         ax.clabel(cs, fmt=lambda v: f"{v:.3g}%", fontsize=7.5, inline=True, colors="black")
+
+    best = int(np.nanargmax(ta.profit_per_yr))
+    xb, yb = float(x[best]), float(y[best])
+    ax.scatter([xb], [yb], s=90, marker="*", color="white", edgecolor="black",
+              linewidth=0.8, zorder=5,
+              label=(f"Best (max profit): {ta.f_load[best]:.0%} load / {ta.f_solar[best]:.0%} solar / "
+                     f"{ta.f_battery[best]:.0%} battery  ({z[best]:.3g}% util)"))
+    ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.02), fontsize=7.5, framealpha=0.85)
 
     _draw_ternary_frame(ax)
     ax.set_title("Resultant utilization — every 3-way budget split")
@@ -149,13 +163,26 @@ def _draw_diverging_metric(ax, ta: derived.TernaryAllocation, z: np.ndarray, *,
     p_lo, p_hi = (float(v) for v in np.nanpercentile(z, [2.0, 98.0]))
 
     if crosses_zero:
-        # Genuine sign change: center the diverging map at the true breakeven
-        # so its visual midpoint means something.
-        vmax = max(abs(p_lo), abs(p_hi)) or 1.0
-        norm = mcolors.TwoSlopeNorm(vmin=-vmax, vcenter=0.0, vmax=vmax)
-        levels = np.linspace(-vmax, vmax, 41)
+        # Genuine sign change, but DON'T force a symmetric +/-max(|p_lo|,|p_hi|)
+        # range (wastes span mirroring a magnitude the minority side never
+        # reaches, crushing the majority side into a handful of colormap
+        # steps — a near-solid-green triangle even though profit genuinely
+        # ranges from ~$0 to ~$500k) and DON'T use TwoSlopeNorm even with
+        # asymmetric bounds (it always puts the zero-crossing at the exact
+        # PIXEL midpoint regardless of how asymmetric the value ranges either
+        # side of it are — e.g. lo=-0.02, hi=0.11 still gets split 50/50 by
+        # pixels, so the narrow negative side is stretched ~5x relative to
+        # the positive side, and the color-per-dollar rate visibly jumps at
+        # the crossing — a "kink" that reads as a non-smooth band). A plain
+        # linear map over the data's own [lo, hi] has ONE constant rate
+        # throughout — genuinely smooth — and RdYlGn still reads red/yellow/
+        # green at whatever fraction of [lo, hi] zero actually falls; the
+        # explicit black "breakeven" contour below marks it exactly either way.
+        lo = min(p_lo, -1e-6 * max(abs(p_hi), 1.0))
+        hi = max(p_hi, 1e-6 * max(abs(p_lo), 1.0))
+        norm = mcolors.Normalize(vmin=lo, vmax=hi)
+        levels = np.linspace(lo, hi, 41)
         cmap = "RdYlGn"
-        lo, hi = -vmax, vmax
     else:
         # No sign change: forcing a symmetric +/-vmax range around 0 would waste
         # the unused half of the colorbar on the sign that never occurs, crushing
@@ -260,15 +287,13 @@ def _params(ta: derived.TernaryAllocation, grid: model.ServedGrid, case_name: st
         "Case": case_name,
         "Site": common.site_label(),
         "Capacity factor": f"{grid.capacity_factor:.0%}",
-        "Total budget": common._dollar_fmt(ta.total_budget),
+        "Total budget": f"{common._dollar_fmt(ta.total_budget)}/yr",
         "Load income": f"${ta.income_per_kwh:.3g}/kWh",
-        "Load capex": f"${ta.load_capex_per_kw:,.0f}/kW  ({ta.load_amortization_years:g} yr)",
-        "Solar cost": f"${ta.solar_capex_per_kw:.0f}/kW  ({ta.amortization_years:g} yr)",
-        "Battery cost": f"${ta.batt_capex_per_kwh:.0f}/kWh  ({ta.amortization_years:g} yr)",
+        "Load cost": f"${ta.load_cost_ann:.3g}/kW·yr  ({ta.load_amortization_years:g} yr amort.)",
+        "Solar cost": f"${ta.solar_cost_ann:.3g}/kW·yr  ({ta.amortization_years:g} yr amort.)",
+        "Battery cost": f"${ta.batt_cost_ann:.3g}/kWh·yr  ({ta.amortization_years:g} yr amort.)",
         "Round-trip eff.": f"{cfg.ROUND_TRIP_EFFICIENCY:.0%}",
     }
-    if ta.off_grid_fraction > 0.005:
-        p["Off-grid (clipped)"] = f"{ta.off_grid_fraction:.0%} of splits"
     return p
 
 
@@ -284,7 +309,7 @@ def figures(ta: derived.TernaryAllocation, grid: model.ServedGrid, case_name: st
         fig, ax = render.new_figure(figsize=(9, 8))
         mesh = draw_utilization(ax, ta, show_contours=True)
         fig.colorbar(mesh, ax=ax, pad=0.02, shrink=0.85).set_label(axis_label("utilization_pct_resultant"))
-        common.info(ax, fig, params, mode="on")
+        common.info(ax, fig, params, mode="off", off_side="left")
         common.watermark(ax, fig)
         return fig, out_dir / f"utilization_contours_{suffix}.png"
 
@@ -292,7 +317,7 @@ def figures(ta: derived.TernaryAllocation, grid: model.ServedGrid, case_name: st
         fig, ax = render.new_figure(figsize=(9, 8))
         mesh = draw_utilization(ax, ta, show_contours=False)
         fig.colorbar(mesh, ax=ax, pad=0.02, shrink=0.85).set_label(axis_label("utilization_pct_resultant"))
-        common.info(ax, fig, params, mode="on")
+        common.info(ax, fig, params, mode="off", off_side="left")
         common.watermark(ax, fig)
         return fig, out_dir / f"utilization_no_contours_{suffix}.png"
 
@@ -302,7 +327,7 @@ def figures(ta: derived.TernaryAllocation, grid: model.ServedGrid, case_name: st
         cbar = fig.colorbar(mesh, ax=ax, pad=0.02, shrink=0.85)
         cbar.set_label(axis_label("profit_per_yr_resultant"))
         common.dollar_colorbar(cbar)
-        common.info(ax, fig, params, mode="on")
+        common.info(ax, fig, params, mode="off", off_side="left")
         common.watermark(ax, fig)
         return fig, out_dir / f"profit_contours_{suffix}.png"
 
@@ -312,7 +337,7 @@ def figures(ta: derived.TernaryAllocation, grid: model.ServedGrid, case_name: st
         cbar = fig.colorbar(mesh, ax=ax, pad=0.02, shrink=0.85)
         cbar.set_label(axis_label("profit_per_yr_resultant"))
         common.dollar_colorbar(cbar)
-        common.info(ax, fig, params, mode="on")
+        common.info(ax, fig, params, mode="off", off_side="left")
         common.watermark(ax, fig)
         return fig, out_dir / f"profit_no_contours_{suffix}.png"
 
@@ -322,7 +347,7 @@ def figures(ta: derived.TernaryAllocation, grid: model.ServedGrid, case_name: st
         cbar = fig.colorbar(mesh, ax=ax, pad=0.02, shrink=0.85)
         cbar.set_label(axis_label("lvoe"))
         _lvoe_colorbar(cbar)
-        common.info(ax, fig, params, mode="on")
+        common.info(ax, fig, params, mode="off", off_side="left")
         common.watermark(ax, fig)
         return fig, out_dir / f"lvoe_contours_{suffix}.png"
 
@@ -332,7 +357,7 @@ def figures(ta: derived.TernaryAllocation, grid: model.ServedGrid, case_name: st
         cbar = fig.colorbar(mesh, ax=ax, pad=0.02, shrink=0.85)
         cbar.set_label(axis_label("lvoe"))
         _lvoe_colorbar(cbar)
-        common.info(ax, fig, params, mode="on")
+        common.info(ax, fig, params, mode="off", off_side="left")
         common.watermark(ax, fig)
         return fig, out_dir / f"lvoe_no_contours_{suffix}.png"
 
@@ -348,7 +373,9 @@ def figures(ta: derived.TernaryAllocation, grid: model.ServedGrid, case_name: st
         cbar3 = fig.colorbar(mesh3, ax=ax3, pad=0.02, shrink=0.8)
         cbar3.set_label(axis_label("lvoe"))
         _lvoe_colorbar(cbar3)
-        common.info(ax3, fig, params, mode="on")
+        # "left" (used by the single-panel figures) would collide with cbar2,
+        # which sits immediately to ax3's left in this 3-panel layout.
+        common.info(ax3, fig, params, mode="off", off_side="bottom")
         common.watermark(ax1, fig)
         return fig
 
@@ -376,7 +403,7 @@ def all_cases_figures(grid: model.ServedGrid):
     for case_name, (income, load_capex, load_amort) in cfg.TERNARY_CASES.items():
         ta = derived.ternary_allocation(
             grid, total_budget=cfg.TERNARY_TOTAL_BUDGET, income_per_kwh=income,
-            load_capex_per_kw=load_capex, load_amortization_years=load_amort,
+            load_cost_ann=load_capex / load_amort, load_amortization_years=load_amort,
         )
         if ta.off_grid_fraction > 0.005:
             print(f"  [{case_name}] {ta.off_grid_fraction:.0%} of splits exceed the "
