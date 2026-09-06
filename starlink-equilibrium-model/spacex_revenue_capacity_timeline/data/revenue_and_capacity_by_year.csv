@@ -1,0 +1,10 @@
+year,starlink_revenue_usd_millions,revenue_source,year_end_cumulative_satellites,year_end_cumulative_capacity_gbps,year_end_equivalent_v3_satellites
+2018,,,2,0.0,0.0
+2019,,,122,1200.0,1.17
+2020,,,955,17860.0,17.44
+2021,222,press_leak (WSJ),1944,37640.0,36.76
+2022,1400-1900,analyst_estimate (range: Information $1.4B vs Payload $1.9B),3666,72080.0,70.39
+2023,3869,official S-1,5650,182896.0,178.61
+2024,7599,official S-1,7612,371248.0,362.55
+2025,11387,official S-1,10781,675472.0,659.64
+2026,,,12868,875824.0,855.3

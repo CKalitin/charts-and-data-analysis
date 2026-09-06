@@ -56,6 +56,7 @@ def fig_cost_per_gbps_by_generation():
     ax.set_ylabel("Cost to orbit per Gbps, USD (log scale)")
     ax.set_title("Starlink cost-to-orbit per Gbps, by generation (mfg + launch cost)")
     ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda v, _: f"${v:,.0f}"))
+    ax.yaxis.set_minor_formatter(mticker.NullFormatter())
     ax.legend(loc="upper right", fontsize=9)
 
     info_box.add_info_box(
@@ -90,6 +91,7 @@ def fig_cost_per_gbps_trend(rows):
     ax.set_ylabel("Satellite bandwidth cost, $/Gbps (log scale)")
     ax.set_title("Satellite bandwidth cost, $/Gbps vs. year")
     ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda v, _: f"${v:,.0f}"))
+    ax.yaxis.set_minor_formatter(mticker.NullFormatter())
     ax.legend(loc="upper right", fontsize=9)
 
     for d, c in zip(dates, costs):

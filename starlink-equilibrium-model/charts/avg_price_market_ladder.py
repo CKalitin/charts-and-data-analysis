@@ -40,12 +40,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import capacity_density_model as cdm
 import cost_per_gbps_model as cgm
-import country_service_model as csm
-import country_tam_full_model as ctmf
-import country_tam_model as ctm
+import tam_model as tm
 import equilibrium_model as em
-import population_density_grid as pdg
-import serviceable_customers_model as scm
 from market_ladder import _draw_cost_lines, _human
 from viz import render
 
@@ -134,41 +130,27 @@ def fig_avg_price_linear(sat_counts, tam, econ, model_key):
 
 def main():
     econ = cgm.build_generation_economics()
-
-    grid = pdg.load_or_build_grid()
-    lat_centers, dens_centers, hist = scm.density_area_histogram_by_latitude(grid)
-    telecom_rows = ctm.load_telecom_rows()
-    household_size = ctm.load_household_size()
-    iso3_list = [r["iso3"] for r in telecom_rows]
-
-    print("loading per-country population-by-latitude (one-time, ~217 rasters)...")
-    pop_by_lat = csm.load_all_country_population_by_latitude(iso3_list, verbose=True)
-
-    args = (telecom_rows, household_size, pop_by_lat, lat_centers, hist, dens_centers)
-
-    sweeps = {
-        "unconnected": (ctm.sweep_total_tam, SAT_COUNTS_LOG, SAT_COUNTS_LINEAR),
-        "full": (ctmf.sweep_total_tam_full, SAT_COUNTS_LOG, SAT_COUNTS_LINEAR),
-    }
+    telecom_rows, household_size, tile, demand, pop_by_tile = tm.load_inputs(verbose=True)
+    args = (telecom_rows, household_size, pop_by_tile, tile, demand)
 
     n_written = 0
-    for model_key, (sweep_fn, sats_log, sats_linear) in sweeps.items():
-        tam_log = sweep_fn(sats_log, *args)
-        fig, path = fig_avg_price_log(sats_log, tam_log, econ, model_key)
+    for model_key in ("unconnected", "full"):
+        tam_log = tm.total_tam(tm.sweep_country_tam(SAT_COUNTS_LOG, *args, mode=model_key, verbose=True))
+        fig, path = fig_avg_price_log(SAT_COUNTS_LOG, tam_log, econ, model_key)
         render.save_fig(fig, path)
         print(f"  wrote {path.relative_to(Path(__file__).resolve().parent.parent)}")
         n_written += 1
 
-        tam_linear = sweep_fn(sats_linear, *args)
-        fig, path = fig_avg_price_linear(sats_linear, tam_linear, econ, model_key)
+        tam_linear = tm.total_tam(tm.sweep_country_tam(SAT_COUNTS_LINEAR, *args, mode=model_key, verbose=True))
+        fig, path = fig_avg_price_linear(SAT_COUNTS_LINEAR, tam_linear, econ, model_key)
         render.save_fig(fig, path)
         print(f"  wrote {path.relative_to(Path(__file__).resolve().parent.parent)}")
         n_written += 1
 
-        avg_price_log = _avg_price_per_gbps_yr(tam_log, sats_log)
+        avg_price_log = _avg_price_per_gbps_yr(tam_log, SAT_COUNTS_LOG)
         i_min, i_max = np.argmin(avg_price_log), np.argmax(avg_price_log)
-        print(f"  [{model_key}] avg $/Gbps/yr range: ${avg_price_log[i_min]:,.0f} (N={sats_log[i_min]:,.0f}) "
-              f"to ${avg_price_log[i_max]:,.0f} (N={sats_log[i_max]:,.0f})")
+        print(f"  [{model_key}] avg $/Gbps/yr range: ${avg_price_log[i_min]:,.0f} (N={SAT_COUNTS_LOG[i_min]:,.0f}) "
+              f"to ${avg_price_log[i_max]:,.0f} (N={SAT_COUNTS_LOG[i_max]:,.0f})")
 
     print(f"wrote {n_written} charts")
 

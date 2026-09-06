@@ -1,0 +1,425 @@
+no,mission,sat_ver,date_raw,deployed,w_dtc,working,outcome
+–,Tintin,v0.1,"22 February 2018, 14:17",2,,0,Success
+1,v0.9,v0.9,"24 May 2019, 02:30",60,,0,Success
+2,Launch 1,v1,"11 November 2019, 14:56",60,,43,Success
+3,Launch 2,v1,"7 January 2020, 02:19:21",60,,40,Success
+4,Launch 3,v1,"29 January 2020, 14:06",60,,48,Success
+5,Launch 4,v1,"17 February 2020, 15:05",60,,46,Success
+6,Launch 5,v1,"18 March 2020, 12:16:39",60,,54,Success
+7,Launch 6,v1,"22 April 2020, 19:30:30",60,,49,Success
+8,Launch 7,v1,"4 June 2020, 01:25:00",60,,53,Success
+9,Launch 8,v1,"13 June 2020, 09:21:18",58,,50,Success
+10,Launch 9,v1,"7 August 2020, 05:12:05",57,,54,Success
+11,Launch 10,v1,"18 August 2020, 14:31:16",58,,53,Success
+12,Launch 11,v1,"3 September 2020, 12:46:14",60,,50,Success
+13,Launch 12,v1,"6 October 2020, 11:29:34",60,,50,Success
+14,Launch 13,v1,"18 October 2020, 12:25:57",60,,45,Success
+15,Launch 14,v1,"24 October 2020, 15:31:34",60,,43,Success
+16,Launch 15,v1,"25 November 2020, 02:13:12",60,,40,Success
+17,Launch 16,v1,"20 January 2021, 13:02:00",60,,57,Success
+–,Tr-1,v1,"24 January 2021, 15:00:00",10,,0,Success
+18,Launch 18,v1,"4 February 2021, 06:19:00",60,,56,Success
+19,Launch 19,v1,"16 February 2021, 03:59:37",60,,57,Success
+20,Launch 17,v1,"4 March 2021, 08:24:54",60,,54,Success
+21,Launch 20,v1,"11 March 2021, 08:13:29",60,,59,Success
+22,Launch 21,v1,"14 March 2021, 10:01:26",60,,54,Success
+23,Launch 22,v1,"24 March 2021, 08:28:24",60,,43,Success
+24,Launch 23,v1,"7 April 2021, 16:34:18",60,,60,Success
+25,Launch 24,v1,"29 April 2021, 03:44:00",60,,60,Success
+26,Launch 25,v1,"4 May 2021, 19:01",60,,60,Success
+27,Launch 27,v1,"9 May 2021, 06:42",60,,58,Success
+28,Launch 26,v1,"15 May 2021, 22:56",52,,49,Success
+29,Launch 28,v1,"26 May 2021, 18:59",60,,60,Success
+–,Tr-2,v1.5,"30 June 2021, 19:31",3,,3,Success
+30,Group 2-1,v1.5,"14 September 2021, 03:55:50",51,,51,Success
+31,Group 4-1,v1.5,"13 November 2021, 11:19:30",53,,52,Success
+32,Group 4-3,v1.5,"2 December 2021, 23:12:15",48,,48,Success
+33,Group 4-4,v1.5,"18 December 2021, 12:41:40",52,,49,Success
+34,Group 4-5,v1.5,"6 January 2022, 21:49:10",49,,49,Success
+35,Group 4-6,v1.5,"19 January 2022, 02:02:40",49,,49,Success
+36,Group 4-7,v1.5,"3 February 2022, 18:13:20",49,,10,Success
+37,Group 4-8,v1.5,"21 February 2022, 14:44:20",46,,46,Success
+38,Group 4-11,v1.5,"25 February 2022, 17:12:10",50,,48,Success
+39,Group 4-9,v1.5,"3 March 2022, 14:25",47,,47,Success
+40,Group 4-10,v1.5,"9 March 2022, 13:45:10",48,,47,Success
+41,Group 4-12,v1.5,"19 March 2022, 04:42:30",53,,47,Success
+42,Group 4-14,v1.5,"21 April 2022, 17:51:40",53,,51,Success
+43,Group 4-16,v1.5,"29 April 2022, 21:27:10",53,,52,Success
+44,Group 4-17,v1.5,"6 May 2022, 09:42",53,,53,Success
+45,Group 4-13,v1.5,"13 May 2022, 22:07:50",53,,53,Success
+46,Group 4-15,v1.5,"14 May 2022, 20:40:50",53,,53,Success
+47,Group 4-18,v1.5,"18 May 2022, 10:59:40",53,,53,Success
+48,Group 4-19,v1.5,"17 June 2022, 16:09:20",53,,53,Success
+49,Group 4-21,v1.5,"7 July 2022, 13:11:10",53,,52,Success
+50,Group 3-1,v1.5,"11 July 2022, 01:39:40",46,,46,Success
+51,Group 4-22,v1.5,"17 July 2022, 14:20",53,,53,Success
+52,Group 3-2,v1.5,"22 July 2022, 17:39:40",46,,46,Success
+53,Group 4-25,v1.5,"24 July 2022, 13:38:20",53,,51,Success
+54,Group 4-26,v1.5,"10 August 2022, 02:14:40",52,,51,Success
+55,Group 3-3,v1.5,"12 August 2022, 21:40:20",46,,46,Success
+56,Group 4-27,v1.5,"19 August 2022, 19:21:20",53,,53,Success
+57,Group 4-23,v1.5,"28 August 2022, 03:41",54,,51,Success
+58,Group 3-4,v1.5,"31 August 2022, 05:40:10",46,,46,Success
+59,Group 4-20,v1.5,"5 September 2022, 02:09:40",51,,46,Success
+60,Group 4-2,v1.5,"11 September 2022, 01:20",34,,31,Success
+61,Group 4-34,v1.5,"19 September 2022, 00:18:40",54,,53,Success
+62,Group 4-35,v1.5,"24 September 2022, 23:32:10",52,,51,Success
+63,Group 4-29,v1.5,"5 October 2022, 23:10:30",52,,52,Success
+64,Group 4-36,v1.5,"20 October 2022, 14:50:40",54,,53,Success
+65,Group 4-31,v1.5,"28 October 2022, 01:14",53,,52,Success
+66,Group 4-37,v1.5,"17 December 2022, 21:32",54,,54,Success
+67,Group 5-1,v1.5,"28 December 2022, 9:34",54,,54,Success
+68,Group 2-4,v1.5,"19 January 2023, 15:43",51,,50,Success
+69,Group 5-2,v1.5,"26 January 2023, 9:32",56,,55,Success
+70,Group 2-6,v1.5,"31 January 2023, 16:15",49,,48,Success
+71,Group 5-3,v1.5,"2 February 2023, 7:58",53,,51,Success
+72,Group 5-4,v1.5,"12 February 2023, 5:10",55,,54,Success
+73,Group 2-5,v1.5,"17 February 2023, 19:12",51,,50,Success
+74,Group 6-1,v2 mini,"27 February 2023, 23:13",21,,12,Success
+75,Group 2-7,v1.5,"3 March 2023, 18:38",51,,51,Success
+76,Group 2-8,v1.5,"17 March 2023, 19:26",52,,52,Success
+77,Group 5-5,v1.5,"24 March 2023, 15:43",56,,56,Success
+78,Group 5-10,v1.5,"29 March 2023, 20:01",56,,56,Success
+79,Group 6-2,v2 mini,"19 April 2023, 14:31",21,,20,Success
+80,Group 3-5,v1.5,"27 April 2023, 13:40",46,,46,Success
+81,Group 5-6,v1.5,"4 May 2023, 07:31",56,,55,Success
+82,Group 2-9,v1.5,"10 May 2023, 20:09",51,,51,Success
+83,Group 5-9,v1.5,"14 May 2023, 05:03",56,,55,Success
+84,Group 6-3,v2 mini,"19 May 2023, 06:19",22,,21,Success
+85,Group 2-10,v1.5,"31 May 2023, 06:02",52,,52,Success
+86,Group 6-4,v2 mini,"4 June 2023, 12:20",22,,19,Success
+87,Group 5-11,v1.5,"12 June 2023, 07:10",52,,52,Success
+88,Group 5-7,v1.5,"22 June 2023, 07:19",47,,47,Success
+89,Group 5-12,v1.5,"23 June 2023, 15:35",56,,56,Success
+90,Group 5-13,v1.5,"7 July 2023, 19:29",48,,47,Success
+91,Group 6-5,v2 mini,"10 July 2023, 03:58",22,,22,Success
+92,Group 5-15,v1.5,"16 July 2023, 03:50",54,,54,Success
+93,Group 6-15,v2 mini,"19 July 2023, 04:09",15,,15,Success
+94,Group 6-6,v2 mini,"24 July 2023, 00:50",22,,22,Success
+95,Group 6-7,v2 mini,"28 July 2023, 04:01",22,,20,Success
+96,Group 6-8,v2 mini,"7 August 2023, 02:41",22,,22,Success
+97,Group 6-20,v2 mini,"8 August 2023, 03:57",15,,15,Success
+98,Group 6-9,v2 mini,"11 August 2023, 05:17",22,,21,Success
+99,Group 6-10,v2 mini,"17 August 2023, 03:36",22,,22,Success
+100,Group 7-1,v2 mini,"22 August 2023, 09:37",21,,21,Success
+101,Group 6-11,v2 mini,"27 August 2023, 01:05",22,,21,Success
+102,Group 6-13,v2 mini,"1 September 2023, 02:21",22,,22,Success
+103,Group 6-12,v2 mini,"4 September 2023, 02:47",21,,21,Success
+104,Group 6-14,v2 mini,"9 September 2023, 03:12",22,,22,Success
+105,Group 7-2,v2 mini,"12 September 2023, 06:57",21,,21,Success
+106,Group 6-16,v2 mini,"16 September 2023, 03:38",22,,22,Success
+107,Group 6-17,v2 mini,"20 September 2023, 03:38",22,,22,Success
+108,Group 6-18,v2 mini,"24 September 2023, 03:38",22,,21,Success
+109,Group 7-3,v2 mini,"25 September 2023, 08:48",21,,21,Success
+110,Group 6-19,v2 mini,"30 September 2023, 02:00",22,,22,Success
+111,Group 6-21,v2 mini,"5 October 2023, 05:36",22,,22,Success
+112,Group 7-4,v2 mini,"9 October 2023, 07:23",21,,21,Success
+113,Group 6-22,v2 mini,"13 October 2023, 23:01",22,,22,Success
+114,Group 6-23,v2 mini,"18 October 2023, 00:39",22,,22,Success
+115,Group 7-5,v2 mini,"21 October 2023, 08:23",21,,21,Success
+116,Group 6-24,v2 mini,"22 October 2023, 02:17",23,,23,Success
+117,Group 7-6,v2 mini,"29 October 2023, 09:00",22,,22,Success
+118,Group 6-25,v2 mini,"30 October 2023, 23:20",23,,23,Success
+119,Group 6-26,v2 mini,"4 November 2023, 00:37",23,,23,Success
+120,Group 6-27,v2 mini,"8 November 2023, 05:05",23,,23,Success
+121,Group 6-28,v2 mini,"18 November 2023, 05:05",23,,23,Success
+122,Group 7-7,v2 mini,"20 November 2023, 10:30",22,,22,Success
+123,Group 6-29,v2 mini,"22 November 2023, 07:47",23,,23,Success
+124,Group 6-30,v2 mini,"28 November 2023, 04:20",23,,23,Success
+125,Group 6-31,v2 mini,"3 December 2023, 04:00",23,,23,Success
+126,Group 6-33,v2 mini,"7 December 2023, 05:07",23,,23,Success
+127,Group 7-8,v2 mini,"8 December 2023, 08:03",22,,22,Success
+128,Group 6-34,v2 mini,"19 December 2023, 04:00",23,,23,Success
+129,Group 6-32,v2 mini,"23 December 2023, 04:00",23,,22,Success
+130,Group 6-36,v2 mini,"29 December 2023, 04:00",23,,22,Success
+131,Group 7-9,v2 mini,"3 January 2024, 03:44",21,6,21,Success
+132,Group 6-35,v2 mini,"7 January 2024, 22:35",23,,23,Success
+133,Group 7-10,v2 mini,"14 January 2024, 08:59",22,,22,Success
+134,Group 6-37,v2 mini,"15 January 2024, 01:52",23,,23,Success
+135,Group 7-11,v2 mini,"24 January 2024, 00:35",22,,22,Success
+136,Group 6-38,v2 mini,"29 January 2024, 01:10",23,,23,Success
+137,Group 7-12,v2 mini,"29 January 2024, 05:02",22,,22,Success
+138,Group 7-13,v2 mini,"10 February 2024, 00:34",22,,21,Success
+139,Group 7-14,v2 mini,"15 February 2024, 21:34",22,,22,Success
+140,Group 7-15,v2 mini,"23 February 2024, 04:11",22,,22,Success
+141,Group 6-39,v2 mini,"25 February 2024, 22:06",24,,24,Success
+142,Group 6-40,v2 mini,"29 February 2024, 15:30",23,,22,Success
+143,Group 6-41,v2 mini,"4 March 2024, 23:54",23,,23,Success
+144,Group 6-43,v2 mini,"11 March 2024, 00:03",23,,23,Success
+145,Group 7-17,v2 mini,"11 March 2024, 04:09",23,,23,Success
+146,Group 6-44,v2 mini,"16 March 2024, 00:21",23,,23,Success
+147,Group 7-16,v2 mini,"19 March 2024, 02:28",20,,20,Success
+148,Group 6-42,v2 mini,"24 March 2024, 03:09",23,,23,Success
+149,Group 6-46,v2 mini,"25 March 2024, 23:42",23,,23,Success
+150,Group 6-45,v2 mini,"31 March 2024, 01:30",23,,23,Success
+151,Group 7-18,v2 mini,"2 April 2024, 02:30",22,,22,Success
+152,Group 6-47,v2 mini,"5 April 2024, 09:12",23,,23,Success
+153,Group 8-1,v2 mini,"7 April 2024, 02:25",21,6,21,Success
+154,Group 6-48,v2 mini,"10 April 2024, 04:40",23,,23,Success
+155,Group 6-49,v2 mini,"13 April 2024, 01:40",23,,23,Success
+156,Group 6-51,v2 mini,"17 April 2024, 21:24",23,,23,Success
+157,Group 6-52,v2 mini,"18 April 2024, 22:40",23,,23,Success
+158,Group 6-53,v2 mini,"23 April 2024, 22:17",23,,23,Success
+159,Group 6-54,v2 mini,"28 April 2024, 21:50",23,,23,Success
+160,Group 6-55,v2 mini,"3 May 2024, 01:49",23,,23,Success
+161,Group 6-57,v2 mini,"6 May 2024, 18:14",23,,23,Success
+162,Group 6-56,v2 mini,"8 May 2024, 18:42",23,,23,Success
+163,Group 8-2,v2 mini,"10 May 2024, 04:30",20,13,20,Success
+164,Group 6-58,v2 mini,"13 May 2024, 00:53",23,,23,Success
+165,Group 8-7,v2 mini,"14 May 2024, 18:39",20,13,20,Success
+166,Group 6-59,v2 mini,"18 May 2024, 00:32",23,,23,Success
+167,Group 6-62,v2 mini,"23 May 2024, 02:33",23,,23,Success
+168,Group 6-63,v2 mini,"24 May 2024, 02:45",23,,23,Success
+169,Group 6-60,v2 mini,"28 May 2024, 14:24",23,,23,Success
+170,Group 6-64,v2 mini,"1 June 2024, 02:37",23,,23,Success
+171,Group 8-5,v2 mini,"5 June 2024, 02:16",20,13,20,Success
+172,Group 10-1,v2 mini,"8 June 2024, 01:56",22,,22,Success
+173,Group 8-8,v2 mini,"8 June 2024, 12:58",20,13,20,Success
+174,Group 9-1,v2 mini,"19 June 2024, 03:40",20,13,20,Success
+175,Group 10-2,v2 mini,"23 June 2024, 17:15",22,,22,Success
+176,Group 9-2,v2 mini,"24 June 2024, 03:47",20,13,20,Success
+177,Group 10-3,v2 mini,"27 June 2024, 11:14",23,,23,Success
+178,Group 8-9,v2 mini,"3 July 2024, 08:55",20,13,20,Success
+179,Group 9-3,v2 mini,"12 July 2024, 02:39",20,13,0,Failure
+180,Group 10-9,v2 mini,"27 July 2024, 05:45",23,,23,Success
+181,Group 10-4,v2 mini,"28 July 2024, 04:17",23,,23,Success
+182,Group 9-4,v2 mini,"28 July 2024, 07:24",21,13,21,Success
+183,Group 10-6,v2 mini,"2 August 2024, 05:01",23,,23,Success
+184,Group 11-1,v2 mini,"4 August 2024, 07:24",23,,23,Success
+185,Group 8-3,v2 mini,"10 August 2024, 12:50",21,13,21,Success
+186,Group 10-7,v2 mini,"12 August 2024, 10:37",23,,23,Success
+187,Group 10-5,v2 mini,"20 August 2024, 13:20",22,,22,Success
+188,Group 8-6,v2 mini,"28 August 2024, 06:54",21,13,21,Success
+189,Group 8-10,v2 mini,"31 August 2024, 07:43",21,13,21,Success
+190,Group 9-5,v2 mini,"31 August 2024, 08:48",21,13,21,Success
+191,Group 8-11,v2 mini,"5 September 2024, 15:33",21,13,21,Success
+192,Group 9-6,v2 mini,"13 September 2024, 01:45",21,13,21,Success
+193,Group 9-17,v2 mini,"20 September 2024, 13:50",20,13,20,Success
+194,Group 9-8,v2 mini,"25 September 2024, 04:01",20,13,20,Success
+195,Group 10-10,v2 mini,"15 October 2024, 06:10",23,,23,Success
+196,Group 9-7,v2 mini,"15 October 2024, 08:21",20,13,20,Success
+197,Group 8-19,v2 mini,"18 October 2024, 23:31",20,13,20,Success
+198,Group 6-61,v2 mini,"23 October 2024, 21:47",23,,23,Success
+199,Group 10-8,v2 mini,"26 October 2024, 21:47",22,,22,Success
+200,Group 9-9,v2 mini,"30 October 2024, 12:07",20,13,20,Success
+201,Group 10-13,v2 mini,"30 October 2024, 21:10",23,,23,Success
+202,Group 6-77,v2 mini,"7 November 2024, 20:19",23,,23,Success
+203,Group 9-10,v2 mini,"9 November 2024, 06:14",20,13,20,Success
+204,Group 6-69,v2 mini,"11 November 2024, 21:28",24,,24,Success
+205,Group 9-11,v2 mini,"14 November 2024, 05:23",20,13,20,Success
+206,Group 6-68,v2 mini,"14 November 2024, 13:21",24,,24,Success
+207,Group 9-12,v2 mini,"18 November 2024, 05:53",20,13,20,Success
+208,Group 6-66,v2 mini,"21 November 2024, 16:07",24,,24,Success
+209,Group 9-13,v2 mini,"24 November 2024, 05:25",20,13,20,Success
+210,Group 12-1,v2 mini,"25 November 2024, 10:02",23,12,23,Success
+211,Group 6-76,v2 mini,"27 November 2024, 04:41",24,,24,Success
+212,Group 6-65,v2 mini,"30 November 2024, 05:00",24,,24,Success
+213,Group N-01,v2 mini,"30 November 2024, 08:10",20,,20,Success
+214,Group 6-70,v2 mini,"4 December 2024, 10:13",24,,24,Success
+215,Group 9-14,v2 mini,"5 December 2024, 03:05",20,13,20,Success
+216,Group 12-5,v2 mini,"8 December 2024, 05:12",23,13,23,Success
+217,Group 11-2,v2 mini,"13 December 2024, 21:55",22,13,22,Success
+218,Group 12-2,v2 mini,"23 December 2024, 05:35",21,13,21,Success
+219,Group 11-3,v2 mini,"29 December 2024, 01:58",22,,22,Success
+220,Group 12-6,v2 mini,"31 December 2024, 05:39",21,13,21,Success
+221,Group 6-71,v2 mini,"6 January 2025, 20:43",24,,24,Success
+222,Group 12-11,v2 mini,"8 January 2025, 15:27",21,13,21,Success
+223,Group 12-12,v2 mini,"10 January 2025, 19:11",21,13,21,Success
+224,Group 12-4,v2 mini,"13 January 2025, 16:47",21,13,21,Success
+225,Group 13-1,v2 mini,"21 January 2025, 05:24",21,,21,Success
+226,Group 11-8,v2 mini,"21 January 2025, 15:45",27,,27,Success
+227,Group 11-6,v2 mini,"24 January 2025, 14:07",23,,23,Success
+228,Group 12-7,v2 mini,"27 January 2025, 22:05",21,13,21,Success
+229,Group 11-4,v2 mini,"2 February 2025, 23:02",22,,22,Success
+230,Group 12-3,v2 mini,"4 February 2025, 10:15",21,13,21,Success
+231,Group 12-9,v2 mini,"8 February 2025, 19:18",21,13,21,Success
+232,Group 11-10,v2 mini,"11 February 2025, 02:09",23,,23,Success
+233,Group 12-18,v2 mini,"11 February 2025, 18:53",21,13,21,Success
+234,Group 12-8,v2 mini,"15 February 2025, 06:14",21,13,21,Success
+235,Group 10-12,v2 mini,"18 February 2025, 23:21",23,,23,Success
+236,Group 12-14,v2 mini,"21 February 2025, 15:19",23,13,23,Success
+237,Group 15-1,v2 mini,"23 February 2025, 01:38",22,,22,Success
+238,Group 12-13,v2 mini,"27 February 2025, 03:34",21,13,21,Success
+239,Group 12-20,v2 mini,"3 March 2025, 02:24",21,13,21,Success
+240,Group 12-21,v2 mini,"13 March 2025, 02:35",21,13,21,Success
+241,Group 12-16,v2 mini,"15 March 2025, 11:35",23,13,23,Success
+242,Group 12-25,v2 mini,"18 March 2025, 19:57",23,13,23,Success
+243,Group 11-7,v2 mini,"26 March 2025, 22:11",27,,27,Success
+244,Group 6-80,v2 mini,"31 March 2025, 19:52",28,,28,Success
+245,Group 11-13,v2 mini,"4 April 2025, 01:02",27,,27,Success
+246,Group 6-72,v2 mini,"6 April 2025, 03:07",28,,28,Success
+247,Group 11-11,v2 mini,"7 April 2025, 23:06",27,,27,Success
+248,Group 12-17,v2 mini,"13 April 2025, 00:53",21,13,21,Success
+249,Group 6-73,v2 mini,"14 April 2025, 04:00",27,,27,Success
+250,Group 6-74,v2 mini,"25 April 2025, 01:52",28,,28,Success
+251,Group 12-23,v2 mini,"28 April 2025, 02:09",23,13,23,Success
+252,Group 11-9,v2 mini,"28 April 2025, 20:42",27,,27,Success
+253,Group 12-10,v2 mini,"29 April 2025, 02:34",23,13,23,Success
+254,Group 6-75,v2 mini,"2 May 2025, 01:51",28,,28,Success
+255,Group 6-84,v2 mini,"4 May 2025, 08:54",29,,29,Success
+256,Group 6-93,v2 mini,"7 May 2025, 01:17",28,,28,Success
+257,Group 15-3,v2 mini,"10 May 2025, 00:19",26,,26,Success
+258,Group 6-91,v2 mini,"10 May 2025, 06:28",28,,28,Success
+259,Group 15-4,v2 mini,"13 May 2025, 01:15",26,,26,Success
+260,Group 6-83,v2 mini,"13 May 2025, 05:02",28,,28,Success
+261,Group 6-67,v2 mini,"14 May 2025, 16:38",28,,28,Success
+262,Group 15-5,v2 mini,"16 May 2025, 13:43",26,,26,Success
+263,Group 12-15,v2 mini,"21 May 2025, 03:19",23,13,23,Success
+264,Group 11-16,v2 mini,"23 May 2025, 22:32",27,,27,Success
+265,Group 12-22,v2 mini,"24 May 2025, 17:19",23,13,23,Success
+266,Group 17-1,v2 mini,"27 May 2025, 16:57",24,,24,Success
+267,Group 10-32,v2 mini,"28 May 2025, 13:30",27,,27,Success
+268,Group 11-18,v2 mini,"31 May 2025, 20:10",27,,27,Success
+269,Group 12-19,v2 mini,"3 June 2025, 04:43",23,13,23,Success
+270,Group 11-22,v2 mini,"4 June 2025, 23:40",27,,27,Success
+271,Group 15-8,v2 mini,"8 June 2025, 14:20",26,,26,Success
+272,Group 12-24,v2 mini,"10 June 2025, 13:05",23,13,23,Success
+273,Group 15-6,v2 mini,"13 June 2025, 01:54",26,,26,Success
+274,Group 12-26,v2 mini,"13 June 2025, 15:29",23,13,23,Success
+275,Group 15-9,v2 mini,"17 June 2025, 01:36",26,,26,Success
+276,Group 10-18,v2 mini,"18 June 2025, 05:55",28,,28,Success
+277,Group 10-23,v2 mini,"23 June 2025, 05:58",27,,27,Success
+278,Group 10-16,v2 mini,"25 June 2025, 19:54",27,,27,Success
+279,Group 10-34,v2 mini,"28 June 2025, 04:26",27,,27,Success
+280,Group 15-7,v2 mini,"28 June 2025, 17:13",26,,26,Success
+281,Group 10-25,v2 mini,"2 July 2025, 06:28",27,,27,Success
+282,Group 10-28,v2 mini,"8 July 2025, 08:21",28,,28,Success
+283,Group 15-2,v2 mini,"16 July 2025, 02:05",26,,26,Success
+284,Group 17-3,v2 mini,"19 July 2025, 03:52",24,,24,Success
+285,Group 10-26,v2 mini,"26 July 2025, 09:01",28,,28,Success
+286,Group 17-2,v2 mini,"27 July 2025, 04:31",24,,24,Success
+287,Group 10-29,v2 mini,"30 July 2025, 03:37",28,,28,Success
+288,Group 13-4,v2 mini,"31 July 2025, 18:35",19,,19,Success
+289,Group 10-30,v2 mini,"4 August 2025, 07:57",28,,28,Success
+290,Group 17-4,v2 mini,"14 August 2025, 05:05",24,,24,Success
+291,Group 10-20,v2 mini,"14 August 2025, 12:29",28,,28,Success
+292,Group 17-5,v2 mini,"18 August 2025, 16:26",24,,24,Success
+293,Group 17-6,v2 mini,"22 August 2025, 17:04",24,,24,Success
+294,Group 10-56,v2 mini,"27 August 2025, 11:10",28,,28,Success
+295,Group 10-11,v2 mini,"28 August 2025, 08:12",28,,28,Success
+296,Group 17-7,v2 mini,"30 August 2025, 04:59",24,,24,Success
+297,Group 10-14,v2 mini,"31 August 2025, 11:49",28,,28,Success
+298,Group 17-8,v2 mini,"3 September 2025, 03:51",24,,24,Success
+299,Group 10-22,v2 mini,"3 September 2025, 11:56",28,,28,Success
+300,Group 10-57,v2 mini,"5 September 2025, 12:32",28,,28,Success
+301,Group 17-9,v2 mini,"6 September 2025, 18:06",24,,24,Success
+302,Group 17-10,v2 mini,"13 September 2025, 17:55",24,,24,Success
+303,Group 10-61,v2 mini,"18 September 2025, 09:30",28,,28,Success
+304,Group 17-12,v2 mini,"19 September 2025, 16:31",24,,24,Success
+305,Group 10-27,v2 mini,"21 September 2025, 10:53",28,,28,Success
+306,Group 10-15,v2 mini,"25 September 2025, 08:39",28,,28,Success
+307,Group 17-11,v2 mini,"26 September 2025, 04:26",24,,24,Success
+308,Group 11-20,v2 mini,"29 September 2025, 02:04",28,,28,Success
+309,Group 11-39,v2 mini,"3 October 2025, 14:06",28,,28,Success
+310,Group 10-59,v2 mini,"7 October 2025, 06:46",28,,28,Success
+311,Group 11-17,v2 mini,"8 October 2025, 03:54",28,,28,Success
+312,Group 10-52,v2 mini,"16 October 2025, 09:27",28,,28,Success
+313,Group 10-17,v2 mini,"19 October 2025, 17:39",28,,28,Success
+314,Group 11-19,v2 mini,"19 October 2025, 19:24",28,,28,Success
+315,Group 11-5,v2 mini,"22 October 2025, 14:16",28,,28,Success
+316,Group 11-12,v2 mini,"25 October 2025, 14:20",28,,28,Success
+317,Group 10-21,v2 mini,"26 October 2025, 15:00",28,,28,Success
+318,Group 11-21,v2 mini,"28 October 2025, 00:43",28,,28,Success
+319,Group 10-37,v2 mini,"29 October 2025, 16:35",29,,29,Success
+320,Group 11-23,v2 mini,"31 October 2025, 20:41",28,,28,Success
+321,Group 6-81,v2 mini,"6 November 2025, 01:31",29,,29,Success
+322,Group 11-14,v2 mini,"6 November 2025, 21:13",28,,28,Success
+323,Group 10-51,v2 mini,"9 November 2025, 08:10",29,,29,Success
+324,Group 6-87,v2 mini,"11 November 2025, 03:21",29,,29,Success
+325,Group 6-89,v2 mini,"15 November 2025, 03:08",29,,29,Success
+326,Group 6-85,v2 mini,"15 November 2025, 06:44",29,,29,Success
+327,Group 6-94,v2 mini,"19 November 2025, 00:12",29,,29,Success
+328,Group 6-78,v2 mini,"21 November 2025, 03:39",29,,29,Success
+329,Group 6-79,v2 mini,"22 November 2025, 07:53",29,,29,Success
+330,Group 11-30,v2 mini,"23 November 2025, 08:48",28,,28,Success
+331,Group 6-86,v2 mini,"1 December 2025, 07:44",29,,29,Success
+332,Group 15-10,v2 mini,"2 December 2025, 05:28",27,,27,Success
+333,Group 6-95,v2 mini,"2 December 2025, 22:18",29,,29,Success
+334,Group 11-25,v2 mini,"4 December 2025, 20:42",28,,28,Success
+335,Group 11-15,v2 mini,"7 December 2025, 17:58",28,,28,Success
+336,Group 6-92,v2 mini,"8 December 2025, 22:26",29,,29,Success
+337,Group 15-11,v2 mini,"10 December 2025, 11:40",27,,27,Success
+338,Group 6-90,v2 mini,"11 December 2025, 22:01",29,,29,Success
+339,Group 15-12,v2 mini,"14 December 2025, 05:49",27,,27,Success
+340,Group 6-82,v2 mini,"15 December 2025, 05:25",29,,29,Success
+341,Group 6-99,v2 mini,"17 December 2025, 13:42",29,,29,Success
+342,Group 15-13,v2 mini,"17 December 2025, 15:27",27,,27,Success
+343,Group 6-88,v2 mini,"4 January 2026, 06:48",29,,29,Success
+344,Group 6-96,v2 mini,"9 January 2026, 21:41",29,,29,Success
+345,Group 6-97,v2 mini,"12 January 2026, 21:08",29,,29,Success
+346,Group 6-98,v2 mini,"14 January 2026, 18:08",29,,29,Success
+347,Group 6-100,v2 mini,"18 January 2026, 23:31",29,,29,Success
+348,Group 17-30,v2 mini,"22 January 2026, 05:47",25,,25,Success
+349,Group 17-20,v2 mini,"25 January 2026, 17:30",25,,25,Success
+350,Group 17-19,v2 mini,"29 January 2026, 17:53",25,,25,Success
+351,Group 6-101,v2 mini,"30 January 2026, 07:22",29,,29,Success
+352,Group 17-32,v2 mini,"2 February 2026, 15:47",25,,25,Success
+353,Group 17-33,v2 mini,"7 February 2026, 20:58",25,,25,Success
+354,Group 17-34,v2 mini,"11 February 2026, 17:11",24,,24,Success
+355,Group 17-13,v2 mini,"15 February 2026, 01:59",24,,24,Success
+356,Group 6-103,v2 mini,"16 February 2026, 07:59",29,,29,Success
+357,Group 10-36,v2 mini,"20 February 2026, 01:41",29,,29,Success
+358,Group 17-25,v2 mini,"21 February 2026, 09:04",25,,25,Success
+359,Group 6-104,v2 mini,"22 February 2026, 03:47",28,,28,Success
+360,Group 6-110,v2 mini,"24 February 2026, 23:04",29,,29,Success
+361,Group 17-26,v2 mini,"25 February 2026, 14:18",25,,25,Success
+362,Group 6-108,v2 mini,"27 February 2026, 12:16",29,,29,Success
+363,Group 17-23,v2 mini,"1 March 2026, 10:10",25,,25,Success
+364,Group 10-41,v2 mini,"2 March 2026, 02:56",29,,29,Success
+365,Group 10-40,v2 mini,"4 March 2026, 10:52",29,,29,Success
+366,Group 17-18,v2 mini,"8 March 2026, 14:00",25,,25,Success
+367,Group 17-31,v2 mini,"13 March 2026, 14:58",25,,25,Success
+368,Group 10-48,v2 mini,"14 March 2026, 12:37",29,,29,Success
+369,Group 17-24,v2 mini,"17 March 2026, 05:19",25,,25,Success
+370,Group 10-46,v2 mini,"17 March 2026, 13:27",29,,29,Success
+371,Group 10-33,v2 mini,"19 March 2026, 14:20",29,,29,Success
+372,Group 17-15,v2 mini,"20 March 2026, 21:51",25,,25,Success
+373,Group 10-62,v2 mini,"22 March 2026, 14:47",29,,29,Success
+374,Group 17-17,v2 mini,"26 March 2026, 23:03",25,,25,Success
+375,Group 10-44,v2 mini,"30 March 2026, 23:15",29,,29,Success
+376,Group 10-58,v2 mini,"2 April 2026, 11:55",29,,29,Success
+377,Group 17-35,v2 mini,"7 April 2026, 02:51",25,,25,Success
+378,Group 17-21,v2 mini,"11 April 2026, 05:04",25,,25,Success
+379,Group 10-24,v2 mini,"14 April 2026, 09:23",29,,29,Success
+380,Group 17-27,v2 mini,"15 April 2026, 04:29",25,,25,Success
+381,Group 17-22,v2 mini,"19 April 2026, 16:03",25,,25,Success
+382,Group 17-14,v2 mini,"23 April 2026, 03:23",24,,24,Success
+383,Group 17-16,v2 mini,"26 April 2026, 14:37",25,,25,Success
+384,Group 17-36,v2 mini,"30 April 2026, 02:42",24,,24,Success
+385,Group 10-38,v2 mini,"1 May 2026, 18:06",29,,29,Success
+386,Group 17-29,v2 mini,"6 May 2026, 03:59",24,,24,Success
+387,Group 17-42,v2 mini,"20 May 2026, 02:46",24,,24,Success
+388,Group 10-31,v2 mini,"21 May 2026, 10:04",29,,29,Success
+389,Group 10-47,v2 mini,"25 May 2026, 11:48",29,,29,Success
+390,Group 17-37,v2 mini,"26 May 2026, 14:50",24,,24,Success
+391,Group 10-53,v2 mini,"29 May 2026, 12:57",29,,29,Success
+392,Group 17-41,v2 mini,"30 May 2026, 15:25",24,,24,Success
+393,Group 17-47,v2 mini,"3 June 2026, 15:40",24,,24,Success
+394,Group 10-43,v2 mini,"4 June 2026, 10:26",29,,29,Success
+395,Group 17-43,v2 mini,"7 June 2026, 04:24",21,,21,Success
+396,Group 10-35,v2 mini,"8 June 2026, 10:13",29,,29,Success
+397,Group 17-44,v2 mini,"11 June 2026, 15:05",24,,24,Success
+398,Group 10-54,v2 mini,"12 June 2026, 12:27",29,,29,Success
+399,Group 17-54,v2 mini,"15 June 2026, 15:34",24,,24,Success
+400,Group 17-28,v2 mini,"21 June 2026, 16:39",24,,24,Success
+401,Group 17-45,v2 mini,"25 June 2026, 03:30",24,,24,Success
+402,Group 17-40,v2 mini,"28 June 2026, 16:09",24,,24,Success
+403,Group 17-46,v2 mini,"2 July 2026, 02:58",24,,24,Success
+404,Group 10-50,v2 mini,"5 July 2026, 10:50",29,,29,Success
+405,Group 10-42,v2 mini,"9 July 2026, 09:25",29,,29,Success
+406,Group 17-48,v2 mini,"11 July 2026, 03:01",24,,24,Success
+407,Group 15-14,v2 mini,"14 July 2026, 01:28",27,,27,Success
+408,Group 10-45,v2 mini,"14 July 2026, 09:10",29,,29,Success
+409,Group 17-39,v2 mini,"21 July 2026, 14:49",24,,24,Success
+410,Group 17-51,v2 mini,"25 July 2026, 15:51",24,,24,Success
+411,Group 17-52,v2 mini,"1 August 2026, 03:08",24,,24,Success
+412,Group 17-53,v2 mini,"4 August 2026, 17:05",24,,24,Success
+413,Group 17-38,v2 mini,"8 August 2026, 16:35",24,,24,Success
+414,Group 10-19,v2 mini,"11 August 2026, 15:58",29,,29,Success
+415,Group 17-49,v2 mini,"12 August 2026, 04:46",24,,24,Success
+416,Group 17-50,v2 mini,"19 August 2026, 04:01",24,,24,Success
+417,Group 10-39,v2 mini,"21 August 2026, 15:14",29,,29,Success
+418,Group 15-20,v2 mini,"22 August 2026, 07:25",27,,27,Success
+419,Group 10-49,v2 mini,"25 August 2026, 09:33",29,,29,Success
+420,Group 15-22,v2 mini,"26 August 2026, 09:35",27,,27,Success
+421,Group 15-23,v2 mini,"2 September 2026, 09:35",27,,27,Success

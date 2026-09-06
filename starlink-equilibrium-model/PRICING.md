@@ -1,157 +1,193 @@
-# How pricing works in the TAM models
+# How pricing works in the TAM model
 
-Companion to `country_tam_model.py` and `country_tam_full_model.py`. Explains the
-actual pricing mechanism behind every "Unconnected Addressable Market" (UAM) and
-"Total Addressable Market" (TAM) chart in this project, since the two models answer
-genuinely different questions and price things differently under the hood.
+Companion to `tam_model.py`. Explains how every "Unconnected Addressable Market"
+(UAM) and "Total Addressable Market" (TAM) figure in this project gets its price.
 
----
-
-## The two models, in one paragraph each
-
-**Unconnected Addressable Market (UAM)** — `country_tam_model.py`,
-`charts/country_tam_charts.py`. Sizes the market Starlink opens up among people who
-are **currently unconnected**. Addressable population per country is capped at
-however many unconnected people actually exist there. This is the narrower,
-"fills the gap" question.
-
-**Total Addressable Market (TAM)** — `country_tam_full_model.py`,
-`charts/country_tam_full_charts.py`. Sizes the market assuming Starlink **takes
-100% of whatever population its capacity can reach**, connected and unconnected
-alike — i.e. it also displaces existing incumbent telecom revenue, not just fills
-the unconnected gap. This is the wider, "just takes share as it expands" question.
-
-Both models share the same physical capacity constraint
-(`country_service_model.country_servable_fraction(N)` — how much of a country's
-population Starlink's satellites can physically reach at N satellites) and the same
-per-country pricing rule (`country_tam_model._country_price()`, described below).
-They differ only in **how much of the servable population gets counted, and at
-what price**.
+> **Rewritten 2026-09-05.** The previous version of this file documented
+> `country_tam_model.py` and `country_tam_full_model.py` (two separate modules, both
+> since deleted and merged into `tam_model.py`) and a `_country_price()` rule built
+> around `SCARCITY_PRICE_MULTIPLIER_CEILING = 3.0`. None of that exists any more.
+> Its revision history also argued *against* elasticity-derived pricing, which is
+> what the model now uses — see "Why elasticity pricing is back" below, because the
+> objection was real and the current design answers it rather than ignoring it.
 
 ---
 
-## The pricing rule (`_country_price()`, in `country_tam_model.py`)
+## One model, two modes
 
-Every priced customer, in both models, is priced by the same two-branch rule,
-evaluated per country:
+`tam_model.py` covers both questions with a single `mode` argument:
 
-```
-arpu = _raw_arpu(country)          # real local price today (mobile or fixed
-                                     # broadband, whichever is the dominant
-                                     # access mode in that country)
+| mode | question | addressable population |
+|---|---|---|
+| `"unconnected"` (UAM) | what market does Starlink *open up* among people with no connection today? | `min(unconnected_population, capacity)` |
+| `"full"` (TAM) | what if Starlink also *displaces incumbents*, taking whatever its capacity reaches? | capacity serves the unconnected first, then whatever is left over serves connected people |
 
-if pct_unconnected < 20%:
-    price = arpu                    # well-served market -> trust the real price
-
-else:  # >= 20% unconnected
-    frac = servable_fraction(N)     # capacity-constrained, changes with N
-    multiplier = 3.0 - 2.0 * frac   # 3x at frac=0, 1x at frac=1, linear between
-    price = arpu * multiplier
-```
-
-- **<20% unconnected**: price is just today's real local ARPU, unmodified. If a
-  country is already mostly served, its existing market price is a reliable signal
-  — no adjustment needed.
-- **>=20% unconnected**: price is the same local ARPU, multiplied by a **scarcity
-  premium** bounded between 1x and `SCARCITY_PRICE_MULTIPLIER_CEILING` (currently
-  **3.0**, a picked-not-confirmed default — see Known limitations below). At low N
-  (capacity barely reaches anyone), the premium is at its ceiling; as N grows and
-  `servable_fraction` approaches 1 (capacity reaches everyone), the premium relaxes
-  back to 1x — full coverage should mean the real market price, not a markup.
-
-This scarcity-premium formula replaced an earlier (broken) mechanism on
-2026-08-23 — see "Revision history" below for why.
+`capacity = servable_fraction(N) x population`, per country. Both modes share one
+physical capacity constraint and one pricing rule; they differ only in how much of
+the servable population is counted, and at what price.
 
 ---
 
-## How the two models differ in addressable population
+## Where capacity comes from
 
-This is the part that actually causes the two models' numbers to diverge, and it
-surprised us when South Asia showed up earning *more* in the UAM chart than in the
-TAM chart at some satellite counts — worth understanding precisely.
+`country_service_model.country_servable_fraction(N, ...)`, which since 2026-09-05
+reads out of **`tile_capacity_model.py`'s 2D (latitude x longitude) allocation**.
+Each satellite carries one customer budget shared only inside its ~940 km coverage
+disk, so neighbouring countries genuinely compete for the same satellite. A
+country's servable-% is its own population-weighted average over the 1-degree tiles
+it occupies.
 
-**UAM** (`country_tam_model.compute_country_tam`):
-```
-addressable_population = min(unconnected_population, servable_fraction(N) * total_population)
-```
-All of a country's servable capacity is treated as going to unconnected people
-first, capped only by how many unconnected people actually exist.
+This replaced a per-latitude-band readout that pooled capacity around an entire
+40,000 km ring — which let idle satellites over the mid-Pacific serve demand in
+South Asia, and handed every country on a band the same answer. That overstated
+servable customers by roughly 1.5x at realistic fleet sizes. See
+`LONGITUDE_FOV_CAPACITY_REVIEW.md` and `MODEL_SPEC.md`.
 
-**TAM** (`country_tam_full_model.compute_country_tam_full`):
-```
-connected_population   = total_population - unconnected_population
-addressable_connected   = servable_fraction(N) * connected_population    # "incumbent" segment, priced at arpu (no premium)
-addressable_unconnected = servable_fraction(N) * unconnected_population  # "new" segment, priced via _country_price()
-```
-Servable capacity is split **proportionally** across connected and unconnected
-people, in the same ratio as the country's real population — not all funneled to
-the unconnected segment. `TAM = incumbent-segment revenue + new-segment revenue`.
-
-**Why this makes UAM revenue larger than TAM revenue below full saturation**: UAM
-effectively values *all* servable capacity (including the slice that "belongs" to
-already-connected people) at the >=20%-branch's scarcity-premium price. TAM instead
-prices that same slice at the real, lower incumbent ARPU. Algebraically, for a
-country in the >=20% branch with no population capping in play:
-
-```
-UAM − TAM = servable_fraction(N) * connected_population * (price_premium − price_incumbent)
-```
-
-Since the premium price is always >= the incumbent price by construction, UAM is
-always >= TAM's corresponding contribution until `servable_fraction` reaches 1 (full
-saturation), at which point the premium relaxes to 1x and the two formulas converge
-exactly. This is expected, structural behavior, not a bug — the two models are
-deliberately answering different questions ("what if all capacity serves the
-unconnected specifically" vs. "what if capacity is shared proportionally").
+`tam_model.py` itself does **no** capacity work: `compute_country_tam()` takes an
+already-computed `{iso3: servable_fraction}` and does pure pricing and aggregation.
 
 ---
 
-## Household conversion and totals
+## The pricing rule
 
-Both models convert priced population to subscriptions the same way:
+There is no ARPU cap, no scarcity multiplier, and no `<20%` / `>=20%` branch. Two
+prices, both derived from one elasticity curve.
+
+### The curve
+
+`charts/served_population_vs_cost.py` holds the user-specified elasticity anchors,
+and `tam_model` imports them rather than redefining them, so there is one source of
+truth:
+
 ```
-subscriptions = addressable_population / household_size(country)   # data/household_size_by_country.csv
-TAM ($/month) = subscriptions * price
+0.75% of monthly GNI/capita  <->    0% of the population priced out
+  10% of monthly GNI/capita  <->  100% of the population priced out
+                      linear in log10(cost %) between those anchors
 ```
-One subscription per household, not per person (Starlink sells one terminal per
-premise). Summed across all countries for the totals shown in
-`tam_vs_satellites.png` / `tam_full_vs_satellites.png`.
+
+`elasticity_cost_pct(pct_unconnected)` inverts it: given how much of a country is
+unconnected *today*, what monthly cost (as a share of GNI/capita) does that imply?
+`elasticity_price_usd_month()` turns that into dollars with the country's own GNI.
+
+### Unconnected customers
+
+```
+price = elasticity_price_usd_month(country's real % unconnected, country's GNI/capita)
+```
+
+**One number per country, independent of N.** It is a demand-side statement — "this
+is what a market with this much exclusion is telling us people can pay" — and
+deliberately not anchored to what the local terrestrial market charges today.
+
+### Connected customers (`mode="full"` only)
+
+Already-connected people have a revealed price: what they pay now. As Starlink takes
+more of them, the price it can charge converges on the elasticity curve's cheapest
+point for that country:
+
+```
+t     = (that country's connected population served) / (its connected population)
+price = existing_local_ARPU + t * (floor_price(GNI) - existing_local_ARPU)
+```
+
+At `t = 0` (nobody switched yet) the price is today's real incumbent price; at
+`t = 1` (everyone switched) it is `floor_price_usd_month(GNI)`, the curve's 0%-
+unconnected price. Unlike the unconnected price, this one *does* move with N,
+because `t` depends on how much capacity exists.
+
+### Subscriptions
+
+```
+subscriptions = addressable_population / household_size(country)
+TAM ($/month)  = subscriptions x price
+```
+
+One subscription per household — Starlink sells one terminal per premise. Household
+sizes are in `data/household_size_by_country.csv`; see
+`results/population/household_size_by_country_ranked.png` for the spread (2.05 to
+8.66 people per household).
+
+Note that `tile_capacity_model` *also* converts people to connections internally,
+using the same dataset attributed per tile. That is not double-counting: the tile
+model returns `servable_fraction` as a fraction of **people**, and the conversion to
+subscriptions happens once, here.
+
+---
+
+## Why elasticity pricing is back, when the old file argued against it
+
+The 2026-08-23 objection was specific and correct: the old code fed
+**`servable_fraction(N)`** into the elasticity curve as if it were a demand-side
+"% priced out" quantity. That conflated a *physical supply constraint* (how many
+satellites exist) with a *demand-side price signal*, so at low N — when capacity
+reached almost nobody — the curve concluded the market must be desperate and India's
+derived price came out at **$88.59/mo against a real local ARPU of $1.60**, a 55x
+markup driven entirely by there not being enough satellites.
+
+The current model does not do that. It feeds the country's **real, current
+%unconnected** into the curve — a fixed property of the country, not of the
+constellation. India's price is now $15.77/mo and does not move when N does.
+
+The conflation is fixed. A **milder version of the divergence remains**, and it is a
+modelling choice rather than a bug:
+
+| country | % unconnected | real local price | derived price | ratio |
+|---|---|---|---|---|
+| Fiji | 25.3% | $0.88 | $18.49 | 21.0x |
+| Sri Lanka | 45.4% | $2.49 | $33.94 | 13.6x |
+| India | 30.0% | $1.60 | $15.77 | 9.9x |
+| Pakistan | 42.7% | $1.24 | $12.16 | 9.8x |
+| Nigeria | 58.8% | $3.94 | $26.45 | 6.7x |
+| United States | 3.0% | $80.00 | $60.45 | 0.8x |
+
+Across 200 priced countries the **median derived price is 1.04x the local price** —
+19 countries land above 3x and 45 below 0.5x. The high-ratio tail is concentrated in
+large, cheap, partly-connected markets, which is exactly where TAM is largest, so it
+matters.
+
+**This is intended and was confirmed with the user**: the curve expresses willingness
+to pay for satellite service, and anchoring it to a $1.60 Indian mobile plan would
+assume Starlink must compete on the incumbent's terms. The full picture is charted at
+`results/market/derived_vs_real_price_by_country.png`
+(`charts/derived_vs_real_price.py`) so the size of the assumption is visible rather
+than buried here.
 
 ---
 
 ## Known limitations (flagged, not fixed)
 
-- **`SCARCITY_PRICE_MULTIPLIER_CEILING = 3.0`** is a reasonable starting default,
-  not a user-confirmed number. Tune this one constant in `country_tam_model.py` if
-  a different scarcity-premium magnitude is wanted — everything downstream (both
-  models, `avg_price_market_ladder.py`) reads from the same constant.
-- **Raw ARPU is not capped for data-quality outliers** in either model's price
-  formula (e.g. a country with a thin, unreliable survey sample could still report
-  an implausible incumbent price, which both `price = arpu` and
-  `price = arpu * multiplier` would inherit uncorrected). This is a pre-existing,
-  already-documented gap (`ASSUMPTIONS.md` #4, e.g. Zimbabwe's raw pre-cap ARPU),
-  not something introduced by the 2026-08-23 pricing revision.
-- **The connected/unconnected proportional split** in the TAM model (servable
-  capacity divided in the country's overall population ratio) is an explicit
-  simplifying assumption — no sub-national data exists to know which specific
-  people within a density bin are already connected (`ASSUMPTIONS.md` #15).
+- **Raw ARPU is uncapped for data-quality outliers.** The connected-segment price
+  starts from `_raw_arpu()`, which inherits known-bad survey samples — Zimbabwe
+  reports $437/mo, South Sudan and Syria similarly implausible figures. They show up
+  on the derived-vs-real chart as the extreme low-ratio points. `ASSUMPTIONS.md` #4.
+- **The elasticity anchors themselves** (0.75% and 10% of GNI/capita) are
+  user-specified, not measured. Every price in the model scales with them.
+- **`mode="full"` serves the unconnected first, then the connected**, per country and
+  not per latitude band or tile — an explicit simplification over allocating within
+  a country by who is actually reachable. `ASSUMPTIONS.md` #15.
+- **One household size per country**, applied uniformly, though rural households are
+  generally larger and Starlink's demand skews rural. `ASSUMPTIONS.md` #13.
+- **Capacity is allocated revenue-blind.** `tile_capacity_model` maximises
+  *connections served*, then TAM prices whatever got served. The stated intent is to
+  serve the highest-revenue customers first within each tile's reachable set; that is
+  a separate, not-yet-built step.
 
 ---
 
-## Revision history
+## What the 2026-09-05 capacity switch did to the numbers
 
-**2026-08-23**: The `>=20% unconnected` branch previously derived price by
-inverting a cross-country elasticity curve (`served_population_vs_cost.py`'s
-0.75%–10%-of-GNI/month anchors) using `servable_fraction(N)` as if it were a
-demand-side "% priced out" quantity. That conflated a **physical supply
-constraint** (how many satellites exist) with a **demand-side price signal**,
-producing absurd results at low N — e.g. India's derived price was $88.59/mo
-against a real local ARPU of $1.60/mo, a 55x markup driven entirely by capacity
-being scarce, which has nothing to do with what the market would actually bear.
-Replaced with the local-ARPU-anchored, bounded scarcity-premium formula described
-above (one of two options presented to the user; the other was dropping
-capacity-dependent pricing entirely). The `<20%` branch was already local-ARPU-only
-and unaffected by this change. `cost_pct_from_pct_unconnected()` (the old inversion
-function) was deleted from `served_population_vs_cost.py` as dead code; its forward
-counterpart `pct_unconnected_from_cost_pct()` is unaffected and still used by that
-file's own scatter chart trend line, unrelated to TAM pricing.
+Switching `country_servable_fraction()` from latitude bands to tiles bundles two
+corrections with **opposite signs**, so the net is misleading on its own. At
+N=10,900, TAM $B/month:
+
+| stage | `unconnected` | `full` |
+|---|---|---|
+| latitude-pooled capacity, 1 person = 1 dish | 4.67 | 11.68 |
+| + longitude fix (tiles) | 3.21 | 8.61 |
+| + households fix (connections) — what ships | 6.60 | 20.19 |
+
+The longitude fix alone cuts TAM ~31%; correcting people-vs-subscriptions more than
+reverses it. More importantly the longitude fix **redistributes**: India's servable
+fraction falls to 0.24x, Brazil 0.42x, Nigeria 0.43x, while the USA rises 2.10x and
+Australia 1.19x. Ring-pooling had been crediting dense low-latitude countries with
+capacity sitting over empty ocean at their latitude.

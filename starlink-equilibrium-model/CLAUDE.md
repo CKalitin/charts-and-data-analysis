@@ -2659,3 +2659,644 @@ as the avg-price and market-ladder charts: population served rises ~linearly wit
 until ~100-200M Gbps deployed (~100,000-200,000 v3 satellites), then saturates at ~8.9B
 (raw global population) by ~6M satellites -- current real fleet (~10,900 sats) sits far down
 the linear-rise part of the curve, nowhere near the capacity-bound saturation point.
+
+## New sub-project: `revenue_capacity_timeline/` -- real revenue & launch history vs. date (2026-09-05)
+
+Separate, self-contained folder (own README, data, charts, results) -- NOT part of the
+equilibrium/serviceable-customers/TAM model above, and doesn't modify any of it. Built for
+one request: compile every available Starlink revenue estimate by date, get Jonathan
+McDowell's real satellite-launch data by version and date, and turn the launch data into a
+cumulative-max-capacity-vs-date table with a parallel axis in equivalent V3 satellites. Full
+detail in `revenue_capacity_timeline/README.md`; key points:
+
+- **Revenue** (`data/starlink_revenue_estimates.csv`/`.md`): compiled from SpaceX's own 2026
+  S-1 IPO filing (fetched directly from SEC EDGAR -- requires a declared `User-Agent` with
+  contact info or SEC blocks the request with a 403 "Undeclared Automated Tool" page, learned
+  the hard way), Payload Research, Quilty Space, and WSJ/Information press-leak reporting.
+  **Official S-1 numbers are authoritative and now available for 2023-2025**: Starlink
+  (Connectivity segment) revenue $3,869M (2023) -> $7,599M (2024, +96.4%) -> $11,387M (2025,
+  +49.8%), plus subscriber counts (2.3M/4.4M/8.9M) and ARPU ($99/$91/$81 per month, falling
+  even as revenue rises sharply -- volume- and enterprise/government/mobile-driven growth).
+  Pre-filing analyst estimates for the same years (Payload, Quilty) all landed within
+  roughly +/-13% of the eventual official number -- kept alongside the official rows, not
+  overwritten, so that track record is visible. 2021-2022 have no official figures (S-1 only
+  presents 3 fiscal years) -- relies on a WSJ press-leak figure ($222M, 2021) and two
+  disputed analyst estimates for 2022 ($1.4B Information vs $1.9B Payload, kept as separate
+  rows since they disagree by ~35%).
+- **Launch history** (`data/starlink_launches_wikipedia_raw.csv`/`starlink_launch_history.md`):
+  all 424 real Falcon 9 Starlink launches, 2018-02-22 through 2026-09-02, parsed from
+  Wikipedia's "List of Starlink and Starshield launches" -- but from the RAW WIKITEXT
+  (`action=raw`), not the rendered page: WebFetch's HTML-to-markdown summarizer silently
+  truncated the (very long) rendered page at January 2025, about halfway through, and
+  reported "no more launches exist" rather than a truncation error. The raw wikitext, parsed
+  with a small custom Python script (regex-split on `|-` row markers), came back complete.
+  Cross-checked against McDowell's own aggregate totals (planet4589.org/space/con/star/stats.html,
+  fetched separately) -- agree within ~0.2%, the expected gap for two snapshots taken 2 days
+  apart during a period of near-weekly launches. **Real finding: zero V3 satellites have
+  reached orbit as of this pull** -- every V3/Starship launch attempt in the data is a
+  failure (0 satellites deployed), confirmed independently by McDowell's page too ("V3: 20
+  satellites (failed to orbit)", "Gen3 Currently in Orbit: 0").
+- **Capacity model** (`capacity_timeline_model.py` -> `data/cumulative_capacity_vs_date.csv`):
+  per-launch capacity = deployed count x that generation's `downlink_gbps_total` from the
+  MAIN project's own `../data/satellite_capacity.csv` (v1.0/v1.5 20 Gbps, v2 mini 96 Gbps,
+  v3 1,024 Gbps -- not re-derived, reused as-is), summed as a running cumulative total.
+  Deliberately GROSS cumulative (not net of deorbits) -- matches the user's own phrase
+  "cumulative MAX capacity," and avoids needing a separate per-satellite deorbit-date
+  dataset. v0.1/v0.9 prototypes get 0 Gbps (no comms payload, no published throughput).
+  Only `outcome == "Success"` launches count (excludes one real Falcon 9 failure,
+  2024-07-12, 20 sats deployed to a bad orbit).
+- **Chart** (`charts/capacity_vs_date.py` -> `results/capacity_vs_date_log.png` + `_linear.png`):
+  x = date (2019-2026), y (left) = cumulative max downlink capacity (Gbps, log or linear),
+  y (right, parallel/secondary axis) = the same value / 1,024 = equivalent V3 satellites --
+  same `ax.secondary_yaxis(functions=(...))` + "set formatter AFTER set_yscale" pattern
+  already established for the main project's secondary axes
+  (`charts/serviceable_customers_chart.py::_add_capacity_secondary_axis`). Latest point
+  (2026-09-02): 12,868 real satellites launched, 875,824 Gbps cumulative capacity = 855.3
+  equivalent V3 satellites. **Since no V3 satellite is actually in orbit, that number is a
+  normalization unit against today's real v1.0+v1.5+v2-mini fleet, not a real V3 count** --
+  said explicitly in the chart's own info box, not just here.
+- **Combined table** (`build_summary_table.py` -> `data/revenue_and_capacity_by_year.csv`):
+  joins the two datasets one row per calendar year. Headline cross-check: capacity grew
+  ~23x from end-2021 to end-2025 (37.6K -> 675K Gbps) while revenue grew ~51x over the same
+  window ($222M -> $11.4B, mixing a press-leak start point with an official-filing end
+  point) -- revenue outpacing capacity by roughly 2x, consistent with the S-1's own
+  disclosed shift toward higher-value enterprise/government/mobile revenue on top of raw
+  subscriber growth.
+
+**Follow-up, same day**: user asked for the capacity axis in Tbps, not Gbps -- `capacity_vs_date.py`
+reworked to convert at load time (`/1000`) rather than just reformatting tick labels, so the
+V3-equivalent conversion factor changes accordingly (1.024 Tbps/satellite, not 1,024 Gbps).
+Then a second chart, `charts/revenue_vs_capacity.py` -> `results/revenue_vs_capacity_log.png`
++ `_linear.png`: x = cumulative max capacity (Tbps) at each fiscal year-end, y = Starlink
+revenue ($B/year), same parallel-axis convention as the main project's
+`charts/country_tam_charts.py` (`tam_vs_satellites_by_region.png` etc.) but built the other
+way around (capacity primary here, since that's this sub-folder's real x-axis; V3-satellite-
+equivalent secondary, via `ax.secondary_xaxis` instead of that file's `secondary_xaxis`-for-Tbps
+usage). Plots every individual revenue estimate per year as its own point (marker shape keyed
+to source_type: filled circle = official S-1, open square = analyst estimate, open triangle =
+press leak) with one connecting line through the best-available point per year -- deliberately
+does NOT reconcile disagreeing sources into a single number, matching the CSV's own
+one-row-per-source-per-year structure. Bug caught before shipping: first draft annotated the
+year label at EVERY point, producing overlapping duplicate text ("2024 2024 2024") wherever a
+year has 2-3 estimates stacked near the same x -- fixed by labeling only the best-available
+point per year. Also relocated the caveat/source text box from bottom-left to bottom-right
+after confirming (linear chart) it was sitting directly on top of the 2021 data point --
+bottom-right is empty on both the log and linear versions of this particular curve shape.
+
+## `revenue_capacity_timeline/` renamed, Q2 2026 earnings added, chart-source rule added to the skill, TAM overlay chart (2026-09-05, same day)
+
+Several fast follow-ups on the new sub-project from earlier this same day:
+
+1. **User caught a real mistake**: charts in this sub-folder cited their own source as
+   "Source: starlink_revenue_estimates.md" -- a repo filename, meaningless to a reader
+   without the repo open. Fixed both charts to name the real origin instead ("Jonathan
+   McDowell (planet4589.org)", "see legend" for the multi-source revenue chart). **Also
+   added this as a hard rule in the `charting-and-modeling` skill itself**
+   (`~/.claude/skills/charting-and-modeling/SKILL.md`, "Chart labelling rules" section) --
+   a source citation must name the real-world author/org/dataset, never an internal
+   `.md`/`.csv` path. Checked every other chart file in this whole project for the same
+   mistake first -- all already cited real sources (World Bank, FCC, WorldPop, Natural
+   Earth) -- so this was isolated to the two brand-new files, not a pervasive pattern.
+2. **The sub-folder itself got renamed mid-session**, from `revenue_capacity_timeline/` to
+   `spacex_revenue_capacity_timeline/` -- confirmed byte-for-byte identical content before
+   continuing (not a duplicate from a separate process, despite briefly looking like one
+   given the unrelated concurrent uncommitted changes elsewhere in the repo at the same
+   time -- see point 4). Every script resolves paths via `Path(__file__)`, so nothing
+   broke except the README's example shell commands.
+3. **User: "we have Q2 results right? ... you didn't search hard enough."** Correct --
+   the first revenue research pass stopped at SpaceX's pre-IPO S-1 filing and missed that
+   SpaceX has since actually IPO'd (Nasdaq: SPCX) and reports real quarterly earnings.
+   Fetched the Q2 2026 earnings release directly from SEC EDGAR (filed 2026-08-04):
+   Connectivity segment revenue $4,291M, **up 32% SEQUENTIALLY from Q1 2026's $3,257M**
+   (not just YoY) -- real acceleration, not just growth. H1 2026 total $7,548M. Starlink
+   Subscribers reached 12.0M (doubled YoY); ARPU held flat at $66/month for the first time
+   in the whole series (previously falling every period). Enterprise & Government revenue
+   grew 108% YoY vs. Consumer's 44% -- the acceleration is disproportionately an
+   enterprise/government story. Annualizing Q2 alone implies a ~$17.2B/year run-rate,
+   already close to Quilty Space's $20B full-year-2026 forecast with two quarters left to
+   report. Added to `data/starlink_revenue_estimates.csv`/`.md` as new quarter-specific
+   metric rows (`starlink_segment_revenue_q1_only`/`_q2_only`/`_h1_only`, distinct from the
+   full-year `starlink_segment_revenue` metric used by 2021-2025), and as a distinct star
+   marker (not connected into the full-year line) on `charts/revenue_vs_capacity.py`.
+4. **New chart, user request ("Overlay your revenue vs capacity onto my unconnected TAM
+   model")**: `charts/revenue_vs_unconnected_tam_overlay.py` -> `results/revenue_vs_unconnected_tam_overlay_log.png`
+   + `_linear.png`. Overlays this sub-folder's real revenue (annual figures / 12, plus the
+   two real quarterly rates / 3 for the freshest/most precise points) onto the MAIN
+   project's "Unconnected Addressable Market" model
+   (`charts/country_tam_charts.py` -> `results/market/tam_vs_satellites.png`), same x
+   (total satellites, V3-equivalent) and y (USD/month) axis definitions. **Deliberately
+   reads the UAM curve from that chart's own already-computed CSV snapshot**
+   (`results/market/tam_by_continent_vs_satellites.csv`, 9 discrete satellite-count
+   buckets) rather than importing/re-running the live model code -- at the time this was
+   built, the main project's TAM model was mid-refactor elsewhere in this repo
+   (`country_tam_model.py` being renamed/rewritten into a new `tam_model.py`,
+   uncommitted, alongside other unrelated new/deleted files -- `tile_capacity_model.py`,
+   `country_tam_full_model.py` deleted, etc. -- discovered via `git status` while
+   debugging an ImportError), so importing either risked either failing outright or
+   silently depending on not-yet-validated in-flight logic. **Real, somewhat surprising
+   finding**: actual Starlink revenue tracks almost exactly along the UAM model's curve
+   at today's real satellite counts (~40-855 equivalent V3 satellites, i.e. the model's
+   very earliest, steepest-rising segment) -- surprising because actual revenue includes
+   already-connected switchers, enterprise, government, and mobile customers that this
+   unconnected-only model doesn't count at all, yet the two lines nearly coincide in the
+   real-world range so far. Not yet explained -- flagged as a finding, not resolved,
+   directly in the chart's own caveat note.
+   Two of the now-familiar recurring bug classes hit again while building this, both
+   fixed: (a) an unwrapped single-line source-note string collided with the 2021 data
+   point (fixed with explicit short `\n`-wrapped lines, same lesson logged many times
+   elsewhere in this file); (b) the log-scale y-axis auto-extended down to the 2021 point
+   (~$18.5M/mo), which also needed an explicit floor (`ax.set_ylim(1e7, ...)`) for the
+   same "log axis needs a nonzero floor" reason documented repeatedly above. The linear
+   version originally swept the same 0-2,000,000-satellite range as the log chart's
+   9-bucket data and rendered every real point invisibly close to x=0 -- fixed by capping
+   the linear x-axis at 50,000 (just past the model's peak) instead, another instance of
+   the project's standing "don't render dead space" principle.
+
+**If a future session regenerates `results/market/tam_by_continent_vs_satellites.csv`
+after the in-flight `tam_model.py` refactor lands, re-run
+`charts/revenue_vs_unconnected_tam_overlay.py`** -- it always reads that CSV fresh, never
+caches its own copy, so it will pick up the new numbers automatically, but the "tracks
+almost exactly" finding above should be re-verified against whatever the refactored model
+produces rather than assumed to still hold.
+
+## 2D (lat x lon) capacity allocation — the longitude fix (2026-09-05)
+
+User: "capacity is only allocated per-latitude, not per-longitude as well... satellites
+on opposite sides of the Earth obviously can't serve the same customer... we need to
+allocate capacity by the 25 degree FOV we derived earlier... subdivide capacity into
+latitude and longitude tiles... two neighbouring countries are 'competing' for the same
+satellite." Correct on every point. `LONGITUDE_FOV_CAPACITY_REVIEW.md` (written the same
+day by a previous session, at the user's request) has the original framing; a **RESOLVED**
+section now appended to it has the full write-up. Summary here.
+
+**New files**: `tile_capacity_model.py` (the model), `tile_capacity_validation.py`
+(exact max-flow reference), `charts/tile_utilization_map.py` (world heatmap + GIF) ->
+`results/tile_capacity/`. **Nothing existing was rewired** — `serviceable_customers_model.py`,
+`country_service_model.py` and both TAM models are untouched, because other sessions were
+revising the market layer in parallel. That migration is the remaining work.
+
+**Two quantified bugs in the old path**, both measured rather than argued:
+1. `orbital_geometry.expected_sats_reaching_latitude()` **overcounts satellites in view by
+   ~19x** — it convolves the latitude histogram with a boxcar of half-width R, counting
+   every satellite whose LATITUDE is within R at ANY longitude (the whole 40,000 km ring)
+   instead of those inside the DISK of radius R. 19.1x global at N=10,900, 27.8x at the
+   equator, 4.3x at 80deg. The correct equatorial figure is ~45 satellites in view, which
+   cross-checks against `N x disk_area / earth_area`. That function now carries a
+   docstring saying so and pointing at the replacement; **its behaviour is unchanged**, so
+   nothing downstream moved.
+2. **Capacity teleportation along a ring** — the old model enforced "capacity can't
+   teleport" across latitudes (its own stated design rule) while violating the identical
+   constraint along a latitude.
+
+Net effect, old vs new served customers: **1.49x overstated at N=4,408, 1.54x at 10,900,
+1.46x at 33,900, 1.34x at 100,000, 1.00x at 1,000,000** (both models are simply
+population-bound at saturation). The overstatement is ~1.5x rather than ~19x because the
+aggregate per-satellite capacity term, pooled per ring, usually bound before the density
+cap did.
+
+**How the model works.** Ground and satellite positions share one 1degx1deg tile grid.
+Satellites are placed by each real shell's latitude profile and spread uniformly in
+longitude (RAAN assumption, ASSUMPTIONS.md #16). Each satellite serves a spherical cap of
+Earth-central radius R = 90 - eps - asin(Re cos eps/(Re+h)) — 8.33-8.70deg (927-968 km) for
+Gen1's 540-570 km shells, 5.71deg (635 km) at V3's planned 345 km. It carries ONE customer
+budget shared across everything in that disk, so neighbouring tiles compete: a bipartite
+transportation problem, not a per-band min().
+
+**The performance trick that made a full 2D treatment cheaper than the approximation it
+was meant to justify**: angular distance between two tiles depends only on
+(lat_i, lat_j, delta_lon), so the disk operator is block-circulant in longitude and
+collapses to one small matrix multiply per longitude frequency — ~15 ms for the whole
+180x360 grid, versus minutes for an explicit ~20M-edge sparse matrix. A full solve is
+~15 s. Partially-overlapping tiles get fractional longitude weights, which reproduces the
+exact spherical-cap area to within 0.4% at every latitude.
+
+**Allocation** is damped proportional water-filling: each round, ground tiles request from
+the satellites they can see in proportion to remaining free capacity, oversubscribed
+satellites ration proportionally, repeat. Costs exactly three disk convolutions per supply
+group per round, and is feasible by construction every round.
+
+**Verified against an exact max-flow (Dinic, hand-written — no scipy in this environment)
+on the same graph**: 0.977-0.994 of the optimum, never above it, at both 4deg and 6deg tiles.
+
+**`AllocationResult.unreachable_slack()` is the check that settles whether a dark patch on
+the map is a bug**: it reports the share of covered satellite tiles with BOTH spare capacity
+AND unserved demand within reach — the only places better routing could help. At N=100,000
+that is 4.7% of tiles holding ~1.5% of served customers, matching the independently measured
+gap from optimum. It confirmed the two big dark regions are REAL, not artifacts: central
+Sahara sits at 16% utilization with exactly ZERO unmet demand within 940 km (its coverage
+disk holds almost nobody), while central Europe is at 100% with 39M customers queued.
+
+**Four real bugs, every one caught by a check rather than by reading the code** — worth
+knowing about before editing any of this:
+1. **FFT round-off served uncovered tiles for free.** irfft leaves ~1e-16 where the true
+   reachable capacity is exactly zero; the allocator divides unmet demand by reachable
+   capacity, so that noise became a ~1e16 request ratio. Total served came out ~50% ABOVE
+   total capacity consumed. Caught by a flow-conservation audit, not by eye. Fixed with
+   `DiskOperator.NOISE_FLOOR_REL = 1e-10`; the audit now runs on every solve so this class
+   cannot return silently. **General lesson: any `a / conv(b)` in this project needs a
+   noise floor on the convolution.**
+2. **Log-spaced density-bin CENTRES made capped demand exceed 100% of world population**
+   (100.4%). `DemandTiles` now stores population per bin alongside area, so
+   `min(pop_bin, cap x area_bin)` is exact in the uncapped limit.
+3. **The reweighting oscillated and rendered as concentric rings — and the first fix
+   was not enough.** The reweighting is a multiplicative accumulation with NO fixed
+   point: the weight spread grows geometrically, hits ~1e6 by round 16 and pins at the
+   clip bounds by round 17. Successive rounds push a wave of demand outward from each
+   population centre, rendering as concentric rings of alternating utilization, with
+   satellites DIRECTLY over people less used than ones a coverage radius away. Damping
+   the step (eta 1.0 -> 0.25) raised the peak total and fixed a transect near Mexico, so
+   it looked solved — **but the user spotted a clear residual arc over Europe in the
+   shipped chart, and they were right**: at the best-total round the ripples were still
+   plainly there, just relocated. The actual fix is to **average the allocation over all
+   reweighting rounds**. Each round's rings sit at a different radius, so averaging
+   cancels them, and a convex combination of feasible flows is itself feasible (row sums
+   stay under demand, column sums under capacity, total is the mean of the totals). At
+   N=100,000: greedy 5,242M clean map / best single round 5,774M heavy ringing / **average
+   of rounds 0-16 5,612M with a map as smooth as greedy**. Costs 2.8% of the peak total,
+   still +7% over greedy, and drops the validated optimality from 0.996-0.999 to
+   **0.977-0.994** — a deliberate, documented trade for a physically coherent map.
+   **Two lessons.** (a) The rings were the tell; the TOTAL alone never exposed them.
+   (b) Worse, a global smoothness metric (total variation) actively MISSED them — TV
+   *improved* as the rings developed, because it is dominated by the coastline halos.
+   Only looking at a zoomed crop of the actual map found it. Do not trust a scalar
+   summary to police spatial artifacts in this project.
+4. **An early validation run reported ratios ABOVE 1.0** (impossible for a feasible flow).
+   Cause: the model uses fractional tile-overlap weights while the Dinic graph used hard
+   0/1 adjacency — different problems. `DiskOperator(fractional=False)` exists so the two
+   run on the identical graph. **Lesson: when a reference disagrees, check you are
+   comparing the same problem before touching the algorithm.**
+
+**Charts** (`charts/tile_utilization_map.py`, single `draw_utilization_map()` renderer
+shared by stills and animation frames): `utilization_map_{4408,10900,100000}sats.png` and
+`utilization_map_vs_satellites.gif` (40 log-spaced fleet sizes, 500 -> 5,000,000).
+Continents are unfilled outlines drawn OVER the mesh. Parameters sit under the axes via
+`fig.text` rather than `info_box` — a full-bleed world map has no empty region for the
+info-box scan to find, so any in-axes placement necessarily covers real tiles.
+The maps show the physics directly: land saturated, oceans idle, and a ~940 km
+partial-utilization halo around every coastline and Pacific island, which is exactly the
+coverage disk made visible.
+
+**Open / next**: migrate `country_service_model.country_servable_fraction()` (and the TAM
+models through it) onto per-tile served fractions, so a country reads out its OWN tiles
+instead of a longitude-pooled latitude band; then retire
+`expected_sats_reaching_latitude()`. Also unresolved and pre-existing: the model runs
+Gen1's 540-570 km shell geometry with V3's capacity scenario, whose real altitude is
+345 km — that halves the coverage disk area, and `build_supply(altitude_override_km=345)`
+exists to test it but no run has been shipped.
+
+## Units fix: the model works in CONNECTIONS, not people (2026-09-05, same session)
+
+User: "How do we model households? Ie. people per connection." The honest answer was
+that we didn't — and that this was a real bug, not just a gap.
+
+**The error.** `capacity_density_model.py` produces SUBSCRIBER counts (one dish, one
+household): 419 per beam under 20:1 contention, 200,000 per V3 satellite, 195/km2.
+Every capacity model in this project — the old `serviceable_customers_model.py` and the
+new `tile_capacity_model.py` alike — compared those directly against WorldPop PEOPLE.
+That asserts one person per dish. It does not overstate the market; it **understates how
+many people a satellite reaches, by roughly the household size**. Note the old TAM model
+did divide by household size, but only at the very END, to price subscriptions — the
+binding capacity constraint upstream was still applied in the wrong units, so the error
+was baked in before pricing ever ran.
+
+**The fix.** `tile_capacity_model.py` now works in connections internally.
+`household_grid.py` (new) attributes `data/household_size_by_country.csv` to lat/lon
+tiles by probing each tile at 4x4 interior points against Natural Earth 110m country
+polygons and averaging over whichever probes land inside a country. **Probing tile
+CENTRES alone matched only 87.8% of world population** — a 1deg tile over a coastal city
+often has its centre offshore — while subsampling reaches **97.6%**; unmatched tiles take
+the population-weighted global mean. Result: 8.85B people -> **2.50B connections**,
+population-weighted mean **3.86 people/connection**. `AllocationResult.served` is
+connections; `.served_people` and `.total_served_people` multiply back out.
+
+**Effect on the headline numbers** (people served, V3 scenario):
+
+| N satellites | before (people==dishes) | after (connections) |
+|---|---|---|
+| 4,408 | 444M | **1,378M** |
+| 10,900 | 994M | **2,986M** |
+| 33,900 | 2,622M | **6,219M** |
+| 100,000 | 5,547M | **8,484M** |
+
+Saturation moves from N~1,000,000 down to **N~300,000**.
+
+**Layering cleanup done at the same time**: `load_country_paths()`/`_polygon_to_path()`
+moved OUT of `charts/country_choropleth.py` into a new root-level `country_geometry.py`,
+so the model layer can use country boundaries without importing upward from `charts/`.
+`country_choropleth.py` re-exports them, so its two existing dependents
+(`charts/country_tam_charts.py`, `charts/country_tam_full_charts.py`) are unchanged.
+
+## MODEL_SPEC.md (2026-09-05)
+
+User asked for "a model spec that shows how we do everything from start to end."
+Written as `MODEL_SPEC.md` (root): the full pipeline in 11 sections — shells and
+latitude density, the 25deg coverage disk and its block-circulant operator, WorldPop
+demand and the people->connections conversion, the two capacity ceilings, the
+transportation problem and why the reweighting rounds are averaged, outputs, the six
+verification results, the assumptions it rests on, how to run it, and what is still
+open. Includes a table of the five bugs that verification caught which reading the code
+did not. **Keep it current** — it is meant to be readable end to end without the code
+open, and it is the document to hand a fresh session before CLAUDE.md's narrative.
+
+## Coverage-geometry diagram + FOV wording (2026-09-05)
+
+User asked what "coverage radius 8.3/8.4/8.6/8.7 deg" meant on the utilization chart,
+then: "Aren't we using 25 degrees as the assumption?" Both numbers are right — they are
+angles at different vertices of ONE triangle, and the chart label had invited exactly
+this confusion by quoting the derived one in the same unit as the input:
+
+| vertex | angle | what it is |
+|---|---|---|
+| user terminal | **25 deg** | elevation above the local horizon — the FCC input |
+| satellite | 56.5 deg | off-nadir look angle |
+| Earth's centre | **8.45 deg** | sub-satellite point to the edge of the servable disk |
+
+`(90 + 25) + 56.55 + 8.45 = 180.00` exactly, verified numerically for every shell
+altitude. The 8.3-8.7 spread is only Gen1's four shell altitudes (540-570 km); a higher
+satellite sees further. Per the user's instruction the chart note is now just
+**"User FOV: 25 deg | Sat FOV at equator: ~8 deg"** — "at equator" is a fair gloss:
+the angle is a function of altitude, not latitude, but at the equator it also equals
+8 deg of longitude, which is what a reader of that map wants pinned down.
+
+**New: `charts/coverage_geometry_diagram.py` -> `results/coverage/coverage_geometry.png`.**
+Two panels, both TRUE TO SCALE with real curvature and no exaggerated altitude (which
+matters — the disk is only ~8.5 deg wide precisely because 550 km is small next to
+Earth's 6,378 km radius): left, the whole Earth with the angle at its centre; right, a
+zoom on the satellite and user terminal with the off-nadir and elevation angles, the
+local horizon, altitude and ground spot radius.
+
+**`_verify_drawn_angles()` measures the three angles back out of the plotted
+coordinates and raises if they disagree with the labels or don't sum to 180.** This is
+worth copying: a diagram whose labels come from formulas rather than from its own
+geometry can be silently wrong, and this one was — the first draft measured the
+elevation to the WRONG END of the horizon line (giving 155 deg, drawn as a huge arc)
+while still printing "25 deg" beside it. Also hit the documented ghost-axes trap:
+`render.new_figure()` returns `(fig, ax)`, and taking only `[0]` then calling
+`add_subplot` twice left the original axes orphaned, rendering as a stray 0-1 tick/grid
+frame behind the whole diagram.
+
+## Utilization animation: large-label variant + per-frame PNGs (2026-09-05)
+
+User asked for a second GIF emphasising satellite number / people served /
+constellation utilization at axis-label size under the chart, the original GIF kept,
+and every frame as a PNG in its own folder. `charts/tile_utilization_map.py` gained
+`render_sweep()`, which solves each fleet size ONCE and draws both label variants from
+the same `AllocationResult` — the solve is ~15 s and the labelling is free, so rendering
+the variants in separate passes would have doubled a ~13 minute job for nothing.
+Outputs: `utilization_map_vs_satellites.gif`, `..._large_labels.gif`, and 40 PNGs each
+in `results/tile_capacity/frames/` and `frames_large_labels/`. `_fit_width()` measures
+the rendered headline and steps the font down until it fits — the satellite count runs
+from 3 to 7 digits, so a size that fits one frame can overflow another.
+
+## Chart: household size by country, ranked (2026-09-05)
+
+`charts/household_size.py` -> `results/population/household_size_by_country_ranked.png`.
+217 countries ranked by people per household, bars coloured by World Bank region
+(`charts/regions.py`), **hatched where the value is a regional-median fallback rather
+than a national survey (66 of 217)** -- do not drop that hatching in a later edit, it is
+the difference between a measurement and an inference and several fallback countries sit
+at the extremes. Range **2.05 (Germany) to 8.66 (Senegal)**, a 4.2x spread, so this is
+not a variable a global constant could stand in for. The hatched bars form visible flat
+plateaus -- that IS the fallback, a whole region sharing one inferred value, and the
+footer says so rather than leaving a reader to wonder why the curve has steps.
+
+**Real discrepancy surfaced and stated on the chart rather than papered over**: the
+country-population-weighted mean is **3.93**, but the model applies **3.86**. Different
+weighting, not an error -- the model weights by WorldPop's gridded population rather than
+World Bank country totals, and 2.4% of population falls outside a matched country
+polygon and takes the global mean. The first draft labelled the 3.93 line "used by the
+model", which was simply wrong; `_model_mean()` now reads the figure back out of
+`tile_capacity_model.build_demand()` itself instead of recomputing something similar.
+
+**Two layout fixes worth reusing.** (1) `fig.set_layout_engine("none")` does NOT make
+`subplots_adjust` work -- it leaves a placeholder engine that still refuses it and only
+emits a warning. To reserve space for figure-level footer text under constrained_layout,
+shrink the engine's rect: `fig.get_layout_engine().set(rect=(0, 0.145, 1, 0.855))`.
+(2) Labelling the top 4 and bottom 4 of a 217-bar ranking put rotated text on bars
+~0.05 inch apart, which overlapped no matter the offset; only well-separated ranks get a
+callout now (the two endpoints plus the four most populous countries) and the extremes
+are listed in the footer instead.
+
+## Tile capacity model integrated into the TAM model (2026-09-05)
+
+User: "we need to integrate [the tile capacity model] into the new model for allocating
+capacity. Is that model well documented?" Answers to the three decisions they made when
+asked: **capacity swap first, revenue ranking as a later separate task**; **edit
+everything needed including the other session's files**; **leave the pricing divergence
+alone but chart it**.
+
+### State of the code before this work
+
+`tam_model.py` (which replaced the deleted `country_tam_model.py` +
+`country_tam_full_model.py`) and `country_service_model.py` were both genuinely well
+documented -- `tam_model`'s docstring even named the integration seam and anticipated
+this task. But two things were badly wrong and one was subtle:
+
+1. **`PRICING.md` was entirely stale** -- it documented the two deleted modules and a
+   `_country_price()` / `SCARCITY_PRICE_MULTIPLIER_CEILING = 3.0` rule that no longer
+   exists, and its revision history argued *against* elasticity pricing, which is what
+   the model now uses. Fully rewritten.
+2. **Three chart modules were broken at import** (`country_tam_charts.py`,
+   `country_tam_full_charts.py`, `avg_price_market_ladder.py`) -- all still importing the
+   deleted models. All three repaired.
+3. `charts/country_tam_charts.py`'s price heatmap read `r.price_usd_per_month` and
+   `r.price_basis`, fields the new `CountryTAM` does not have. Repointed to
+   `price_unconnected_usd_per_month`. **Consequence worth knowing: the derived price now
+   depends only on a country's own %unconnected and GNI/capita, so it does NOT vary with
+   satellite count.** The old scarcity premium made it N-dependent and the chart was
+   drawn at two N; drawing it twice now produces two identical images, so it is drawn
+   once and the filename lost its `_100k` suffix.
+
+### What changed
+
+- **`country_service_model.py` rewritten tile-based.** Was: weight a GLOBAL
+  per-latitude-band served-fraction by each country's population-by-latitude. Now:
+  weight `tile_capacity_model`'s per-tile served-fraction by each country's own
+  population per 1deg tile. Same weighted-readout idea, but the tile model has already
+  resolved who competes with whom, so no capacity teleports around a latitude ring.
+  New `load_all_country_population_by_tile()` builds per-country tile footprints from
+  the same cached WorldPop rasters, stored SPARSE (a country occupies few of the 64,800
+  tiles).
+- **`tam_model.py` decoupled from capacity.** `compute_country_tam()` now takes an
+  already-computed `{iso3: servable_fraction}` and is pure pricing + aggregation -- the
+  old signature threaded five latitude-histogram arguments through the module purely to
+  hand them to the capacity call. New `sweep_country_tam()` solves ONCE per N and returns
+  per-country rows; `total_tam()` / `tam_by_region()` / `tam_by_segment()` are cheap
+  reducers over that. **This matters for runtime, not just tidiness**: a solve is ~15 s,
+  and the old three separate sweep functions each re-solved every N for identical
+  numbers. New `load_inputs()` holds the one-time setup all three chart modules shared.
+
+### Two caching bugs, one of them mine, both of the same family
+
+Solving is ~15 s per N and a chart run sweeps ~99 distinct N, so servable fractions are
+cached to disk. Both bugs are the "a cache that loads successfully is not a cache that
+holds the right thing" family this project keeps re-encountering:
+
+1. **My country-tile cache silently returned a partial answer.** A 10-country smoke test
+   wrote the cache; the subsequent 217-country request then got 10 countries back with no
+   error, and the TAM run reported "10 countries" totals. Fixed by making the cache
+   INCREMENTAL -- reuse what is cached, build and merge whatever is missing.
+2. **Stale-config risk on the servable cache.** Keyed on capacity scenario + tile size +
+   every shell's altitude/inclination/count, hashed into the FILENAME so a config change
+   lands on a different file, with the key also stored inside and re-checked on load.
+
+Measured: cold 19.6 s, warm 0.000 s, identical results.
+
+### What the integration actually changed, decomposed
+
+TAM goes UP, not down -- which is not what "we fixed a 1.5x overstatement" would lead
+you to expect. **Two fixes with opposite signs are bundled in this switch**, and it
+would be easy (and wrong) to report only the net. Measured at N=10,900, TAM $B/month:
+
+| stage | unconnected | full |
+|---|---|---|
+| (a) old: latitude-pooled capacity, 1 person = 1 dish | 4.67 | 11.68 |
+| (b) + longitude fix (tiles), still 1 person = 1 dish | **3.21** | **8.61** |
+| (c) + households fix (connections) = what ships | **6.60** | **20.19** |
+
+The longitude fix alone cuts TAM ~31%. The households fix (people are not dishes; see
+the units section above) more than reverses it. Net ~1.4x up for `unconnected`,
+~1.7x for `full`.
+
+**The longitude fix is not a uniform haircut -- it REDISTRIBUTES, and sharply.**
+Servable fraction at N=10,900, old -> longitude-only:
+
+| country | old | longitude only | effect |
+|---|---|---|---|
+| India | 8.3% | 2.0% | **0.24x** |
+| Brazil | 49.4% | 20.6% | 0.42x |
+| Nigeria | 11.7% | 5.0% | 0.43x |
+| China | 9.4% | 5.1% | 0.55x |
+| Indonesia | 18.7% | 10.4% | 0.56x |
+| Russia | 32.3% | 38.2% | 1.18x |
+| Australia | 83.8% | 100.0% | 1.19x |
+| United States | 12.6% | 26.5% | **2.10x** |
+
+Exactly the predicted mechanism, now measured: ring-pooling was crediting dense
+low-latitude countries with capacity that was really sitting over empty ocean at their
+latitude, and India was the biggest beneficiary of that error. The USA *gains* from the
+fix because it shares its latitude band with Europe's and Asia's populations, which
+were diluting its pooled share -- once capacity is local, it keeps what is overhead.
+
+### Sanity check on the new per-country numbers
+
+At N=4,408: Australia 100%, Canada 72%, Russia 40%, USA 27%, Indonesia 16%, Nigeria 10%,
+China 6.1%, India 3.8%. Sparse high-latitude countries saturate first; dense low-latitude
+ones last -- the same supply-constrained-South-Asia finding this project reached from the
+saturation heatmap, now reproduced through a completely independent code path.
+
+### New chart
+
+`charts/derived_vs_real_price.py` -> `results/market/derived_vs_real_price_by_country.png`,
+built at the user's request to size the pricing assumption rather than leave it in prose.
+Log-log scatter of elasticity-derived price against each country's real local price, y=x
+diagonal, 10x/0.1x guides, coloured by region. **Median 1.04x, but the large unconnected
+markets sit far above: Fiji 21x, Sri Lanka 14x, India 9.9x, Pakistan 9.8x, Nigeria 6.7x.**
+The extreme low-ratio points (Zimbabwe 0.0x, South Sudan, Syria) are the known bad-ARPU
+survey outliers of ASSUMPTIONS.md #4 showing up from a new angle.
+
+**Layout note**: `set_aspect("equal")` on this chart fought constrained_layout and forced
+the axes taller than the figure, clipping the title AND the x tick labels. Dropped it --
+with equal x/y limits, y=x is the corner-to-corner diagonal anyway.
+
+### Still open
+
+- **Revenue-ranked allocation.** `tile_capacity_model` maximises connections served and is
+  revenue-blind; TAM prices whatever got served. The user's stated intent is to serve the
+  highest-revenue customers first within each tile's reachable set. Note the shape of the
+  problem before starting: the UNCONNECTED price is exogenous (a country's real
+  %unconnected and GNI, independent of N), so ranking on it is well defined -- but the
+  CONNECTED price in `mode="full"` is lerped by how much of that country's connected
+  population is served, which depends on the allocation, so that half needs a fixed point
+  or an explicit simplification.
+- `orbital_geometry.expected_sats_reaching_latitude()` (the ~19x overcount) is now unused
+  by the market path but still used by `serviceable_customers_model.py` and its charts.
+
+## Migrated the remaining latitude-only charts onto the tile model (2026-09-05, same day)
+
+User: "Update existing charts with this new method. Eg. satellite utilization needs
+regeneration now, look for others that need it too." A repo-wide grep for
+`serviceable_customers_model` found **four chart families** still built on the
+latitude-only model (the TAM integration earlier this session only touched the market
+layer, not these): `charts/satellite_utilization.py`, `charts/
+serviceable_customers_per_satellite_chart.py`, `charts/latitude_saturation_heatmap.py`,
+`charts/population_connected_market_ladder.py`. All four called functions that trace
+back to `orbital_geometry.expected_sats_reaching_latitude()` (the ~19x ring-overcounted
+density cap) or the ring-pooled aggregate capacity term -- so all four were carrying the
+same longitude bug this session already fixed for the market layer, just not yet for
+these.
+
+**New shared readouts added to `tile_capacity_model.py`** (not duplicated per chart):
+`fleet_utilization(result)` (global scalar), `served_fraction_by_latitude(result, tile)`
+(population-weighted marginal over longitude, for the saturation heatmap),
+`density_cap_connections_per_km2()` / `density_cap_profile_average_people()` (the areal
+ceiling, standalone from a full solve since only the ceiling itself is wanted). The last
+one is a DELIBERATE change, not a like-for-like port: the old latitude-only version
+weighted its single summary number by where SATELLITES concentrate (cap-weighted,
+answering "what ceiling does a typical satellite support"); this one weights by where
+PEOPLE actually are (population-weighted), which is now possible and is the more useful
+reading of "what ceiling does a typical person experience."
+
+**Performance decision, made before writing any chart code**: a full-resolution (1deg)
+solve costs ~15-16s, and these charts need dozens-to-hundreds of points per sweep to
+render a smooth curve -- at 1deg that's tens of minutes PER chart. Measured timing
+across tile sizes first: 2deg tiles solve in ~2s (worst case) and differ from 1deg by
+**<0.5%** on global totals (served_people at N=100,000: 8,484M @ 1deg vs 8,514M @ 2deg).
+**All four migrated chart files now sweep at 2deg**, not the production 1deg -- the
+per-tile utilization MAP (`tile_utilization_map.py`, built earlier this session) still
+solves at full 1deg resolution since it only needs a handful of fixed fleet sizes, not
+a hundred-point sweep.
+
+**One figure retired outright, not migrated**: `satellite_utilization.py`'s world-map
+utilization heatmap. It was already latitude-striped by construction (the old model has
+no longitude dimension); `charts/tile_utilization_map.py` already draws the same
+question correctly per-tile, so migrating the old one would only produce a worse
+duplicate. `git rm`'d `results/population/utilization_heatmap_world.png`.
+
+**One chart pair deliberately left un-migrated, clearly flagged rather than silently
+skipped**: `serviceable_customers_per_satellite_chart.py`'s US 1km-vs-100m
+population-resolution comparison. It asks a narrow question (does WorldPop raster
+resolution change the answer) using the SAME old capacity model on both curves as a
+controlled A/B, so the longitude bug cancels out of the comparison between them. A real
+2D version would need the US's 100m raster re-streamed into the global tile grid (~10
+min pass) AND the US modelled with its real neighbours (Canada/Mexico) instead of in
+isolation, which changes what the comparison even measures -- judged not worth rushing.
+Both the module docstring and each figure's info box now say so explicitly. (This
+comparison's cache file happens to be absent in the current environment anyway, so
+`main()` already skips it -- unaffected either way.)
+
+**Verified after regenerating**: `latitude_saturation_heatmap.png` now saturates by
+~N=150,000-300,000 instead of needing up to 6-8M -- consistent with the corrected
+global model's own saturation point. The asymmetric grey band (uncovered latitudes
+start around +83 in the north but only -55 in the south) is real, not a bug: Arctic
+settlements have real WorldPop population up to high latitude, Antarctica has none.
+`serviceable_customers_vs_satellites_global.png` and `population_connected_vs_capacity
+.png` both now saturate at the same point the main model's own headline table shows
+(~N=300,000). `servable_density_vs_satellites.png` is an exact straight line on log-log
+axes, as expected (the density cap is exactly proportional to N).
+
+## Elasticity pricing mechanism diagram: chained arrows + market-share labels (2026-09-05)
+
+`charts/elasticity_pricing_diagram.py` -> `results/tam/elasticity_pricing_mechanism.png`
+existed already (built by another session, illustrates tam_model.py's pricing for one
+illustrative "Country A"). User asked for a geometry change: the two arrows used to
+diverge from one shared start point (Country A's real position); now they CHAIN --
+step 1 (blue) still traces the elasticity curve down from Country A's real position to
+y=0 (serving the originally-unconnected population drives %unconnected to 0), and step 2
+(red) now starts exactly where step 1 ENDS and runs horizontally to Country A's own
+x-coordinate at y=0 (not to the dot itself, which stays at y=60 -- a vertical dotted
+guide ties the two together). This reads as a real narrative match to `tam_model.py`'s
+two modes: step 1 = mode="unconnected" (captures the original %unconnected share), step 2
+= mode="full" (additionally captures the already-connected population at their real
+incumbent price). Labelled accordingly: arrow ends say "XX% Starlink market share" (XX =
+Country A's original %unconnected) and "100% Starlink market share". Country A's
+illustrative numbers changed 30%/5% -> 60%/10%. Legend renamed per request to "Step 2:
+Serve existing users and interpolate to incumbent price"; the inline caption explaining
+that step was deleted per a same-turn follow-up.
+
+**One real layout bug hit while fixing this**: the market-share labels first placed
+ABOVE the y=0 line collided with the diagonal blue arrow, the dashed curve, and each
+other at the tight three-line junction near floor_x. Fixed by moving both labels BELOW
+y=0 into the axis's small negative margin (`ax.set_ylim(-3, 103)` already provided just
+enough room) -- a cleaner fix than nudging either label sideways, since sideways
+crowds toward each other while below has empty space.

@@ -1,22 +1,24 @@
 """Satellite capacity UTILIZATION -- % of available satellite capacity actually
 used to serve customers (served/supply), a DIFFERENT question from the
-serviceable-customers family's served/population -- see
-serviceable_customers_model.capacity_utilization_by_latitude()'s docstring.
-User request 2026-08-14.
+serviceable-customers family's served/population.
 
-Two charts:
-  1. utilization_vs_satellites(_linear).png -- global aggregate utilization vs.
-     total satellites, same "vs. satellite count" family as the serviceable-
-     customers charts (satellite count on the bottom x-axis, cumulative max
-     capacity in Tbps on a secondary top axis).
-  2. utilization_heatmap_world.png -- the requested "corollary" world-map view, at
-     one fixed N. Per the user's own expectation and this session's scoping
-     discussion: the underlying model is latitude-only (no per-country/per-cell
-     distinction in satellite supply), so this map shows genuine horizontal
-     STRIPES -- the same utilization value at every longitude within a 1deg
-     latitude band -- not per-cell variation like the population density map. This
-     is an honest rendering of what the model actually computes, not a
-     simplification of a richer 2D result.
+MIGRATED 2026-09-05 from serviceable_customers_model.py's latitude-only functions
+to tile_capacity_model.py's 2D (lat x lon) allocation. That model pooled satellite
+capacity around whole 40,000 km latitude rings and used a density cap derived from
+orbital_geometry.expected_sats_reaching_latitude(), which overcounts satellites in
+view by ~19x (it sums every satellite at a given LATITUDE regardless of longitude,
+not the ones actually within reach -- see LONGITUDE_FOV_CAPACITY_REVIEW.md). The
+world-map utilization heatmap this file used to draw is retired outright rather than
+migrated: charts/tile_utilization_map.py already renders the same question correctly
+per TILE instead of as latitude stripes, so keeping this one would just be a worse
+duplicate.
+
+Sweeps here use COARSER (2deg) tiles than the 1deg production model. Each solve
+costs ~15s at 1deg but ~2s at 2deg, and a smooth "vs satellite count" line needs
+dozens of solves; validated against 1deg at a few points, 2deg differs by <0.5% on
+these global totals (tile_capacity_validation.py's own cross-resolution check found
+a similar <1% spread). The per-tile utilization MAP (tile_utilization_map.py) still
+solves at the full 1deg resolution for its handful of fixed fleet sizes.
 
 Run: python charts/satellite_utilization.py
 """
@@ -27,33 +29,35 @@ from pathlib import Path
 
 import matplotlib.ticker as mticker
 import numpy as np
-from matplotlib.colors import Normalize
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-import population_density_grid as pdg
-import serviceable_customers_model as scm
-from coverage_map import draw_world_basemap, load_land_paths
-from serviceable_customers_chart import (
-    SHELL_RATIO_NOTE, SOURCE_NOTE, _add_capacity_secondary_axis, _add_fleet_reference_lines,
-    ESTIMATED_CURRENT_CAPACITY_SATS,
-)
-from viz import render, info_box
+import tile_capacity_model as tcm
+from serviceable_customers_chart import _add_capacity_secondary_axis, _add_fleet_reference_lines
+from viz import render
 
 OUT_ROOT = Path(__file__).resolve().parent.parent / "results" / "population"
+
+#: Coarser than the production 1deg grid -- see module docstring for why that's fine
+#: for a global total, and results/tile_capacity/ for the full-resolution per-tile maps.
+SWEEP_TILE_DEG = 2.0
 
 
 def _pct_formatter(x, _pos):
     return f"{x:.0%}" if x >= 0.01 else f"{x:.1%}"
 
 
+def _sweep(sat_counts, tile, demand):
+    return np.array([tcm.fleet_utilization(r) for r in tcm.sweep(sat_counts, tile=tile, demand=demand)])
+
+
 # --------------------------------------------------------------------------------------
 # Chart 1: global aggregate utilization vs. total satellites
 # --------------------------------------------------------------------------------------
-def fig_utilization_vs_satellites(hist, dens_centers, lat_centers):
-    sat_counts = np.geomspace(1, 2_000_000, 46)
-    util = scm.sweep_capacity_utilization(sat_counts, hist, dens_centers, lat_centers)
+def fig_utilization_vs_satellites(tile, demand):
+    sat_counts = np.geomspace(1, 2_000_000, 30)
+    util = _sweep(sat_counts, tile, demand)
 
     fig, ax = render.new_figure(figsize=(12, 7.5))
     ax.plot(sat_counts, util, color="#4575b4", linewidth=2, label="Capacity utilization (global)")
@@ -76,9 +80,9 @@ def fig_utilization_vs_satellites(hist, dens_centers, lat_centers):
 UTIL_LINEAR_MAX_SATS = 2_000_000
 
 
-def fig_utilization_vs_satellites_linear(hist, dens_centers, lat_centers):
-    sat_counts = np.linspace(1, UTIL_LINEAR_MAX_SATS, 200)
-    util = scm.sweep_capacity_utilization(sat_counts, hist, dens_centers, lat_centers)
+def fig_utilization_vs_satellites_linear(tile, demand):
+    sat_counts = np.linspace(1, UTIL_LINEAR_MAX_SATS, 60)
+    util = _sweep(sat_counts, tile, demand)
 
     fig, ax = render.new_figure(figsize=(12, 7.5))
     ax.plot(sat_counts, util, color="#4575b4", linewidth=2, label="Capacity utilization (global)")
@@ -97,61 +101,19 @@ def fig_utilization_vs_satellites_linear(hist, dens_centers, lat_centers):
     return fig, OUT_ROOT / "utilization_vs_satellites_linear.png"
 
 
-# --------------------------------------------------------------------------------------
-# Chart 2: world-map utilization heatmap at one fixed N (latitude-striped, see module docstring)
-# --------------------------------------------------------------------------------------
-UTIL_MAP_SATS = ESTIMATED_CURRENT_CAPACITY_SATS  # today's real capacity, in V3-equivalent satellites
-
-
-def fig_utilization_heatmap_world(hist, dens_centers, lat_centers, land_paths):
-    util = scm.capacity_utilization_by_latitude(UTIL_MAP_SATS, hist, dens_centers, lat_centers)
-    lat_edges = np.arange(-90, 90 + scm.BIN_WIDTH_DEG, scm.BIN_WIDTH_DEG)
-    lon_edges = np.array([-180.0, 180.0])
-    data = np.ma.masked_invalid(util[:, None])  # (n_lat, 1) -- constant across longitude, by construction
-
-    fig, ax = render.new_figure(figsize=(16, 9))
-    draw_world_basemap(ax, land_paths)
-
-    import matplotlib as mpl
-    cmap = mpl.colormaps["viridis"].copy()
-    cmap.set_bad(alpha=0)  # uncovered / no-supply bands: basemap shows through, not a color
-    pcm = ax.pcolormesh(lon_edges, lat_edges, data, cmap=cmap, norm=Normalize(vmin=0, vmax=1),
-                        shading="flat", zorder=2, alpha=0.85)
-
-    cbar = fig.colorbar(pcm, ax=ax, pad=0.015, shrink=0.65)
-    cbar.set_label("% of available satellite capacity used")
-    cbar.ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda v, _: f"{v:.0%}"))
-
-    ax.set_title(f"Satellite capacity utilization by latitude, world map (N={UTIL_MAP_SATS:,.0f} satellites)")
-    ax.set_xlim(-180, 180)
-    ax.set_ylim(-60, 85)
-
-    info_box.add_info_box(
-        ax, fig,
-        f"Latitude-striped, not per-country: this model computes utilization\n"
-        "per latitude band only (no per-country/per-cell supply distinction),\n"
-        "so every longitude at a given latitude shows the SAME value -- an\n"
-        "honest rendering of the model, not a simplified 2D result.\n"
-        f"{SHELL_RATIO_NOTE}. " + SOURCE_NOTE,
-        mode="on",
-    )
-    return fig, OUT_ROOT / "utilization_heatmap_world.png"
-
-
-def figures(grid: pdg.PopulationGrid, land_paths):
-    lat_centers, dens_centers, hist = scm.density_area_histogram_by_latitude(grid)
+def figures(tile=None, demand=None):
+    tile = tile if tile is not None else tcm.make_tile_grid(SWEEP_TILE_DEG)
+    demand = demand if demand is not None else tcm.build_demand(tile)
     return [
-        ("utilization_vs_satellites", lambda: fig_utilization_vs_satellites(hist, dens_centers, lat_centers)),
-        ("utilization_vs_satellites_linear",
-         lambda: fig_utilization_vs_satellites_linear(hist, dens_centers, lat_centers)),
-        ("utilization_heatmap_world", lambda: fig_utilization_heatmap_world(hist, dens_centers, lat_centers, land_paths)),
+        ("utilization_vs_satellites", lambda: fig_utilization_vs_satellites(tile, demand)),
+        ("utilization_vs_satellites_linear", lambda: fig_utilization_vs_satellites_linear(tile, demand)),
     ]
 
 
 def main():
-    grid = pdg.load_or_build_grid()
-    land_paths = load_land_paths()
-    plan = figures(grid, land_paths)
+    tile = tcm.make_tile_grid(SWEEP_TILE_DEG)
+    demand = tcm.build_demand(tile)
+    plan = figures(tile, demand)
     for name, build in plan:
         fig, path = build()
         render.save_fig(fig, path)

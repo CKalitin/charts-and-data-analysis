@@ -1,19 +1,15 @@
-"""New market-ladder-style chart: population CONNECTED vs. cumulative capacity
+"""Market-ladder-style chart: population CONNECTED vs. cumulative capacity
 deployed / satellite count -- same capacity-Gbps-primary-axis convention as
-market_ladder.py / avg_price_market_ladder.py, but reuses the ALREADY-BUILT
-"serviceable customers" model (serviceable_customers_model.sweep_per_satellite_cap(),
-charts/serviceable_customers_per_satellite_chart.py) rather than the per-country TAM
-pipeline -- "population connected" doesn't depend on pricing/household size/ARPU at
-all, only on the physical density-cap + aggregate-capacity model, which needs just
-the GLOBAL population density grid (already cached, no per-country raster reload).
+market_ladder.py / avg_price_market_ladder.py.
 
-served = min(aggregate satellite capacity, density-capped population), summed across
-every 1deg latitude band -- see serviceable_customers_model.py's per-satellite-cap
-section for the full mechanism. This IS the same quantity the existing
-serviceable_customers_vs_satellites_global(_linear).png charts, just re-axed here
-(capacity Gbps primary / satellites secondary, matching this session's market-ladder
-chart family) instead of their satellites-primary / Tbps-secondary convention -- not
-a new model.
+MIGRATED 2026-09-05 from serviceable_customers_model.sweep_per_satellite_cap()
+(latitude-only) to tile_capacity_model.py's 2D (lat x lon) allocation -- "population
+connected" doesn't depend on pricing/household size/ARPU, so this reads directly off
+AllocationResult.total_served_people rather than the per-country TAM pipeline.
+
+Sweeps here use COARSER (2deg) tiles than the 1deg production model -- see
+charts/satellite_utilization.py's docstring for the validated <0.5% difference on
+global totals.
 
 Run: python charts/population_connected_market_ladder.py
 """
@@ -29,19 +25,23 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import capacity_density_model as cdm
-import population_density_grid as pdg
-import serviceable_customers_model as scm
+import tile_capacity_model as tcm
 from market_ladder import _human
-from serviceable_customers_chart import ESTIMATED_CURRENT_CAPACITY_SATS, SHELL_RATIO_NOTE, SOURCE_NOTE, _pop_formatter
+from serviceable_customers_chart import ESTIMATED_CURRENT_CAPACITY_SATS, SOURCE_NOTE, _pop_formatter
 from viz import render, info_box
 
 OUT_ROOT = Path(__file__).resolve().parent.parent / "results" / "market_ladder"
 
 GBPS_PER_SAT = cdm.V3_SCENARIO.downlink_gbps_per_beam * cdm.V3_SCENARIO.beams_per_satellite  # 1,024
 
+#: Coarser than the production 1deg grid -- see satellite_utilization.py's docstring.
+SWEEP_TILE_DEG = 2.0
+
+TILE_SHELL_NOTE = "Real Gen1 shells: 53.0/53.2/70.0/97.6deg, real 25deg-elevation coverage disks"
+
 CAPACITY_XLIM_MAX = 1_000e6  # 1000M Gbps -- user-requested cutoff; the curve is
 # already fully flat/saturated well before this (~100-200M), so nothing past it is lost
-SAT_COUNTS_LOG = np.geomspace(100, 1_000_000, 40)  # -> ~1,024M Gbps, just past the cutoff
+SAT_COUNTS_LOG = np.geomspace(100, 1_000_000, 30)  # -> ~1,024M Gbps, just past the cutoff
 LINEAR_MAX_SATS = 1_000_000  # -> ~1,024M Gbps, same reasoning
 
 
@@ -89,16 +89,15 @@ def _draw_chart(ax, capacity_gbps, served, raw_pop, *, log_scale: bool):
     info_box.add_info_box(
         ax, ax.figure,
         f"Approaches raw population ({_pop_formatter(raw_pop, None)}) as capacity grows --\n"
-        "density cap scales with range-extended satellites reaching each band.\n"
-        f"{SHELL_RATIO_NOTE}. " + SOURCE_NOTE,
+        "density cap scales with real satellites reaching each tile's coverage disk.\n"
+        f"{TILE_SHELL_NOTE}. " + SOURCE_NOTE,
         mode="on",
     )
 
 
-def fig_population_connected_log(grid):
-    lat_centers, dens_centers, hist = scm.density_area_histogram_by_latitude(grid)
-    served = scm.sweep_per_satellite_cap(SAT_COUNTS_LOG, hist, dens_centers, lat_centers)
-    raw_pop = float(np.sum(hist * dens_centers[None, :]))
+def fig_population_connected_log(tile, demand):
+    served = np.array([r.total_served_people for r in tcm.sweep(SAT_COUNTS_LOG, tile=tile, demand=demand)])
+    raw_pop = float(demand.population.sum())
     capacity_gbps = SAT_COUNTS_LOG * GBPS_PER_SAT
 
     fig, ax = render.new_figure(figsize=(13, 8))
@@ -106,12 +105,10 @@ def fig_population_connected_log(grid):
     return fig, OUT_ROOT / "population_connected_vs_capacity.png"
 
 
-def fig_population_connected_linear(grid):
-    sat_counts = np.linspace(0, LINEAR_MAX_SATS, 200)
-    sat_counts[0] = 1.0
-    lat_centers, dens_centers, hist = scm.density_area_histogram_by_latitude(grid)
-    served = scm.sweep_per_satellite_cap(sat_counts, hist, dens_centers, lat_centers)
-    raw_pop = float(np.sum(hist * dens_centers[None, :]))
+def fig_population_connected_linear(tile, demand):
+    sat_counts = np.linspace(1, LINEAR_MAX_SATS, 40)
+    served = np.array([r.total_served_people for r in tcm.sweep(sat_counts, tile=tile, demand=demand)])
+    raw_pop = float(demand.population.sum())
     capacity_gbps = sat_counts * GBPS_PER_SAT
 
     fig, ax = render.new_figure(figsize=(13, 8))
@@ -119,16 +116,22 @@ def fig_population_connected_linear(grid):
     return fig, OUT_ROOT / "population_connected_vs_capacity_linear.png"
 
 
+def figures(tile=None, demand=None):
+    tile = tile if tile is not None else tcm.make_tile_grid(SWEEP_TILE_DEG)
+    demand = demand if demand is not None else tcm.build_demand(tile)
+    return [
+        ("population_connected_log", lambda: fig_population_connected_log(tile, demand)),
+        ("population_connected_linear", lambda: fig_population_connected_linear(tile, demand)),
+    ]
+
+
 def main():
-    grid = pdg.load_or_build_grid()
-
-    fig, path = fig_population_connected_log(grid)
-    render.save_fig(fig, path)
-    print(f"wrote {path.relative_to(Path(__file__).resolve().parent.parent)}")
-
-    fig, path = fig_population_connected_linear(grid)
-    render.save_fig(fig, path)
-    print(f"wrote {path.relative_to(Path(__file__).resolve().parent.parent)}")
+    tile = tcm.make_tile_grid(SWEEP_TILE_DEG)
+    demand = tcm.build_demand(tile)
+    for name, build in figures(tile, demand):
+        fig, path = build()
+        render.save_fig(fig, path)
+        print(f"wrote {path.relative_to(Path(__file__).resolve().parent.parent)}")
 
 
 if __name__ == "__main__":

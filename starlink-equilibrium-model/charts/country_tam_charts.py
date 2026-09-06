@@ -36,10 +36,7 @@ from matplotlib.colors import LogNorm
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-import country_service_model as csm
-import country_tam_model as ctm
-import population_density_grid as pdg
-import serviceable_customers_model as scm
+import tam_model as tm
 from country_choropleth import draw_choropleth, load_country_paths
 from regions import REGION_COLORS, REGION_SHORT
 from serviceable_customers_chart import _add_capacity_secondary_axis, _add_fleet_reference_lines
@@ -57,7 +54,9 @@ OUT_ROOT = Path(__file__).resolve().parent.parent / "results" / "market"
 # at the call site, never append this inline onto another sentence.
 TAM_SOURCE_NOTE = "Source: World Bank; Wikipedia (household size)"
 
-PRICE_MAP_SATS = 100_000  # user-specified N for the price heatmap
+#: Only used to pick which sweep entry the price map is built from. The derived
+#: price no longer varies with N, so the choice is immaterial to the output.
+PRICE_MAP_SATS = 100_000
 
 
 def _usd_formatter(x, _pos):
@@ -72,9 +71,10 @@ def _usd_formatter(x, _pos):
 # --------------------------------------------------------------------------------------
 # Chart 1: subscription price by country, choropleth, at N=100,000
 # --------------------------------------------------------------------------------------
-def fig_price_heatmap_by_country(rows: list[ctm.CountryTAM], country_paths):
+def fig_price_heatmap_by_country(rows: list[tm.CountryTAM], country_paths):
     fig, ax = render.new_figure(figsize=(16, 9))
-    prices = {r.iso3: r.price_usd_per_month for r in rows if r.price_usd_per_month > 0}
+    prices = {r.iso3: r.price_unconnected_usd_per_month for r in rows
+              if r.price_unconnected_usd_per_month > 0}
 
     import matplotlib as mpl
     cmap = mpl.colormaps["plasma"].copy()
@@ -88,23 +88,22 @@ def fig_price_heatmap_by_country(rows: list[ctm.CountryTAM], country_paths):
     cbar.ax.yaxis.set_major_formatter(mticker.FuncFormatter(_usd_formatter))
     cbar.ax.yaxis.set_minor_formatter(mticker.NullFormatter())
 
-    ax.set_title(f"Derived monthly subscription price by country (N={PRICE_MAP_SATS:,} satellites)")
+    ax.set_title("Derived monthly subscription price by country")
     ax.set_xlabel("Longitude")
     ax.set_ylabel("Latitude")
 
-    n_premium = sum(1 for r in rows if r.price_basis == "scarcity_premium_on_local_price")
-    n_local = sum(1 for r in rows if r.price_basis == "existing_local_price")
     n_missing = len({r.iso3 for r in rows}) - len(prices)
     info_box.add_info_box(
         ax, fig,
-        f"{len(prices)} countries priced ({n_premium} scarcity-premium,\n"
-        f"{n_local} existing local price, {n_missing} missing price data).\n"
+        f"{len(prices)} countries priced, {n_missing} missing price data.\n"
+        "Price depends only on each country's own %unconnected and\n"
+        "GNI/capita, so it does NOT vary with satellite count.\n"
         "Grey = no price data or no 110m country polygon (~50 small\n"
         "states/territories excluded from the basemap resolution).\n"
         + TAM_SOURCE_NOTE,
         mode="on",
     )
-    return fig, OUT_ROOT / "subscription_price_by_country_100k.png"
+    return fig, OUT_ROOT / "subscription_price_by_country.png"
 
 
 # --------------------------------------------------------------------------------------
@@ -172,18 +171,14 @@ def fig_tam_vs_satellites_linear(sat_counts, tam):
 # sweep table).
 # --------------------------------------------------------------------------------------
 def export_tam_csv(telecom_rows: list[dict], household_size: dict[str, float],
-                    country_pop_by_lat: dict[str, tuple[np.ndarray, np.ndarray]],
-                    global_lat_centers: np.ndarray, global_area_hist: np.ndarray,
-                    global_dens_centers: np.ndarray, buckets: list[int] = SAT_BUCKETS):
+                    country_pop_by_tile, tile, demand, buckets: list[int] = SAT_BUCKETS):
     """Writes tam_by_country_vs_satellites.csv (one row per country) and
     tam_by_continent_vs_satellites.csv (one row per region, countries summed) --
     both wide-format, one column per N in `buckets`. Returns (country_path,
     continent_path)."""
-    rows_per_bucket = {
-        n: ctm.compute_country_tam(n, telecom_rows, household_size, country_pop_by_lat, global_lat_centers,
-                                    global_area_hist, global_dens_centers)
-        for n in buckets
-    }
+    rows_per_bucket = dict(zip(buckets, tm.sweep_country_tam(
+        buckets, telecom_rows, household_size, country_pop_by_tile, tile, demand,
+        mode="unconnected", verbose=True)))
     by_iso3_per_bucket = {n: {r.iso3: r.tam_usd_per_month for r in rows} for n, rows in rows_per_bucket.items()}
 
     bucket_cols = [f"tam_usd_per_month_n{n:,}".replace(",", "_") for n in buckets]
@@ -244,46 +239,41 @@ def fig_tam_vs_satellites_stacked_by_region(sat_counts, by_region: dict[str, np.
 
 
 def main():
-    grid = pdg.load_or_build_grid()
-    lat_centers, dens_centers, hist = scm.density_area_histogram_by_latitude(grid)
-    telecom_rows = ctm.load_telecom_rows()
-    household_size = ctm.load_household_size()
-    iso3_list = [r["iso3"] for r in telecom_rows]
+    telecom_rows, household_size, tile, demand, pop_by_tile = tm.load_inputs(verbose=True)
+    args = (telecom_rows, household_size, pop_by_tile, tile, demand)
 
-    print("loading per-country population-by-latitude (one-time, ~217 rasters)...")
-    pop_by_lat = csm.load_all_country_population_by_latitude(iso3_list, verbose=True)
-
-    price_rows = ctm.compute_country_tam(PRICE_MAP_SATS, telecom_rows, household_size, pop_by_lat, lat_centers,
-                                          hist, dens_centers)
-    country_paths = load_country_paths()
-    fig, path = fig_price_heatmap_by_country(price_rows, country_paths)
+    # The derived price depends only on a country's own %unconnected and GNI/capita,
+    # not on fleet size, so this map is the same at every N -- it is drawn once now,
+    # where the old model's scarcity premium made it N-dependent and two were drawn.
+    price_rows = tm.sweep_country_tam([PRICE_MAP_SATS], *args, mode="unconnected")[0]
+    fig, path = fig_price_heatmap_by_country(price_rows, load_country_paths())
     render.save_fig(fig, path)
     print(f"  wrote {path.relative_to(Path(__file__).resolve().parent.parent)}")
 
+    # One sweep, reduced two ways -- each solve is ~15 s, so re-sweeping for the
+    # by-region chart would double the run for identical numbers.
     sat_counts = np.geomspace(100, 2_000_000, 30)
-    tam = ctm.sweep_total_tam(sat_counts, telecom_rows, household_size, pop_by_lat, lat_centers, hist, dens_centers)
+    rows_log = tm.sweep_country_tam(sat_counts, *args, mode="unconnected", verbose=True)
+    tam = tm.total_tam(rows_log)
 
     fig, path = fig_tam_vs_satellites(sat_counts, tam)
     render.save_fig(fig, path)
     print(f"  wrote {path.relative_to(Path(__file__).resolve().parent.parent)}")
 
     sat_counts_linear = np.linspace(1, TAM_LINEAR_MAX_SATS, 60)
-    tam_linear = ctm.sweep_total_tam(sat_counts_linear, telecom_rows, household_size, pop_by_lat, lat_centers,
-                                      hist, dens_centers)
+    tam_linear = tm.total_tam(tm.sweep_country_tam(sat_counts_linear, *args,
+                                                   mode="unconnected", verbose=True))
     fig, path = fig_tam_vs_satellites_linear(sat_counts_linear, tam_linear)
     render.save_fig(fig, path)
     print(f"  wrote {path.relative_to(Path(__file__).resolve().parent.parent)}")
 
-    by_region = ctm.sweep_tam_by_region(sat_counts, telecom_rows, household_size, pop_by_lat, lat_centers, hist,
-                                         dens_centers)
-    fig, path = fig_tam_vs_satellites_stacked_by_region(sat_counts, by_region)
+    fig, path = fig_tam_vs_satellites_stacked_by_region(sat_counts, tm.tam_by_region(rows_log))
     render.save_fig(fig, path)
     print(f"  wrote {path.relative_to(Path(__file__).resolve().parent.parent)}")
 
     print("wrote 4 charts")
 
-    country_path, continent_path = export_tam_csv(telecom_rows, household_size, pop_by_lat, lat_centers, hist,
-                                                    dens_centers)
+    country_path, continent_path = export_tam_csv(telecom_rows, household_size, pop_by_tile, tile, demand)
     print(f"  wrote {country_path.relative_to(Path(__file__).resolve().parent.parent)}")
     print(f"  wrote {continent_path.relative_to(Path(__file__).resolve().parent.parent)}")
 

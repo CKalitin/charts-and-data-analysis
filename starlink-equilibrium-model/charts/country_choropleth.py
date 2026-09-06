@@ -11,47 +11,21 @@ this loader handles both.
 """
 from __future__ import annotations
 
-import json
+import sys
 from pathlib import Path
 
-import numpy as np
-from matplotlib.path import Path as MplPath
+import numpy as np  # noqa: F401
+from matplotlib.path import Path as MplPath  # noqa: F401
 from matplotlib.patches import PathPatch
 
-COUNTRIES_GEOJSON = Path(__file__).resolve().parent.parent / "data" / "raw" / "ne_110m_admin_0_countries.geojson"
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+# Boundary loading moved to the project root (country_geometry.py) so the model
+# layer can use it too without importing upward from charts/. Re-exported here so
+# existing `from country_choropleth import load_country_paths` callers still work.
+from country_geometry import COUNTRIES_GEOJSON, load_country_paths, polygon_to_path  # noqa: F401
 
-def _polygon_to_path(rings) -> MplPath:
-    """One Polygon's rings (outer boundary + optional holes) -> one compound Path."""
-    verts, codes = [], []
-    for ring in rings:
-        ring = np.asarray(ring)
-        verts.append(ring)
-        codes.append([MplPath.MOVETO] + [MplPath.LINETO] * (len(ring) - 2) + [MplPath.CLOSEPOLY])
-    return MplPath(np.concatenate(verts), np.concatenate(codes))
-
-
-def load_country_paths() -> dict[str, list[MplPath]]:
-    """{iso3: [Path, ...]} -- a list because MultiPolygon countries (islands,
-    exclaves) need more than one Path to render correctly. Keyed by ADM0_A3, NOT
-    ISO_A3 -- Natural Earth's ISO_A3 field is "-99" for 5 features (Norway,
-    France, and 3 disputed territories this project doesn't need), ADM0_A3 has no
-    such gaps."""
-    d = json.load(open(COUNTRIES_GEOJSON, encoding="utf-8"))
-    out: dict[str, list[MplPath]] = {}
-    for feat in d["features"]:
-        iso3 = feat["properties"].get("ADM0_A3")
-        if not iso3:
-            continue
-        geom = feat["geometry"]
-        if geom["type"] == "Polygon":
-            polygons = [geom["coordinates"]]
-        elif geom["type"] == "MultiPolygon":
-            polygons = geom["coordinates"]
-        else:
-            continue
-        out.setdefault(iso3, []).extend(_polygon_to_path(rings) for rings in polygons)
-    return out
+_polygon_to_path = polygon_to_path  # backwards-compatible alias
 
 
 def draw_choropleth(ax, country_paths: dict[str, list["MplPath"]], values_by_iso3: dict[str, float],

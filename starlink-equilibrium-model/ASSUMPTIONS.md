@@ -261,6 +261,18 @@ is more exposed to this than a directly-sourced one. The real range is large
 (regional medians span 2.45-5.24 people/household), so getting this wrong for a
 populous country materially moves that country's TAM.
 
+**Update 2026-09-05 — this is now load-bearing for the CAPACITY model too, not just
+TAM.** `tile_capacity_model.py` works in connections, so household size converts
+WorldPop people into connection demand before anything is allocated
+(`household_grid.py` attributes it per lat/lon tile via Natural Earth polygons,
+matching 97.6% of world population; the rest take the population-weighted global mean
+of 3.86). It therefore now scales the headline "people served" figure roughly
+linearly. Additional limitation introduced by the tile attribution: one household
+size per whole country, applied uniformly, whereas rural households are generally
+larger than urban ones — and Starlink's addressable demand skews rural, so the true
+rural figure is probably above the national average, making the conversion mildly
+conservative in exactly the segment that matters most.
+
 ### 14. TAM pricing rule: existing local price below 20% unconnected, elasticity-derived price above
 **Where**: `country_tam_model.py`, `_country_price()`, `UNCONNECTED_PCT_THRESHOLD = 20.0`.
 **User-specified rule, not derived**: below 20% unconnected, price = the country's
@@ -313,6 +325,58 @@ addressable population (`servable_fraction x population`), only how it's split
 between the two price mechanisms.
 
 ---
+
+### 16. Satellite sub-satellite points are uniformly distributed in longitude
+**Where**: `tile_capacity_model.build_supply()` — each shell's latitude profile is
+divided evenly across all longitude tiles.
+**Why it exists**: the 2D model needs satellites placed in (lat, lon), but
+`data/starlink_shells.csv` has no RAAN (right ascension of ascending node) per plane.
+Real Starlink shells space their planes approximately evenly in RAAN, and Earth's
+rotation smears each ground track across every longitude over successive orbits, so
+the long-run time-average satellite density above a latitude circle is genuinely
+longitude-independent. Assumed from the shell design, not computed from TLEs.
+**Impact if wrong**: this is the supply side of every tile in the new model. A real
+constellation with clumped RAAN would have persistently under- and over-served
+longitudes that this model cannot show. Fixable by sourcing real per-plane RAAN
+(Celestrak TLEs) if it ever matters.
+
+### 17. Supply and demand are combined as expected values, not distributions
+**Where**: `tile_capacity_model.allocate()` — the allocation runs on expected
+satellites per tile.
+**Why it exists**: the whole project models satellite counts as time-averaged
+expectations (`orbital_geometry.latitude_density()`). Carried over unchanged.
+**Impact if wrong**: OPTIMISTIC, by Jensen's inequality. Real instantaneous satellite
+counts fluctuate around the mean, and `min(supply, demand)` is concave, so
+`E[min(supply, demand)] <= min(E[supply], E[demand])`. The model therefore reports
+an upper bound on served customers; the gap grows as the fleet shrinks, since a small
+fleet has proportionally larger fluctuations. Not quantified.
+
+### 18. Capacity is allocated as if routing were globally optimal
+**Where**: `tile_capacity_model.allocate()`.
+**Why it exists**: the model asks how many customers the constellation COULD serve,
+so it solves for the best achievable assignment of customers to satellites — a
+max-flow. Validated against an exact max-flow reference on the same graph
+(`tile_capacity_validation.py`): the reported allocation reaches **0.977-0.994 of the
+optimum**, never above it. The remaining ~2% is deliberate — it is the cost of
+averaging the reweighting rounds, which is what keeps the per-tile map physically
+coherent (see `allocate()`'s docstring on the ring artifact).
+**Impact if wrong**: an upper bound on what a real, decentralised handover scheme
+achieves. The model reports the single un-reweighted greedy pass alongside it
+(`AllocationResult.greedy_total`), which is 6-8% lower and is a reasonable
+lower-bound proxy for less coordinated routing — the truth sits between the two.
+
+### 19. Tile resolution = 1 degree
+**Where**: `tile_capacity_model.TILE_DEG = 1.0`.
+**Why it exists**: a computational resolution choice, not a real-world quantity. It
+must be well under the coverage radius (5.7-8.7 deg) for the disk to be resolved, and
+divide evenly into the 0.1 deg WorldPop grid. Sub-tile population density is NOT
+averaged away — it is retained as a per-tile density histogram, so the areal density
+cap still bites inside dense cities.
+**Impact if wrong**: the disk operator was checked against the exact spherical-cap
+area and is accurate to 0.4% at 1 deg. Allocation results at 4 deg and 6 deg differ
+from each other by ~1%, so the answer is not strongly resolution-dependent, but no
+finer-than-1-deg run has been done to confirm convergence from that side.
+
 
 ## Confirmed by the user (locked in, listed for completeness only)
 

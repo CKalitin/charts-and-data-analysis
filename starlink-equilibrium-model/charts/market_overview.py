@@ -15,6 +15,7 @@ import sys
 from pathlib import Path
 
 import matplotlib.ticker as mticker
+import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -144,6 +145,19 @@ def fig_cost_landscape(rows):
     ax.set_title("Current telecom cost landscape (point size ~ unconnected population)")
     ax.xaxis.set_major_formatter(mticker.FuncFormatter(_usd_formatter))
     ax.yaxis.set_major_formatter(mticker.FuncFormatter(_usd_formatter))
+
+    # log-log linear fit (power law in linear space) + R^2
+    log_x = np.log10([p[2] for p in pts])
+    log_y = np.log10([p[3] for p in pts])
+    slope, intercept = np.polyfit(log_x, log_y, 1)
+    fit_y = slope * log_x + intercept
+    ss_res = np.sum((log_y - fit_y) ** 2)
+    ss_tot = np.sum((log_y - log_y.mean()) ** 2)
+    r2 = 1 - ss_res / ss_tot
+    x_line = np.array([log_x.min(), log_x.max()])
+    ax.plot(10 ** x_line, 10 ** (slope * x_line + intercept), color="black",
+            linestyle="--", linewidth=1.3, zorder=1, label=f"Trend (R²={r2:.2f})")
+
     ax.legend(loc="upper left", fontsize=8)
 
     labels = {"United States", "India", "Nigeria", "Germany", "Brazil", "China",
@@ -270,6 +284,62 @@ def fig_connected_vs_broadband_month(rows):
     return fig, OUT_ROOT / "connected_pop_vs_broadband_month_cost.png"
 
 
+
+# --------------------------------------------------------------------------------------
+# Chart 7: GDP per capita (PPP) vs. mobile data cost, $/GB
+# --------------------------------------------------------------------------------------
+def fig_gdp_vs_mobile_cost(rows):
+    pts = []
+    for r in rows:
+        gdp = _f(r, "gdp_per_capita_ppp_usd")
+        gb = _f(r, "mobile_usd_per_gb")
+        u = _f(r, "unconnected_population_est_coverage_corrected") or 0
+        if gdp is None or gb is None or gdp <= 0 or gb <= 0:
+            continue
+        pts.append((r["country"], r["region"], gdp, gb, u))
+
+    fig, ax = render.new_figure(figsize=(11, 7.5))
+    for region in REGION_COLORS:
+        sub = [p for p in pts if p[1] == region]
+        if not sub:
+            continue
+        sizes = [12 + 40 * (u / 1e8) ** 0.5 for *_, u in sub]
+        ax.scatter([p[2] for p in sub], [p[3] for p in sub], s=sizes,
+                   color=REGION_COLORS[region], alpha=0.65, label=REGION_SHORT[region],
+                   edgecolors="none")
+
+    ax.set_xscale("log")
+    ax.set_yscale("log")
+    ax.set_xlabel("GDP per capita, PPP $ (log scale)")
+    ax.set_ylabel("Mobile data cost, $/GB (log scale)")
+    ax.set_title("Mobile data cost vs. GDP per capita, PPP, by country")
+    ax.xaxis.set_major_formatter(mticker.FuncFormatter(_usd_formatter))
+    ax.yaxis.set_major_formatter(mticker.FuncFormatter(_usd_formatter))
+
+    log_x = np.log10([p[2] for p in pts])
+    log_y = np.log10([p[3] for p in pts])
+    slope, intercept = np.polyfit(log_x, log_y, 1)
+    fit_y = slope * log_x + intercept
+    ss_res = np.sum((log_y - fit_y) ** 2)
+    ss_tot = np.sum((log_y - log_y.mean()) ** 2)
+    r2 = 1 - ss_res / ss_tot
+    x_line = np.array([log_x.min(), log_x.max()])
+    ax.plot(10 ** x_line, 10 ** (slope * x_line + intercept), color="black",
+            linestyle="--", linewidth=1.3, zorder=1, label=f"Trend (R²={r2:.2f})")
+
+    ax.legend(loc="upper right", fontsize=8)
+
+    labels = {"United States", "India", "Nigeria", "Germany", "Brazil", "China",
+              "United Kingdom", "Indonesia", "Pakistan", "Ethiopia"}
+    for c, reg, gdp, gb, u in pts:
+        if c in labels:
+            ax.annotate(c, xy=(gdp, gb), xytext=(6, 6), textcoords="offset points", fontsize=7.5)
+
+    info_box.add_info_box(ax, fig, f"{len(pts)} countries plotted\nPoint size ~ unconnected pop.\n{SOURCE_NOTE}",
+                           mode="on")
+    return fig, OUT_ROOT / "gdp_per_capita_vs_mobile_cost.png"
+
+
 def figures(rows):
     return [
         ("unconnected_by_region", lambda: fig_unconnected_by_region(rows)),
@@ -278,6 +348,7 @@ def figures(rows):
         ("affordability_burden", lambda: fig_affordability_burden(rows)),
         ("unconnected_vs_broadband_gb", lambda: fig_unconnected_vs_broadband_gb(rows)),
         ("connected_vs_broadband_month", lambda: fig_connected_vs_broadband_month(rows)),
+        ("gdp_vs_mobile_cost", lambda: fig_gdp_vs_mobile_cost(rows)),
     ]
 
 

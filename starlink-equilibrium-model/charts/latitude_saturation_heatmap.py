@@ -1,16 +1,28 @@
 """Latitude x satellite-count saturation heatmap -- answers "why does it take so
 many satellites to fully serve the population" with a picture instead of a table.
 
+MIGRATED 2026-09-05 from serviceable_customers_model.py's latitude-only served-
+fraction to a population-weighted MARGINAL of tile_capacity_model.py's 2D (lat x
+lon) allocation. The old function derived this from the ring-pooled density cap
+(og.expected_sats_reaching_latitude(), ~19x too generous -- see
+LONGITUDE_FOV_CAPACITY_REVIEW.md); here there is no separate latitude-only
+computation to get wrong -- served_fraction_by_latitude() is a straight population-
+weighted readout of the already-correct 2D solve (tile_capacity_model.py).
+
 Built after discovering (2026-08-11, see CLAUDE.md) that the long tail of the
 serviceable-customers-vs-N curve is NOT a density-cap story for almost the whole
-range -- from ~N=2M to full saturation (~N=6M), essentially 100% of the remaining
-shortfall is AGGREGATE CAPACITY-bound (customers_per_satellite x satellites
-overhead), not density-cap-bound. The real driver: the single most populous
-latitude band on Earth (~26N, India/Bangladesh, ~279M people in one degree of
-latitude) is far from where Starlink's real Gen1 shells concentrate satellites
-(53N) -- a mismatch between orbital geometry and population geography, not a
-density-per-cell problem at all. A world map can't show this (it's a
-latitude x satellite-count relationship, not a spatial one); this heatmap can.
+range -- a mismatch between orbital geometry (Starlink's real Gen1 shells
+concentrate satellites at 53N) and population geography (the single most populous
+latitude band on Earth is ~26N, India/Bangladesh). A world map can't show this
+(it's a latitude x satellite-count relationship, not a spatial one); this heatmap
+can. That finding was about the AGGREGATE capacity term (customers_per_satellite x
+satellites overhead), which the longitude bug never touched -- so the mechanism
+described above is unaffected by this migration; only the density-cap side of the
+"is this band saturated" question was wrong before.
+
+Sweeps here use COARSER (2deg) tiles than the 1deg production model -- see
+satellite_utilization.py's docstring for the validated <0.5% difference on global
+totals; the same reasoning applies to this per-latitude marginal.
 
 Run: python charts/latitude_saturation_heatmap.py
 """
@@ -28,14 +40,16 @@ from matplotlib.colors import LogNorm
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-import population_density_grid as pdg
-import serviceable_customers_model as scm
-from serviceable_customers_chart import (
-    ESTIMATED_CURRENT_CAPACITY_SATS, SHELL_RATIO_NOTE, SOURCE_NOTE, _add_capacity_secondary_axis,
-)
+import tile_capacity_model as tcm
+from serviceable_customers_chart import ESTIMATED_CURRENT_CAPACITY_SATS, SOURCE_NOTE, _add_capacity_secondary_axis
 from viz import render, info_box
 
 OUT_ROOT = Path(__file__).resolve().parent.parent / "results" / "population"
+
+#: Coarser than the production 1deg grid -- see satellite_utilization.py's docstring.
+SWEEP_TILE_DEG = 2.0
+
+TILE_SHELL_NOTE = "Real Gen1 shells: 53.0/53.2/70.0/97.6deg, real 25deg-elevation coverage disks"
 
 # Reference latitudes worth annotating directly on the heatmap.
 LAT_ANNOTATIONS = [
@@ -43,8 +57,17 @@ LAT_ANNOTATIONS = [
     (53.0, "Starlink shell concentration (72% of sats)"),
 ]
 
-
 LOG_COLOR_FLOOR = 1e-4  # 0.01% -- LogNorm can't take exact 0, so exact-0 cells are clipped up to this
+
+
+def _sweep_served_fraction_by_latitude(sat_counts, tile, demand):
+    """(n_lat, n_sats) served-fraction grid -- ONE tile-model solve per N, reused by
+    both colorbar-scale variants. The old file ran an equivalent sweep TWICE (once
+    per figure function); computed once here instead."""
+    cache: dict = {}
+    results = tcm.sweep(sat_counts, tile=tile, demand=demand, operator_cache=cache)
+    frac = np.array([tcm.served_fraction_by_latitude(r, tile) for r in results])  # (n_sats, n_lat)
+    return frac.T  # (n_lat, n_sats), matching pcolormesh(x=sat_counts, y=lat_centers, ...)
 
 
 def _mask_uncovered_bands(frac_masked):
@@ -95,10 +118,8 @@ def _draw_saturation_heatmap(ax, fig, frac_masked, sat_counts, lat_centers, *, l
     return pcm
 
 
-def fig_latitude_saturation_heatmap(hist, dens_centers, lat_centers):
-    sat_counts = np.geomspace(100, 8_000_000, 70)
-    frac = scm.sweep_served_fraction_by_latitude(sat_counts, hist, dens_centers, lat_centers)
-    frac_masked = np.ma.masked_invalid(frac.T)  # (n_lat, n_sats); NaN (no pop in band) -> transparent
+def fig_latitude_saturation_heatmap(frac, sat_counts, lat_centers):
+    frac_masked = np.ma.masked_invalid(frac)  # (n_lat, n_sats); NaN (no pop in band) -> transparent
     frac_masked = _mask_uncovered_bands(frac_masked)
 
     fig, ax = render.new_figure(figsize=(13, 8))
@@ -115,16 +136,14 @@ def fig_latitude_saturation_heatmap(hist, dens_centers, lat_centers):
         "Grey = no population, or permanently beyond satellite coverage.\n"
         "Almost all of the N=2M-6M tail is aggregate-capacity-bound,\n"
         "not density-cap-bound.\n"
-        + SHELL_RATIO_NOTE + ". " + SOURCE_NOTE,
+        + TILE_SHELL_NOTE + ". " + SOURCE_NOTE,
         mode="on",
     )
     return fig, OUT_ROOT / "latitude_saturation_heatmap.png"
 
 
-def fig_latitude_saturation_heatmap_log(hist, dens_centers, lat_centers):
-    sat_counts = np.geomspace(100, 8_000_000, 70)
-    frac = scm.sweep_served_fraction_by_latitude(sat_counts, hist, dens_centers, lat_centers)
-    frac_masked = np.ma.masked_invalid(frac.T)
+def fig_latitude_saturation_heatmap_log(frac, sat_counts, lat_centers):
+    frac_masked = np.ma.masked_invalid(frac)
     frac_masked = _mask_uncovered_bands(frac_masked)
 
     fig, ax = render.new_figure(figsize=(13, 8))
@@ -145,24 +164,27 @@ def fig_latitude_saturation_heatmap_log(hist, dens_centers, lat_centers):
         "Log color scale -- reveals low-%-served structure the linear version hides.\n"
         f"0% clipped to {LOG_COLOR_FLOOR:.2%} (LogNorm floor).\n"
         "Grey = no population, or permanently beyond satellite coverage.\n"
-        + SHELL_RATIO_NOTE + ". " + SOURCE_NOTE,
+        + TILE_SHELL_NOTE + ". " + SOURCE_NOTE,
         mode="on",
     )
     return fig, OUT_ROOT / "latitude_saturation_heatmap_log.png"
 
 
-def figures(grid: pdg.PopulationGrid):
-    lat_centers, dens_centers, hist = scm.density_area_histogram_by_latitude(grid)
+def figures(tile=None, demand=None):
+    tile = tile if tile is not None else tcm.make_tile_grid(SWEEP_TILE_DEG)
+    demand = demand if demand is not None else tcm.build_demand(tile)
+    sat_counts = np.geomspace(100, 8_000_000, 70)
+    frac = _sweep_served_fraction_by_latitude(sat_counts, tile, demand)
     return [
-        ("latitude_saturation_heatmap", lambda: fig_latitude_saturation_heatmap(hist, dens_centers, lat_centers)),
+        ("latitude_saturation_heatmap",
+         lambda: fig_latitude_saturation_heatmap(frac, sat_counts, tile.lat_centers)),
         ("latitude_saturation_heatmap_log",
-         lambda: fig_latitude_saturation_heatmap_log(hist, dens_centers, lat_centers)),
+         lambda: fig_latitude_saturation_heatmap_log(frac, sat_counts, tile.lat_centers)),
     ]
 
 
 def main():
-    grid = pdg.load_or_build_grid()
-    plan = figures(grid)
+    plan = figures()
     for name, build in plan:
         fig, path = build()
         render.save_fig(fig, path)

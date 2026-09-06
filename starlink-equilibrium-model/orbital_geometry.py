@@ -225,7 +225,23 @@ def ground_range_km(altitude_km: float, min_elevation_deg: float = MIN_ELEVATION
 
 def expected_sats_reaching_latitude(shells: list[Shell], min_elevation_deg: float = MIN_ELEVATION_DEG,
                                      bin_width_deg: float = 1.0):
-    """Like expected_sats_by_latitude(), but counts a satellite toward EVERY
+    """SUPERSEDED -- OVERCOUNTS BY ~19x. Use tile_capacity_model.sats_reaching_tile().
+
+    This counts every satellite whose LATITUDE is within R of a ground point, at ANY
+    longitude -- i.e. the whole 40,000 km latitude ring. The satellites that can
+    actually serve that point are the ones inside the DISK of radius R (~940 km for
+    Gen1), which is a small fraction of that ring. Measured against the correct disk
+    integral at N=10,900: 19.1x too high globally, 27.8x at the equator, 4.3x at
+    80deg (where the ring shrinks toward the pole and the two converge).
+
+    Kept, and still returning exactly what it always did, because
+    serviceable_customers_model.py and the market models downstream of it are still
+    wired to it and are being revised separately. Do not build anything new on it;
+    tile_capacity_model.py computes this correctly in 2D.
+
+    Original description follows.
+
+    Like expected_sats_by_latitude(), but counts a satellite toward EVERY
     latitude bin its ground coverage circle reaches, not just its own
     sub-satellite-point bin -- "how many satellites could serve a user at this
     latitude right now," not "how many satellites are exactly overhead." A
