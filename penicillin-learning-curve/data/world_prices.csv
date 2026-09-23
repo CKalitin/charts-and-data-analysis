@@ -1,0 +1,17 @@
+year,price,unit,kind,source,note
+1985,24.0,USD/BOU,trade price,ISID-WP239 (Bart et al. 2013),"Pen-G price fell from $24/BU (1985) to $6/BU (2003)"
+1992,18.0,USD/BOU,trade price,Zhang & Bjerke 2023,"'about USD 18 per BOU in the early 1990s'; year approximate"
+1995,18.2,USD/BOU,market value / volume,Elander 2003,"$1.06 billion market / (26,400 t Pen G + 9,980 t Pen V) = $29.1/kg, at 1.6 BOU/kg"
+2003,6.0,USD/BOU,trade price,ISID-WP239 (Bart et al. 2013),"Zhang & Bjerke: $6.27/BOU in the early 2000s"
+2009,62.5,CNY/BOU,China domestic quote,chyxx 2017,"2009 range 55-70 CNY/BOU; midpoint"
+2011,13.89,USD/kg,China export unit value,CCCMHPIE,"2012 export UV $12.07/kg was 13.1% below 2011"
+2012,12.07,USD/kg,China export unit value,CCCMHPIE,"6,207 t exported, $74.92 million"
+2013,18.0,USD/kg,China export unit value,CCCMHPIE,"8,454 t exported, $152 million"
+2016,45.0,CNY/BOU,China domestic quote,chyxx 2017,"July 2016 record low (single month)"
+2017,70.0,CNY/BOU,China domestic quote,chyxx 2017,"May 2017 65, Sep 2017 75 CNY/BOU; midpoint"
+2019,6.0,USD/BOU,trade price,BusinessToday 2020,"Nov-Dec 2019 price paid by Indian buyers"
+2020,53.4,CNY/BOU,producer avg selling price (ex-VAT),United Laboratories FY2021 results deck,
+2021,66.3,CNY/BOU,producer avg selling price (ex-VAT),United Laboratories FY2022 results deck,
+2022,89.4,CNY/BOU,producer avg selling price (ex-VAT),United Laboratories FY2022 results deck,
+2023,170.0,CNY/BOU,China market quote (Wind),Southwest Securities 2024-05,"April 2024 quote 130 was -23.53% YoY => April 2023 = 170"
+2024,130.0,CNY/BOU,China market quote (Wind),Southwest Securities 2024-05,April 2024

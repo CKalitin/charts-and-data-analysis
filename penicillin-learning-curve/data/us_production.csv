@@ -1,0 +1,42 @@
+year,production,unit,status,source,note
+1943,21,BU,reported,ACS-NHCL; WPB,War Production Board total US output (21 billion units)
+1944,1663,BU,reported,ACS-NHCL; WPB,War Production Board total US output
+1945,7500,BU,reported,SOC-1945,"7.5 trillion Oxford units (WPB figure quoted by ACS: more than 6.8 trillion)"
+1946,27000,BU,reported,SOC-1946,
+1947,42000,BU,reported,SOC-1947,604 million Oxford units per pound
+1948,92945,BU,reported,SOC-1948,"penicillin salts total; 161,500 lb"
+1949,,BU,interpolated,,"SOC 1949-1951 volumes not digitised; geometric interpolation 1948->1952"
+1950,,BU,interpolated,,"SOC 1949-1951 volumes not digitised; geometric interpolation 1948->1952"
+1951,,BU,interpolated,,"SOC 1949-1951 volumes not digitised; geometric interpolation 1948->1952"
+1952,342000,BU,reported,SOC-1953,1952 figure quoted in the 1953 report
+1953,372000,BU,reported,SOC-1953,
+1954,477000,BU,reported,SOC-1954,
+1955,344000,BU,reported,SOC-1955,
+1956,478000,BU,reported,SOC-1956,
+1957,526000,BU,reported,SOC-1957,
+1958,392000,BU,reported,SOC-1958,
+1959,430000,BU,reported,SOC-1959,
+1960,590000,BU,reported,SOC-1960,"498,000 BU human/veterinary + ~92,000 BU feed grade (footnote)"
+1961,761000,BU,reported,SOC-1961,"649,000 BU human/veterinary + ~112,000 BU feed grade (footnote)"
+1962,964023,BU,reported,SOC-1962,for all uses
+1963,957013,BU,reported,SOC-1963,
+1964,1202328,BU,reported,SOC-1964,
+1965,1343126,BU,reported,SOC-1965,"penicillins total; includes a small semisynthetic share"
+1966,1676281,BU,reported,SOC-1966,"penicillins total; includes a small semisynthetic share"
+1967,1424566,BU,reported,SOC-1967,"penicillins total; includes a small semisynthetic share"
+1968,2210205,BU,reported,SOC-1968,"natural penicillins = 2,473,189 total - 262,984 semisynthetic"
+1969,2461560,BU,reported,SOC-1969,penicillins except semisynthetic
+1970,3760210,BU,reported,SOC-1970,penicillins except semisynthetic (medicinal + feed)
+1971,4670454,BU,reported,SOC-1971,
+1972,3827078,BU,reported,SOC-1972,
+1973,4945339,BU,reported,SOC-1973,
+1974,5239625,BU,reported,SOC-1974,"also 7,812 thousand lb (calibration: 670.7 M units/lb)"
+1975,3817616,BU,reported,SOC-1975,"also 5,902 thousand lb (calibration: 646.8 M units/lb)"
+1976,7132,klb,reported,SOC-1976,1976+ published in pounds only
+1977,7460,klb,reported,SOC-1977,
+1978,7723,klb,reported,SOC-1978,
+1979,8402,klb,reported,SOC-1979,
+1980,6515,klb,derived,SOC-1981,"1980 volume not digitised; 1981 report: 7,362 klb was 13.0% above 1980"
+1981,7362,klb,reported,SOC-1981,
+1982,7429,klb,reported,SOC-1982,
+1983,6067,klb,reported,SOC-1983,

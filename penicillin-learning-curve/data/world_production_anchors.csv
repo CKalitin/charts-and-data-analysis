@@ -1,0 +1,7 @@
+year,value,unit,low,high,source,note
+1946,1.10,ratio_to_US,1.00,1.25,assumption,"UK + Canada on top of US output; the US made the large majority of wartime penicillin"
+1953,1.63,ratio_to_US,1.30,2.00,CIA-1954; SOC-1953; assumption,"US 372,000 BU + Soviet bloc 113,100 BU (CIA estimate) + rest of world assumed at 25% of (US+bloc) = 606,400 BU; low/high = rest of world 0% / 60%"
+1985,11000,t,9000,13000,CORDIS BAP-0395,"worldwide penicillin production in 1985 = 11,000 t (40% went to semisynthetics); low/high = +-18%"
+1995,36380,t,30000,42000,Elander-2003,"26,400 t penicillin G + 9,980 t penicillin V"
+2019,60000,t,50000,70000,chyxx-2019; gelonghui,"global demand quoted as 50-60 kt (one source) and 60-70 kt (another); China ~75-90% of output"
+2025,60000,t,50000,70000,assumption,"held flat after 2019; China capacity >100 kt but demand-limited"

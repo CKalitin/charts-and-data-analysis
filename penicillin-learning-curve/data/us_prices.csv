@@ -1,0 +1,42 @@
+year,basis,sales_qty,qty_unit,sales_value_kusd,quoted_price,quoted_unit,source,note
+1943,quoted,,,,20,USD/100k_units,ACS-NHCL,"$20 per 100,000 units in 1943; buyer and basis not stated"
+1945,all_forms,7100,BU,46000,,,SOC-1945,"7.1 trillion Oxford units sold, $46 million"
+1946,all_forms,20000,BU,89000,,,SOC-1947,"$90M in SOC-1946, revised to $89M in SOC-1947"
+1947,all_forms,37000,BU,87000,,,SOC-1947,
+1948,all_forms,64600,BU,108000,,,SOC-1948,"108,300 lb; about $1,000 per pound"
+1950,quoted,,,,282,USD/lb,Goozner-2004,"$282 per pound in 1950 ($3,955 in 1945); basis not stated; converted at the SOC-1948 ratio of 0.5965 BU per lb"
+1952,all_forms,287000,BU,83000,,,SOC-1953,
+1953,all_forms,354000,BU,58000,,,SOC-1953,
+1954,all_forms,323000,BU,53000,,,SOC-1954,
+1955,all_forms,336000,BU,44000,,,SOC-1955,
+1956,all_forms,449000,BU,63500,,,SOC-1956,
+1957,all_forms,456000,BU,66300,,,SOC-1957,
+1958,all_forms,372000,BU,60300,,,SOC-1958,
+1959,all_forms,371000,BU,57300,,,SOC-1959,
+1960,all_forms,387000,BU,53400,,,SOC-1960,
+1961,all_forms,520000,BU,58300,,,SOC-1961,
+1962,all_forms,715260,BU,66504,,,SOC-1962,penicillin salts total (bulk + dosage forms)
+1963,all_forms,714637,BU,71690,,,SOC-1963,penicillin salts total (bulk + dosage forms)
+1964,all_forms,964857,BU,86048,,,SOC-1964,penicillin salts total; table header 'Sales (bulk and dosage forms)'
+1962,bulk,107994,BU,1833,,,SOC-1962,"procaine penicillin G, for other uses (feed-grade bulk)"
+1963,bulk,144757,BU,2382,,,SOC-1963,"procaine penicillin G, for other uses (feed-grade bulk)"
+1964,bulk,233359,BU,3659,,,SOC-1964,"procaine penicillin G, for other uses (feed-grade bulk)"
+1965,bulk,719491,BU,10448,,,SOC-1965,"penicillin G only: K 236,822 BU/$3,343k + procaine 482,669 BU/$7,105k (total incl. other penicillins: $21.26/BU)"
+1966,bulk,555913,BU,9712,,,SOC-1966,"penicillin G only: procaine medicinal 209,670/$4,024k + G salts other uses 346,243/$5,688k"
+1967,bulk,541744,BU,9918,,,SOC-1967,procaine penicillin G for all uses
+1968,bulk,579210,BU,9981,,,SOC-1968,procaine penicillin G for all uses
+1969,bulk,1173366,BU,19379,,,SOC-1969,penicillins except semisynthetic
+1970,bulk,1522253,BU,28667,,,SOC-1970,penicillins except semisynthetic
+1971,bulk,1531103,BU,27295,,,SOC-1971,penicillins except semisynthetic
+1972,bulk,1506738,BU,22791,,,SOC-1972,penicillins except semisynthetic
+1973,bulk,2481297,BU,34372,,,SOC-1973,penicillins except semisynthetic
+1974,bulk,2602451,BU,47656,,,SOC-1974,"also 4,149 klb (calibration: 627.2 M units/lb)"
+1975,bulk,1718314,BU,37612,,,SOC-1975,"also 2,834 klb (calibration: 606.3 M units/lb)"
+1976,bulk,2888,klb,34365,,,SOC-1976,1976+ published in pounds only
+1977,bulk,2915,klb,35862,,,SOC-1977,
+1978,bulk,1907,klb,23287,,,SOC-1978,
+1979,bulk,2978,klb,36982,,,SOC-1979,
+1981,bulk,1569,klb,21652,,,SOC-1981,
+1982,bulk,2575,klb,30342,,,SOC-1982,
+1983,bulk,1528,klb,23344,,,SOC-1983,
+1984,bulk,562,klb,8530,,,SOC-1984,production withheld for confidentiality

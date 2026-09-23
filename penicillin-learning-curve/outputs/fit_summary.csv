@@ -1,0 +1,13 @@
+fit,n,b,se_b,learning_rate_pct,lr_ci95_lo_pct,lr_ci95_hi_pct,r2
+US price vs US cumulative (1943-1984),28,-0.7628,0.0283,41.1,38.6,43.4,0.965
+"World cumulative, low (1943-2024)",44,-0.7012,0.0189,38.5,36.8,40.1,0.97
+"World cumulative, central (1943-2024)",44,-0.698,0.0182,38.4,36.8,39.9,0.972
+"World cumulative, high (1943-2024)",44,-0.6979,0.0178,38.4,36.8,39.9,0.974
+Era: Wartime scale-up (1943-1950),6,-0.5692,0.034,32.6,28.0,36.9,0.986
+Era: US bulk market (1962-1984),22,-0.3287,0.0284,20.4,17.0,23.6,0.87
+Era: Global / China era (1985-2024),16,-0.6273,0.1295,35.3,21.5,46.6,0.626
+Robustness: drop 1943 quote,43,-0.7171,0.0224,39.2,37.2,41.0,0.962
+Robustness: drop 1943 + 1950 quotes,42,-0.7118,0.0231,38.9,36.9,40.9,0.96
+Robustness: include 1952-64 dosage-form values,57,-0.7198,0.0195,39.3,37.6,40.9,0.961
+Robustness: end-of-year cumulative,44,-0.7217,0.0197,39.4,37.7,41.0,0.97
+"Check: dosage-form series alone (1945-1964, US cum.)",17,-0.7175,0.027,39.2,36.7,41.6,0.979
