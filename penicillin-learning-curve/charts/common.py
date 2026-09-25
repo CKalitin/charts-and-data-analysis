@@ -109,3 +109,15 @@ def add_watermark(ax) -> None:
 
 def add_source(fig, text: str) -> None:
     fig.text(0.01, 0.005, text, ha="left", va="bottom", fontsize=6.8, color="0.35", wrap=True)
+
+
+# World price observations are heterogeneous; one marker per kind so the reader can weigh them.
+WORLD_KIND_STYLES = {
+    "trade price": dict(marker="^", color="#d62728", label="Trade price (ISID, Zhang & Bjerke, BusinessToday)"),
+    "market value / volume": dict(marker="v", color="#8c564b", label="Market value / volume (Elander 2003)"),
+    "China export unit value": dict(marker="s", color="#1f77b4", label="China export unit value (CCCMHPIE)"),
+    "China domestic quote": dict(marker="o", color="#ff7f0e", label="China domestic quote (industry reports)"),
+    "producer avg selling price (ex-VAT)": dict(marker="D", color="#2ca02c",
+                                                label="Producer avg selling price, ex-VAT (United Labs)"),
+    "China market quote (Wind)": dict(marker="P", color="#9467bd", label="China market quote, Wind (April)"),
+}

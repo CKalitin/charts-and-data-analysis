@@ -30,6 +30,15 @@ SOURCE_US = (
     f"Chemical Landmark (1943); Goozner 2004 (1950). CPI-U deflated to {cfg.CPI_BASIS_YEAR}."
 )
 
+SOURCE_GLOBAL = (
+    "Sources: ISID WP239 (Bart et al. 2013); Zhang & Bjerke 2023; Elander 2003; CCCMHPIE; chyxx; biodiscover; "
+    "BusinessToday 2020; United Laboratories results decks; Southwest Securities (Wind); US Tariff Commission "
+    f"(1975-84). CNY at annual-average FX; CPI-U deflated to {cfg.CPI_BASIS_YEAR}."
+)
+
+# label offsets for the 1985-2024 zoom (dx, dy, ha, va)
+ZOOM_OFFSETS = {2016: (-6, -4, "right", "top"), 2020: (6, -4, "left", "top")}
+
 # per-year label offsets (dx, dy, ha, va) where the default (6, 6) collides
 OFFSETS = {
     1943: (8, -2, "left", "center"),
@@ -134,6 +143,54 @@ def draw_eras(ax, fig, pts, fits) -> None:
     common.add_source(fig, SOURCE_WORLD)
 
 
+def draw_global_era(ax, fig, pts, fits) -> None:
+    """Zoom on 1985-2024 world prices, with the last US bulk years for continuity."""
+    x = "cum_world_central"
+    era = fits["Era: Global / China era (1985-2024)"]
+    whole = fits["World cumulative, central (1943-2024)"]
+    world = pts[pts.region == "World"]
+    us_tail = pts[(pts.region == "US") & (pts.basis == "bulk") & (pts.year >= 1975)]
+    x_lo, x_hi = us_tail[x].min() / 1.25, world.cum_world_high.max() * 1.25
+
+    common.log_axes(ax)
+    _fit_line(ax, whole, x_lo, x_hi, color="0.55", lw=1.2, ls="--",
+              label=f"Fit, all years 1943-2024: {100 * whole.lr:.1f}%")
+    lo, hi = era.lr_ci
+    _fit_line(ax, era, world[x].min() / 1.15, world[x].max() * 1.15, color="#d62728", lw=2.0,
+              label=f"Fit, 1985-2024: {100 * era.lr:.1f}% (95% CI {100 * lo:.0f}-{100 * hi:.0f}%)")
+    ax.scatter(us_tail[x], us_tail.real, s=30, facecolor="none", edgecolor=cfg.COLORS["us_bulk"],
+               linewidth=1.0, zorder=3, label="US Tariff Commission bulk sales, 1975-84 (not in era fit)")
+    # horizontal bars: cumulative volume under the low / high world-production scenarios
+    for i, r in enumerate(world.itertuples()):
+        ax.plot([r.cum_world_low, r.cum_world_high], [r.real, r.real], color="0.6", lw=0.9,
+                zorder=2, label="Cumulative-volume range (low / high scenario)" if i == 0 else None)
+    for kind, style in common.WORLD_KIND_STYLES.items():
+        sel = world[world.basis == kind]
+        if len(sel):
+            ax.scatter(sel[x], sel.real, s=52, edgecolor="k", linewidth=0.5, zorder=4, **style)
+    for r in world.itertuples():
+        dx, dy, ha, va = ZOOM_OFFSETS.get(r.year, (6, 4, "left", "bottom"))
+        ax.annotate(str(r.year), xy=(getattr(r, x), r.real), xytext=(dx, dy),
+                    textcoords="offset points", fontsize=7.5, color="0.25", ha=ha, va=va)
+    for r in us_tail[us_tail.year.isin([1975, 1984])].itertuples():
+        ax.annotate(str(r.year), xy=(getattr(r, x), r.real), xytext=(-6, -6),
+                    textcoords="offset points", fontsize=7.5, color="0.45", ha="right", va="top")
+    ax.set_xticks([1e8, 2e8, 5e8, 1e9, 2e9, 5e9])
+    ax.set_yticks([5, 10, 20, 50, 100, 200])
+    ax.set_xlim(x_lo, x_hi)
+    ax.set_ylim(5, 200)
+    ax.set_xlabel(X_WORLD)
+    ax.set_ylabel(Y_LABEL)
+    ax.set_title("Penicillin Price vs Cumulative World Production, 1985-2024")
+    common.tonnes_top_axis(ax)
+    common.per_kg_right_axis(ax)
+    ax.legend(loc="lower left", fontsize=7.4, framealpha=0.9)
+    common.add_watermark(ax)
+    common.add_source(fig, SOURCE_GLOBAL)
+    info_box.add_info_box(ax, fig, _fit_text(era, "Fit 1985-2024: log P = a + b log X"), mode="on",
+                          fontsize=8)
+
+
 def figures(pts, fits):
     def build(draw, name, size=(11, 7)):
         def _b():
@@ -144,7 +201,8 @@ def figures(pts, fits):
         return name, _b
     return [build(draw_world, "price_vs_cumulative_world"),
             build(draw_us, "price_vs_cumulative_us"),
-            build(draw_eras, "learning_rate_by_era")]
+            build(draw_eras, "learning_rate_by_era"),
+            build(draw_global_era, "price_vs_cumulative_world_1985_2024")]
 
 
 if __name__ == "__main__":

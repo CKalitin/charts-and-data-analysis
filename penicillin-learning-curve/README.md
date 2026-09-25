@@ -17,6 +17,7 @@ whole-history slope is steeper than any single era because of step-downs *betwee
 | `learning_curve/price_vs_cumulative_world.png` | Main chart: real price vs cumulative world production, with the fit |
 | `learning_curve/price_vs_cumulative_us.png` | US-only version, one consistent source (US Tariff Commission), 1943–1984: **41.1%** (CI 38.6–43.4%) |
 | `learning_curve/learning_rate_by_era.png` | Separate fits for the three eras |
+| `learning_curve/price_vs_cumulative_world_1985_2024.png` | Zoom on 1985–2024: world prices by source type, with low/high cumulative-volume ranges and the era fit |
 | `timeseries/price_vs_year.png` | Real (solid) and nominal (faded) price vs year |
 | `timeseries/production_vs_year.png` | US annual output (reported) and world output (estimated, with scenario band) |
 
