@@ -1,0 +1,237 @@
+year,series,usd_per_100lb_nominal,source
+1892,cut_philadelphia,1.83,"AISA Report for 1899, p.28 (Duncannon Iron Co., W.E.S. Baker)"
+1893,cut_philadelphia,1.44,"AISA Report for 1899, p.28 (Duncannon Iron Co., W.E.S. Baker)"
+1894,cut_philadelphia,1.08,"AISA Report for 1899, p.28 (Duncannon Iron Co., W.E.S. Baker)"
+1895,cut_philadelphia,1.56,"AISA Report for 1899, p.28 (Duncannon Iron Co., W.E.S. Baker)"
+1896,cut_philadelphia,2.32,"AISA Report for 1899, p.28 (Duncannon Iron Co., W.E.S. Baker)"
+1897,cut_philadelphia,1.47,"AISA Report for 1899, p.28 (Duncannon Iron Co., W.E.S. Baker)"
+1898,cut_philadelphia,1.31,"AISA Report for 1899, p.28 (Duncannon Iron Co., W.E.S. Baker)"
+1899,cut_philadelphia,2.21,"AISA Report for 1899, p.28 (Duncannon Iron Co., W.E.S. Baker)"
+1900,cut_philadelphia,2.46,"AISA Report for 1907, p.40 (Duncannon Iron Co.)"
+1901,cut_philadelphia,2.29,"AISA Report for 1907, p.40 (Duncannon Iron Co.)"
+1902,cut_philadelphia,2.29,"AISA Report for 1907, p.40 (Duncannon Iron Co.)"
+1903,cut_philadelphia,2.36,"AISA Report for 1907, p.40 (Duncannon Iron Co.)"
+1904,cut_philadelphia,2.01,"AISA Report for 1907, p.40 (Duncannon Iron Co.)"
+1905,cut_philadelphia,2.0,"AISA Report for 1907, p.40 (Duncannon Iron Co.)"
+1906,cut_philadelphia,2.13,"AISA Report for 1907, p.40 (Duncannon Iron Co.)"
+1907,cut_philadelphia,2.36,"AISA Report for 1907, p.40 (Duncannon Iron Co.)"
+1908,cut_philadelphia,2.2,"AISA Report for 1910, p.45"
+1909,cut_philadelphia,2.05,"AISA Report for 1910, p.45"
+1910,cut_philadelphia,2.1,"AISA Report for 1910, p.45"
+1911,cut_philadelphia,2.02,"AISA Report for 1920, p.86 (Edward L. Hand & Co.)"
+1912,cut_philadelphia,1.92,"AISA Report for 1920, p.86 (Edward L. Hand & Co.)"
+1913,cut_philadelphia,1.99,"AISA Report for 1920, p.86 (Edward L. Hand & Co.)"
+1914,cut_philadelphia,1.9,"AISA Report for 1920, p.86 (Edward L. Hand & Co.)"
+1915,cut_philadelphia,1.94,"AISA Report for 1920, p.86 (Edward L. Hand & Co.)"
+1916,cut_philadelphia,2.96,"AISA Report for 1920, p.86 (Edward L. Hand & Co.)"
+1917,cut_philadelphia,4.5,"AISA Report for 1920, p.86 (Edward L. Hand & Co.)"
+1918,cut_philadelphia,5.19,"AISA Report for 1920, p.86 (Edward L. Hand & Co.)"
+1919,cut_philadelphia,5.69,"AISA Report for 1920, p.86 (Edward L. Hand & Co.)"
+1920,cut_philadelphia,7.29,"AISA Report for 1920, p.86 (Edward L. Hand & Co.)"
+1800,hsus_e131_mixed_cut,10.67,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1801,hsus_e131_mixed_cut,10.67,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1802,hsus_e131_mixed_cut,11.65,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1803,hsus_e131_mixed_cut,10.52,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1804,hsus_e131_mixed_cut,10.5,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1805,hsus_e131_mixed_cut,10.5,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1806,hsus_e131_mixed_cut,9.5,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1807,hsus_e131_mixed_cut,9.5,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1808,hsus_e131_mixed_cut,9.5,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1809,hsus_e131_mixed_cut,9.5,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1810,hsus_e131_mixed_cut,9.5,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1811,hsus_e131_mixed_cut,9.33,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1812,hsus_e131_mixed_cut,8.5,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1813,hsus_e131_mixed_cut,8.5,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1814,hsus_e131_mixed_cut,11.25,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1815,hsus_e131_mixed_cut,12.5,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1816,hsus_e131_mixed_cut,12.83,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1817,hsus_e131_mixed_cut,10.9,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1818,hsus_e131_mixed_cut,9.6,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1819,hsus_e131_mixed_cut,9.67,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1820,hsus_e131_mixed_cut,9.8,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1821,hsus_e131_mixed_cut,9.8,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1822,hsus_e131_mixed_cut,9.8,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1823,hsus_e131_mixed_cut,9.8,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1824,hsus_e131_mixed_cut,8.87,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1825,hsus_e131_mixed_cut,7.33,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1826,hsus_e131_mixed_cut,7.21,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1827,hsus_e131_mixed_cut,6.76,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1828,hsus_e131_mixed_cut,7.08,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1829,hsus_e131_mixed_cut,7.1,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1830,hsus_e131_mixed_cut,5.5,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1831,hsus_e131_mixed_cut,5.6,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1832,hsus_e131_mixed_cut,5.8,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1833,hsus_e131_mixed_cut,5.0,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1834,hsus_e131_mixed_cut,5.5,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1835,hsus_e131_mixed_cut,6.0,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1836,hsus_e131_mixed_cut,6.0,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1837,hsus_e131_mixed_cut,6.0,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1838,hsus_e131_mixed_cut,6.0,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1839,hsus_e131_mixed_cut,6.12,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1840,hsus_e131_mixed_cut,5.5,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1841,hsus_e131_mixed_cut,5.25,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1842,hsus_e131_mixed_cut,4.75,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1843,hsus_e131_mixed_cut,4.25,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1844,hsus_e131_mixed_cut,4.5,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1845,hsus_e131_mixed_cut,4.75,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1846,hsus_e131_mixed_cut,4.5,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1847,hsus_e131_mixed_cut,4.5,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1848,hsus_e131_mixed_cut,4.25,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1849,hsus_e131_mixed_cut,4.0,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1850,hsus_e131_mixed_cut,3.71,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1851,hsus_e131_mixed_cut,3.28,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1852,hsus_e131_mixed_cut,3.13,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1853,hsus_e131_mixed_cut,4.85,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1854,hsus_e131_mixed_cut,4.76,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1855,hsus_e131_mixed_cut,4.1,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1856,hsus_e131_mixed_cut,3.92,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1857,hsus_e131_mixed_cut,3.72,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1858,hsus_e131_mixed_cut,3.53,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1859,hsus_e131_mixed_cut,3.86,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1860,hsus_e131_mixed_cut,3.13,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1861,hsus_e131_mixed_cut,2.75,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1862,hsus_e131_mixed_cut,3.47,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1863,hsus_e131_mixed_cut,5.13,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1864,hsus_e131_mixed_cut,7.85,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1865,hsus_e131_mixed_cut,7.08,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1866,hsus_e131_mixed_cut,6.97,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1867,hsus_e131_mixed_cut,5.92,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1868,hsus_e131_mixed_cut,5.17,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1869,hsus_e131_mixed_cut,4.87,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1870,hsus_e131_mixed_cut,4.4,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1871,hsus_e131_mixed_cut,4.62,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1872,hsus_e131_mixed_cut,5.46,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1873,hsus_e131_mixed_cut,4.9,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1874,hsus_e131_mixed_cut,3.99,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1875,hsus_e131_mixed_cut,3.42,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1876,hsus_e131_mixed_cut,2.98,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1877,hsus_e131_mixed_cut,2.57,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1878,hsus_e131_mixed_cut,2.81,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1879,hsus_e131_mixed_cut,2.69,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1880,hsus_e131_mixed_cut,3.68,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1881,hsus_e131_mixed_cut,3.09,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1882,hsus_e131_mixed_cut,3.47,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1883,hsus_e131_mixed_cut,3.06,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1884,hsus_e131_mixed_cut,2.89,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1885,hsus_e131_mixed_cut,2.33,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1886,hsus_e131_mixed_cut,2.27,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1887,hsus_e131_mixed_cut,2.3,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1888,hsus_e131_mixed_cut,2.03,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1889,hsus_e131_mixed_cut,2.0,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1890,hsus_e131_mixed_cut,2.0,HSUS (1975) Series E-131: 1800-1813 Philadelphia mixed (Cole); 1814-1890 cut (Cole / NY / Treasury / Duncannon); 1828 = NY quote
+1890,hsus_e131_wire,2.965,"HSUS (1975) Series E-131: wire 8d, Pittsburgh, $/100 lb (1961+ quoted per 50 lb, doubled here). 1918-19 values are a transcription error in HSUS (AISA Pittsburgh: 3.50, 3.41)"
+1891,hsus_e131_wire,2.467,"HSUS (1975) Series E-131: wire 8d, Pittsburgh, $/100 lb (1961+ quoted per 50 lb, doubled here). 1918-19 values are a transcription error in HSUS (AISA Pittsburgh: 3.50, 3.41)"
+1892,hsus_e131_wire,2.19,"HSUS (1975) Series E-131: wire 8d, Pittsburgh, $/100 lb (1961+ quoted per 50 lb, doubled here). 1918-19 values are a transcription error in HSUS (AISA Pittsburgh: 3.50, 3.41)"
+1893,hsus_e131_wire,1.992,"HSUS (1975) Series E-131: wire 8d, Pittsburgh, $/100 lb (1961+ quoted per 50 lb, doubled here). 1918-19 values are a transcription error in HSUS (AISA Pittsburgh: 3.50, 3.41)"
+1894,hsus_e131_wire,1.652,"HSUS (1975) Series E-131: wire 8d, Pittsburgh, $/100 lb (1961+ quoted per 50 lb, doubled here). 1918-19 values are a transcription error in HSUS (AISA Pittsburgh: 3.50, 3.41)"
+1895,hsus_e131_wire,2.118,"HSUS (1975) Series E-131: wire 8d, Pittsburgh, $/100 lb (1961+ quoted per 50 lb, doubled here). 1918-19 values are a transcription error in HSUS (AISA Pittsburgh: 3.50, 3.41)"
+1896,hsus_e131_wire,2.925,"HSUS (1975) Series E-131: wire 8d, Pittsburgh, $/100 lb (1961+ quoted per 50 lb, doubled here). 1918-19 values are a transcription error in HSUS (AISA Pittsburgh: 3.50, 3.41)"
+1897,hsus_e131_wire,1.485,"HSUS (1975) Series E-131: wire 8d, Pittsburgh, $/100 lb (1961+ quoted per 50 lb, doubled here). 1918-19 values are a transcription error in HSUS (AISA Pittsburgh: 3.50, 3.41)"
+1898,hsus_e131_wire,1.438,"HSUS (1975) Series E-131: wire 8d, Pittsburgh, $/100 lb (1961+ quoted per 50 lb, doubled here). 1918-19 values are a transcription error in HSUS (AISA Pittsburgh: 3.50, 3.41)"
+1899,hsus_e131_wire,2.388,"HSUS (1975) Series E-131: wire 8d, Pittsburgh, $/100 lb (1961+ quoted per 50 lb, doubled here). 1918-19 values are a transcription error in HSUS (AISA Pittsburgh: 3.50, 3.41)"
+1900,hsus_e131_wire,2.633,"HSUS (1975) Series E-131: wire 8d, Pittsburgh, $/100 lb (1961+ quoted per 50 lb, doubled here). 1918-19 values are a transcription error in HSUS (AISA Pittsburgh: 3.50, 3.41)"
+1901,hsus_e131_wire,2.365,"HSUS (1975) Series E-131: wire 8d, Pittsburgh, $/100 lb (1961+ quoted per 50 lb, doubled here). 1918-19 values are a transcription error in HSUS (AISA Pittsburgh: 3.50, 3.41)"
+1902,hsus_e131_wire,2.104,"HSUS (1975) Series E-131: wire 8d, Pittsburgh, $/100 lb (1961+ quoted per 50 lb, doubled here). 1918-19 values are a transcription error in HSUS (AISA Pittsburgh: 3.50, 3.41)"
+1903,hsus_e131_wire,2.075,"HSUS (1975) Series E-131: wire 8d, Pittsburgh, $/100 lb (1961+ quoted per 50 lb, doubled here). 1918-19 values are a transcription error in HSUS (AISA Pittsburgh: 3.50, 3.41)"
+1904,hsus_e131_wire,1.906,"HSUS (1975) Series E-131: wire 8d, Pittsburgh, $/100 lb (1961+ quoted per 50 lb, doubled here). 1918-19 values are a transcription error in HSUS (AISA Pittsburgh: 3.50, 3.41)"
+1905,hsus_e131_wire,1.896,"HSUS (1975) Series E-131: wire 8d, Pittsburgh, $/100 lb (1961+ quoted per 50 lb, doubled here). 1918-19 values are a transcription error in HSUS (AISA Pittsburgh: 3.50, 3.41)"
+1906,hsus_e131_wire,1.958,"HSUS (1975) Series E-131: wire 8d, Pittsburgh, $/100 lb (1961+ quoted per 50 lb, doubled here). 1918-19 values are a transcription error in HSUS (AISA Pittsburgh: 3.50, 3.41)"
+1907,hsus_e131_wire,2.117,"HSUS (1975) Series E-131: wire 8d, Pittsburgh, $/100 lb (1961+ quoted per 50 lb, doubled here). 1918-19 values are a transcription error in HSUS (AISA Pittsburgh: 3.50, 3.41)"
+1908,hsus_e131_wire,2.1,"HSUS (1975) Series E-131: wire 8d, Pittsburgh, $/100 lb (1961+ quoted per 50 lb, doubled here). 1918-19 values are a transcription error in HSUS (AISA Pittsburgh: 3.50, 3.41)"
+1909,hsus_e131_wire,1.917,"HSUS (1975) Series E-131: wire 8d, Pittsburgh, $/100 lb (1961+ quoted per 50 lb, doubled here). 1918-19 values are a transcription error in HSUS (AISA Pittsburgh: 3.50, 3.41)"
+1910,hsus_e131_wire,1.888,"HSUS (1975) Series E-131: wire 8d, Pittsburgh, $/100 lb (1961+ quoted per 50 lb, doubled here). 1918-19 values are a transcription error in HSUS (AISA Pittsburgh: 3.50, 3.41)"
+1911,hsus_e131_wire,1.804,"HSUS (1975) Series E-131: wire 8d, Pittsburgh, $/100 lb (1961+ quoted per 50 lb, doubled here). 1918-19 values are a transcription error in HSUS (AISA Pittsburgh: 3.50, 3.41)"
+1912,hsus_e131_wire,1.74,"HSUS (1975) Series E-131: wire 8d, Pittsburgh, $/100 lb (1961+ quoted per 50 lb, doubled here). 1918-19 values are a transcription error in HSUS (AISA Pittsburgh: 3.50, 3.41)"
+1913,hsus_e131_wire,1.819,"HSUS (1975) Series E-131: wire 8d, Pittsburgh, $/100 lb (1961+ quoted per 50 lb, doubled here). 1918-19 values are a transcription error in HSUS (AISA Pittsburgh: 3.50, 3.41)"
+1914,hsus_e131_wire,1.679,"HSUS (1975) Series E-131: wire 8d, Pittsburgh, $/100 lb (1961+ quoted per 50 lb, doubled here). 1918-19 values are a transcription error in HSUS (AISA Pittsburgh: 3.50, 3.41)"
+1915,hsus_e131_wire,1.746,"HSUS (1975) Series E-131: wire 8d, Pittsburgh, $/100 lb (1961+ quoted per 50 lb, doubled here). 1918-19 values are a transcription error in HSUS (AISA Pittsburgh: 3.50, 3.41)"
+1916,hsus_e131_wire,2.596,"HSUS (1975) Series E-131: wire 8d, Pittsburgh, $/100 lb (1961+ quoted per 50 lb, doubled here). 1918-19 values are a transcription error in HSUS (AISA Pittsburgh: 3.50, 3.41)"
+1917,hsus_e131_wire,3.633,"HSUS (1975) Series E-131: wire 8d, Pittsburgh, $/100 lb (1961+ quoted per 50 lb, doubled here). 1918-19 values are a transcription error in HSUS (AISA Pittsburgh: 3.50, 3.41)"
+1918,hsus_e131_wire,8.6,"HSUS (1975) Series E-131: wire 8d, Pittsburgh, $/100 lb (1961+ quoted per 50 lb, doubled here). 1918-19 values are a transcription error in HSUS (AISA Pittsburgh: 3.50, 3.41)"
+1919,hsus_e131_wire,8.518,"HSUS (1975) Series E-131: wire 8d, Pittsburgh, $/100 lb (1961+ quoted per 50 lb, doubled here). 1918-19 values are a transcription error in HSUS (AISA Pittsburgh: 3.50, 3.41)"
+1920,hsus_e131_wire,4.187,"HSUS (1975) Series E-131: wire 8d, Pittsburgh, $/100 lb (1961+ quoted per 50 lb, doubled here). 1918-19 values are a transcription error in HSUS (AISA Pittsburgh: 3.50, 3.41)"
+1921,hsus_e131_wire,3.056,"HSUS (1975) Series E-131: wire 8d, Pittsburgh, $/100 lb (1961+ quoted per 50 lb, doubled here). 1918-19 values are a transcription error in HSUS (AISA Pittsburgh: 3.50, 3.41)"
+1922,hsus_e131_wire,2.61,"HSUS (1975) Series E-131: wire 8d, Pittsburgh, $/100 lb (1961+ quoted per 50 lb, doubled here). 1918-19 values are a transcription error in HSUS (AISA Pittsburgh: 3.50, 3.41)"
+1923,hsus_e131_wire,3.035,"HSUS (1975) Series E-131: wire 8d, Pittsburgh, $/100 lb (1961+ quoted per 50 lb, doubled here). 1918-19 values are a transcription error in HSUS (AISA Pittsburgh: 3.50, 3.41)"
+1924,hsus_e131_wire,2.989,"HSUS (1975) Series E-131: wire 8d, Pittsburgh, $/100 lb (1961+ quoted per 50 lb, doubled here). 1918-19 values are a transcription error in HSUS (AISA Pittsburgh: 3.50, 3.41)"
+1925,hsus_e131_wire,2.82,"HSUS (1975) Series E-131: wire 8d, Pittsburgh, $/100 lb (1961+ quoted per 50 lb, doubled here). 1918-19 values are a transcription error in HSUS (AISA Pittsburgh: 3.50, 3.41)"
+1926,hsus_e131_wire,2.75,"HSUS (1975) Series E-131: wire 8d, Pittsburgh, $/100 lb (1961+ quoted per 50 lb, doubled here). 1918-19 values are a transcription error in HSUS (AISA Pittsburgh: 3.50, 3.41)"
+1927,hsus_e131_wire,2.638,"HSUS (1975) Series E-131: wire 8d, Pittsburgh, $/100 lb (1961+ quoted per 50 lb, doubled here). 1918-19 values are a transcription error in HSUS (AISA Pittsburgh: 3.50, 3.41)"
+1928,hsus_e131_wire,2.676,"HSUS (1975) Series E-131: wire 8d, Pittsburgh, $/100 lb (1961+ quoted per 50 lb, doubled here). 1918-19 values are a transcription error in HSUS (AISA Pittsburgh: 3.50, 3.41)"
+1929,hsus_e131_wire,2.667,"HSUS (1975) Series E-131: wire 8d, Pittsburgh, $/100 lb (1961+ quoted per 50 lb, doubled here). 1918-19 values are a transcription error in HSUS (AISA Pittsburgh: 3.50, 3.41)"
+1930,hsus_e131_wire,2.191,"HSUS (1975) Series E-131: wire 8d, Pittsburgh, $/100 lb (1961+ quoted per 50 lb, doubled here). 1918-19 values are a transcription error in HSUS (AISA Pittsburgh: 3.50, 3.41)"
+1931,hsus_e131_wire,1.978,"HSUS (1975) Series E-131: wire 8d, Pittsburgh, $/100 lb (1961+ quoted per 50 lb, doubled here). 1918-19 values are a transcription error in HSUS (AISA Pittsburgh: 3.50, 3.41)"
+1932,hsus_e131_wire,2.05,"HSUS (1975) Series E-131: wire 8d, Pittsburgh, $/100 lb (1961+ quoted per 50 lb, doubled here). 1918-19 values are a transcription error in HSUS (AISA Pittsburgh: 3.50, 3.41)"
+1933,hsus_e131_wire,2.089,"HSUS (1975) Series E-131: wire 8d, Pittsburgh, $/100 lb (1961+ quoted per 50 lb, doubled here). 1918-19 values are a transcription error in HSUS (AISA Pittsburgh: 3.50, 3.41)"
+1934,hsus_e131_wire,2.623,"HSUS (1975) Series E-131: wire 8d, Pittsburgh, $/100 lb (1961+ quoted per 50 lb, doubled here). 1918-19 values are a transcription error in HSUS (AISA Pittsburgh: 3.50, 3.41)"
+1935,hsus_e131_wire,2.628,"HSUS (1975) Series E-131: wire 8d, Pittsburgh, $/100 lb (1961+ quoted per 50 lb, doubled here). 1918-19 values are a transcription error in HSUS (AISA Pittsburgh: 3.50, 3.41)"
+1936,hsus_e131_wire,2.229,"HSUS (1975) Series E-131: wire 8d, Pittsburgh, $/100 lb (1961+ quoted per 50 lb, doubled here). 1918-19 values are a transcription error in HSUS (AISA Pittsburgh: 3.50, 3.41)"
+1937,hsus_e131_wire,2.773,"HSUS (1975) Series E-131: wire 8d, Pittsburgh, $/100 lb (1961+ quoted per 50 lb, doubled here). 1918-19 values are a transcription error in HSUS (AISA Pittsburgh: 3.50, 3.41)"
+1938,hsus_e131_wire,2.575,"HSUS (1975) Series E-131: wire 8d, Pittsburgh, $/100 lb (1961+ quoted per 50 lb, doubled here). 1918-19 values are a transcription error in HSUS (AISA Pittsburgh: 3.50, 3.41)"
+1939,hsus_e131_wire,2.461,"HSUS (1975) Series E-131: wire 8d, Pittsburgh, $/100 lb (1961+ quoted per 50 lb, doubled here). 1918-19 values are a transcription error in HSUS (AISA Pittsburgh: 3.50, 3.41)"
+1940,hsus_e131_wire,2.55,"HSUS (1975) Series E-131: wire 8d, Pittsburgh, $/100 lb (1961+ quoted per 50 lb, doubled here). 1918-19 values are a transcription error in HSUS (AISA Pittsburgh: 3.50, 3.41)"
+1941,hsus_e131_wire,2.55,"HSUS (1975) Series E-131: wire 8d, Pittsburgh, $/100 lb (1961+ quoted per 50 lb, doubled here). 1918-19 values are a transcription error in HSUS (AISA Pittsburgh: 3.50, 3.41)"
+1942,hsus_e131_wire,2.55,"HSUS (1975) Series E-131: wire 8d, Pittsburgh, $/100 lb (1961+ quoted per 50 lb, doubled here). 1918-19 values are a transcription error in HSUS (AISA Pittsburgh: 3.50, 3.41)"
+1943,hsus_e131_wire,2.55,"HSUS (1975) Series E-131: wire 8d, Pittsburgh, $/100 lb (1961+ quoted per 50 lb, doubled here). 1918-19 values are a transcription error in HSUS (AISA Pittsburgh: 3.50, 3.41)"
+1944,hsus_e131_wire,2.55,"HSUS (1975) Series E-131: wire 8d, Pittsburgh, $/100 lb (1961+ quoted per 50 lb, doubled here). 1918-19 values are a transcription error in HSUS (AISA Pittsburgh: 3.50, 3.41)"
+1945,hsus_e131_wire,2.85,"HSUS (1975) Series E-131: wire 8d, Pittsburgh, $/100 lb (1961+ quoted per 50 lb, doubled here). 1918-19 values are a transcription error in HSUS (AISA Pittsburgh: 3.50, 3.41)"
+1946,hsus_e131_wire,3.477,"HSUS (1975) Series E-131: wire 8d, Pittsburgh, $/100 lb (1961+ quoted per 50 lb, doubled here). 1918-19 values are a transcription error in HSUS (AISA Pittsburgh: 3.50, 3.41)"
+1947,hsus_e131_wire,4.467,"HSUS (1975) Series E-131: wire 8d, Pittsburgh, $/100 lb (1961+ quoted per 50 lb, doubled here). 1918-19 values are a transcription error in HSUS (AISA Pittsburgh: 3.50, 3.41)"
+1948,hsus_e131_wire,5.823,"HSUS (1975) Series E-131: wire 8d, Pittsburgh, $/100 lb (1961+ quoted per 50 lb, doubled here). 1918-19 values are a transcription error in HSUS (AISA Pittsburgh: 3.50, 3.41)"
+1949,hsus_e131_wire,6.136,"HSUS (1975) Series E-131: wire 8d, Pittsburgh, $/100 lb (1961+ quoted per 50 lb, doubled here). 1918-19 values are a transcription error in HSUS (AISA Pittsburgh: 3.50, 3.41)"
+1950,hsus_e131_wire,6.343,"HSUS (1975) Series E-131: wire 8d, Pittsburgh, $/100 lb (1961+ quoted per 50 lb, doubled here). 1918-19 values are a transcription error in HSUS (AISA Pittsburgh: 3.50, 3.41)"
+1951,hsus_e131_wire,6.98,"HSUS (1975) Series E-131: wire 8d, Pittsburgh, $/100 lb (1961+ quoted per 50 lb, doubled here). 1918-19 values are a transcription error in HSUS (AISA Pittsburgh: 3.50, 3.41)"
+1952,hsus_e131_wire,7.123,"HSUS (1975) Series E-131: wire 8d, Pittsburgh, $/100 lb (1961+ quoted per 50 lb, doubled here). 1918-19 values are a transcription error in HSUS (AISA Pittsburgh: 3.50, 3.41)"
+1953,hsus_e131_wire,7.44,"HSUS (1975) Series E-131: wire 8d, Pittsburgh, $/100 lb (1961+ quoted per 50 lb, doubled here). 1918-19 values are a transcription error in HSUS (AISA Pittsburgh: 3.50, 3.41)"
+1954,hsus_e131_wire,7.651,"HSUS (1975) Series E-131: wire 8d, Pittsburgh, $/100 lb (1961+ quoted per 50 lb, doubled here). 1918-19 values are a transcription error in HSUS (AISA Pittsburgh: 3.50, 3.41)"
+1955,hsus_e131_wire,8.18,"HSUS (1975) Series E-131: wire 8d, Pittsburgh, $/100 lb (1961+ quoted per 50 lb, doubled here). 1918-19 values are a transcription error in HSUS (AISA Pittsburgh: 3.50, 3.41)"
+1956,hsus_e131_wire,8.917,"HSUS (1975) Series E-131: wire 8d, Pittsburgh, $/100 lb (1961+ quoted per 50 lb, doubled here). 1918-19 values are a transcription error in HSUS (AISA Pittsburgh: 3.50, 3.41)"
+1957,hsus_e131_wire,9.596,"HSUS (1975) Series E-131: wire 8d, Pittsburgh, $/100 lb (1961+ quoted per 50 lb, doubled here). 1918-19 values are a transcription error in HSUS (AISA Pittsburgh: 3.50, 3.41)"
+1958,hsus_e131_wire,9.828,"HSUS (1975) Series E-131: wire 8d, Pittsburgh, $/100 lb (1961+ quoted per 50 lb, doubled here). 1918-19 values are a transcription error in HSUS (AISA Pittsburgh: 3.50, 3.41)"
+1959,hsus_e131_wire,9.825,"HSUS (1975) Series E-131: wire 8d, Pittsburgh, $/100 lb (1961+ quoted per 50 lb, doubled here). 1918-19 values are a transcription error in HSUS (AISA Pittsburgh: 3.50, 3.41)"
+1960,hsus_e131_wire,9.596,"HSUS (1975) Series E-131: wire 8d, Pittsburgh, $/100 lb (1961+ quoted per 50 lb, doubled here). 1918-19 values are a transcription error in HSUS (AISA Pittsburgh: 3.50, 3.41)"
+1962,hsus_e131_wire,9.43,"HSUS (1975) Series E-131: wire 8d, Pittsburgh, $/100 lb (1961+ quoted per 50 lb, doubled here). 1918-19 values are a transcription error in HSUS (AISA Pittsburgh: 3.50, 3.41)"
+1963,hsus_e131_wire,9.242,"HSUS (1975) Series E-131: wire 8d, Pittsburgh, $/100 lb (1961+ quoted per 50 lb, doubled here). 1918-19 values are a transcription error in HSUS (AISA Pittsburgh: 3.50, 3.41)"
+1964,hsus_e131_wire,9.292,"HSUS (1975) Series E-131: wire 8d, Pittsburgh, $/100 lb (1961+ quoted per 50 lb, doubled here). 1918-19 values are a transcription error in HSUS (AISA Pittsburgh: 3.50, 3.41)"
+1965,hsus_e131_wire,9.292,"HSUS (1975) Series E-131: wire 8d, Pittsburgh, $/100 lb (1961+ quoted per 50 lb, doubled here). 1918-19 values are a transcription error in HSUS (AISA Pittsburgh: 3.50, 3.41)"
+1966,hsus_e131_wire,8.702,"HSUS (1975) Series E-131: wire 8d, Pittsburgh, $/100 lb (1961+ quoted per 50 lb, doubled here). 1918-19 values are a transcription error in HSUS (AISA Pittsburgh: 3.50, 3.41)"
+1967,hsus_e131_wire,8.67,"HSUS (1975) Series E-131: wire 8d, Pittsburgh, $/100 lb (1961+ quoted per 50 lb, doubled here). 1918-19 values are a transcription error in HSUS (AISA Pittsburgh: 3.50, 3.41)"
+1968,hsus_e131_wire,8.678,"HSUS (1975) Series E-131: wire 8d, Pittsburgh, $/100 lb (1961+ quoted per 50 lb, doubled here). 1918-19 values are a transcription error in HSUS (AISA Pittsburgh: 3.50, 3.41)"
+1969,hsus_e131_wire,9.348,"HSUS (1975) Series E-131: wire 8d, Pittsburgh, $/100 lb (1961+ quoted per 50 lb, doubled here). 1918-19 values are a transcription error in HSUS (AISA Pittsburgh: 3.50, 3.41)"
+1891,wire_chicago,2.04,"AISA Reports for 1898-1899, pp.27-28 (Iron Age, G.W. Cope)"
+1892,wire_chicago,1.7,"AISA Reports for 1898-1899, pp.27-28 (Iron Age, G.W. Cope)"
+1893,wire_chicago,1.49,"AISA Reports for 1898-1899, pp.27-28 (Iron Age, G.W. Cope)"
+1894,wire_chicago,1.11,"AISA Reports for 1898-1899, pp.27-28 (Iron Age, G.W. Cope)"
+1895,wire_chicago,1.69,"AISA Reports for 1898-1899, pp.27-28 (Iron Age, G.W. Cope)"
+1896,wire_chicago,2.5,"AISA Reports for 1898-1899, pp.27-28 (Iron Age, G.W. Cope)"
+1897,wire_chicago,1.45,"AISA Reports for 1898-1899, pp.27-28 (Iron Age, G.W. Cope)"
+1898,wire_chicago,1.45,"AISA Reports for 1898-1899, pp.27-28 (Iron Age, G.W. Cope)"
+1899,wire_chicago,2.57,"AISA Reports for 1898-1899, pp.27-28 (Iron Age, G.W. Cope)"
+1903,wire_chicago,2.13,AISA Reports for 1907-1910
+1904,wire_chicago,1.96,AISA Reports for 1907-1910
+1905,wire_chicago,1.98,AISA Reports for 1907-1910
+1906,wire_chicago,1.98,AISA Reports for 1907-1910
+1907,wire_chicago,2.18,AISA Reports for 1907-1910
+1908,wire_chicago,2.17,AISA Reports for 1907-1910
+1909,wire_chicago,2.0,AISA Reports for 1907-1910
+1910,wire_chicago,1.96,AISA Reports for 1907-1910
+1911,wire_chicago,1.89,"AISA Report for 1920, p.86"
+1912,wire_chicago,1.82,"AISA Report for 1920, p.86"
+1913,wire_chicago,1.89,"AISA Report for 1920, p.86"
+1914,wire_chicago,1.75,"AISA Report for 1920, p.86"
+1915,wire_chicago,1.85,"AISA Report for 1920, p.86"
+1916,wire_chicago,2.72,"AISA Report for 1920, p.86"
+1917,wire_chicago,3.75,"AISA Report for 1920, p.86"
+1918,wire_chicago,3.74,"AISA Report for 1920, p.86"
+1919,wire_chicago,3.68,"AISA Report for 1920, p.86"
+1920,wire_chicago,4.4,"AISA Report for 1920, p.86"
+1911,wire_pittsburgh,1.7,"AISA Report for 1920, p.86"
+1912,wire_pittsburgh,1.64,"AISA Report for 1920, p.86"
+1913,wire_pittsburgh,1.7,"AISA Report for 1920, p.86"
+1914,wire_pittsburgh,1.56,"AISA Report for 1920, p.86"
+1915,wire_pittsburgh,1.66,"AISA Report for 1920, p.86"
+1916,wire_pittsburgh,2.53,"AISA Report for 1920, p.86"
+1917,wire_pittsburgh,3.56,"AISA Report for 1920, p.86"
+1918,wire_pittsburgh,3.5,"AISA Report for 1920, p.86"
+1919,wire_pittsburgh,3.41,"AISA Report for 1920, p.86"
+1920,wire_pittsburgh,4.09,"AISA Report for 1920, p.86"
