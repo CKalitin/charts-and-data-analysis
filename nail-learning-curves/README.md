@@ -63,7 +63,9 @@ What the numbers show:
 - **Which basis is used after 1920.** The central case uses US consumption. The alternative, US production = consumption × (1 − import share), inherits a source break in Sichel's import-share series: it drops from 70% in 1987 to 29% in 1992. That break shows up as a 4× jump in implied US output (see the output chart). The 1890–1940 wire fit is the same under either basis.
 - **Why hand-forged volumes can't be pinned down.** If output grows exponentially at rate g with a long prior history, the stock is Q(t) = O(t)/g. The *number of doublings* over 1695–1792 then depends only on g: 0.7 doublings at g = 0.5%/yr and 2.1 at 1.5%/yr. The output level O₁₈₀₀ only shifts the curve sideways. The light-blue horizontal bars on the chart show the x-range between the low and high scenarios.
 
-![output](outputs/production/us_nail_output_by_technology.png)
+![output](outputs/production/nail_output_by_technology.png)
+
+Every annual output value used in the analysis, with a data-quality tag on each row, is in `outputs/production/nail_output_by_technology.csv` [kt/yr].
 
 ## Known gaps
 - **1921–1941 wire volumes are interpolated** between the 1920 AISA figure and the 1942 benchmark. The Depression trough is missing, so cumulative output around 1930–40 is overstated by roughly 10%. That moves the wire LR by less than 1 point.

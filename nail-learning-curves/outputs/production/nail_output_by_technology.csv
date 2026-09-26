@@ -1,0 +1,574 @@
+year,series,kt_per_yr,quality
+1695,hand_forged_england_low,4.14,assumed (scenario)
+1696,hand_forged_england_low,4.203,assumed (scenario)
+1697,hand_forged_england_low,4.266,assumed (scenario)
+1698,hand_forged_england_low,4.331,assumed (scenario)
+1699,hand_forged_england_low,4.396,assumed (scenario)
+1700,hand_forged_england_low,4.463,assumed (scenario)
+1701,hand_forged_england_low,4.53,assumed (scenario)
+1702,hand_forged_england_low,4.599,assumed (scenario)
+1703,hand_forged_england_low,4.668,assumed (scenario)
+1704,hand_forged_england_low,4.739,assumed (scenario)
+1705,hand_forged_england_low,4.81,assumed (scenario)
+1706,hand_forged_england_low,4.883,assumed (scenario)
+1707,hand_forged_england_low,4.957,assumed (scenario)
+1708,hand_forged_england_low,5.032,assumed (scenario)
+1709,hand_forged_england_low,5.108,assumed (scenario)
+1710,hand_forged_england_low,5.185,assumed (scenario)
+1711,hand_forged_england_low,5.263,assumed (scenario)
+1712,hand_forged_england_low,5.343,assumed (scenario)
+1713,hand_forged_england_low,5.423,assumed (scenario)
+1714,hand_forged_england_low,5.505,assumed (scenario)
+1715,hand_forged_england_low,5.589,assumed (scenario)
+1716,hand_forged_england_low,5.673,assumed (scenario)
+1717,hand_forged_england_low,5.759,assumed (scenario)
+1718,hand_forged_england_low,5.846,assumed (scenario)
+1719,hand_forged_england_low,5.934,assumed (scenario)
+1720,hand_forged_england_low,6.024,assumed (scenario)
+1721,hand_forged_england_low,6.115,assumed (scenario)
+1722,hand_forged_england_low,6.207,assumed (scenario)
+1723,hand_forged_england_low,6.301,assumed (scenario)
+1724,hand_forged_england_low,6.396,assumed (scenario)
+1725,hand_forged_england_low,6.493,assumed (scenario)
+1726,hand_forged_england_low,6.591,assumed (scenario)
+1727,hand_forged_england_low,6.691,assumed (scenario)
+1728,hand_forged_england_low,6.792,assumed (scenario)
+1729,hand_forged_england_low,6.895,assumed (scenario)
+1730,hand_forged_england_low,6.999,assumed (scenario)
+1731,hand_forged_england_low,7.105,assumed (scenario)
+1732,hand_forged_england_low,7.212,assumed (scenario)
+1733,hand_forged_england_low,7.321,assumed (scenario)
+1734,hand_forged_england_low,7.432,assumed (scenario)
+1735,hand_forged_england_low,7.544,assumed (scenario)
+1736,hand_forged_england_low,7.658,assumed (scenario)
+1737,hand_forged_england_low,7.774,assumed (scenario)
+1738,hand_forged_england_low,7.891,assumed (scenario)
+1739,hand_forged_england_low,8.01,assumed (scenario)
+1740,hand_forged_england_low,8.131,assumed (scenario)
+1741,hand_forged_england_low,8.254,assumed (scenario)
+1742,hand_forged_england_low,8.379,assumed (scenario)
+1743,hand_forged_england_low,8.506,assumed (scenario)
+1744,hand_forged_england_low,8.634,assumed (scenario)
+1745,hand_forged_england_low,8.765,assumed (scenario)
+1746,hand_forged_england_low,8.897,assumed (scenario)
+1747,hand_forged_england_low,9.032,assumed (scenario)
+1748,hand_forged_england_low,9.168,assumed (scenario)
+1749,hand_forged_england_low,9.307,assumed (scenario)
+1750,hand_forged_england_low,9.447,assumed (scenario)
+1751,hand_forged_england_low,9.59,assumed (scenario)
+1752,hand_forged_england_low,9.735,assumed (scenario)
+1753,hand_forged_england_low,9.882,assumed (scenario)
+1754,hand_forged_england_low,10.03,assumed (scenario)
+1755,hand_forged_england_low,10.18,assumed (scenario)
+1756,hand_forged_england_low,10.34,assumed (scenario)
+1757,hand_forged_england_low,10.49,assumed (scenario)
+1758,hand_forged_england_low,10.65,assumed (scenario)
+1759,hand_forged_england_low,10.81,assumed (scenario)
+1760,hand_forged_england_low,10.98,assumed (scenario)
+1761,hand_forged_england_low,11.14,assumed (scenario)
+1762,hand_forged_england_low,11.31,assumed (scenario)
+1763,hand_forged_england_low,11.48,assumed (scenario)
+1764,hand_forged_england_low,11.65,assumed (scenario)
+1765,hand_forged_england_low,11.83,assumed (scenario)
+1766,hand_forged_england_low,12.01,assumed (scenario)
+1767,hand_forged_england_low,12.19,assumed (scenario)
+1768,hand_forged_england_low,12.38,assumed (scenario)
+1769,hand_forged_england_low,12.56,assumed (scenario)
+1770,hand_forged_england_low,12.75,assumed (scenario)
+1771,hand_forged_england_low,12.95,assumed (scenario)
+1772,hand_forged_england_low,13.14,assumed (scenario)
+1773,hand_forged_england_low,13.34,assumed (scenario)
+1774,hand_forged_england_low,13.54,assumed (scenario)
+1775,hand_forged_england_low,13.75,assumed (scenario)
+1776,hand_forged_england_low,13.95,assumed (scenario)
+1777,hand_forged_england_low,14.16,assumed (scenario)
+1778,hand_forged_england_low,14.38,assumed (scenario)
+1779,hand_forged_england_low,14.6,assumed (scenario)
+1780,hand_forged_england_low,14.82,assumed (scenario)
+1781,hand_forged_england_low,15.04,assumed (scenario)
+1782,hand_forged_england_low,15.27,assumed (scenario)
+1783,hand_forged_england_low,15.5,assumed (scenario)
+1784,hand_forged_england_low,15.73,assumed (scenario)
+1785,hand_forged_england_low,15.97,assumed (scenario)
+1786,hand_forged_england_low,16.21,assumed (scenario)
+1787,hand_forged_england_low,16.46,assumed (scenario)
+1788,hand_forged_england_low,16.71,assumed (scenario)
+1789,hand_forged_england_low,16.96,assumed (scenario)
+1790,hand_forged_england_low,17.21,assumed (scenario)
+1791,hand_forged_england_low,17.47,assumed (scenario)
+1792,hand_forged_england_low,17.74,assumed (scenario)
+1793,hand_forged_england_low,18.01,assumed (scenario)
+1794,hand_forged_england_low,18.28,assumed (scenario)
+1795,hand_forged_england_low,18.55,assumed (scenario)
+1796,hand_forged_england_low,18.84,assumed (scenario)
+1797,hand_forged_england_low,19.12,assumed (scenario)
+1798,hand_forged_england_low,19.41,assumed (scenario)
+1799,hand_forged_england_low,19.7,assumed (scenario)
+1800,hand_forged_england_low,20,assumed (scenario)
+1695,hand_forged_england_central,14,assumed (scenario)
+1696,hand_forged_england_central,14.14,assumed (scenario)
+1697,hand_forged_england_central,14.28,assumed (scenario)
+1698,hand_forged_england_central,14.42,assumed (scenario)
+1699,hand_forged_england_central,14.57,assumed (scenario)
+1700,hand_forged_england_central,14.72,assumed (scenario)
+1701,hand_forged_england_central,14.86,assumed (scenario)
+1702,hand_forged_england_central,15.01,assumed (scenario)
+1703,hand_forged_england_central,15.16,assumed (scenario)
+1704,hand_forged_england_central,15.32,assumed (scenario)
+1705,hand_forged_england_central,15.47,assumed (scenario)
+1706,hand_forged_england_central,15.63,assumed (scenario)
+1707,hand_forged_england_central,15.78,assumed (scenario)
+1708,hand_forged_england_central,15.94,assumed (scenario)
+1709,hand_forged_england_central,16.1,assumed (scenario)
+1710,hand_forged_england_central,16.26,assumed (scenario)
+1711,hand_forged_england_central,16.43,assumed (scenario)
+1712,hand_forged_england_central,16.59,assumed (scenario)
+1713,hand_forged_england_central,16.76,assumed (scenario)
+1714,hand_forged_england_central,16.93,assumed (scenario)
+1715,hand_forged_england_central,17.1,assumed (scenario)
+1716,hand_forged_england_central,17.27,assumed (scenario)
+1717,hand_forged_england_central,17.44,assumed (scenario)
+1718,hand_forged_england_central,17.62,assumed (scenario)
+1719,hand_forged_england_central,17.79,assumed (scenario)
+1720,hand_forged_england_central,17.97,assumed (scenario)
+1721,hand_forged_england_central,18.15,assumed (scenario)
+1722,hand_forged_england_central,18.34,assumed (scenario)
+1723,hand_forged_england_central,18.52,assumed (scenario)
+1724,hand_forged_england_central,18.71,assumed (scenario)
+1725,hand_forged_england_central,18.89,assumed (scenario)
+1726,hand_forged_england_central,19.08,assumed (scenario)
+1727,hand_forged_england_central,19.28,assumed (scenario)
+1728,hand_forged_england_central,19.47,assumed (scenario)
+1729,hand_forged_england_central,19.67,assumed (scenario)
+1730,hand_forged_england_central,19.86,assumed (scenario)
+1731,hand_forged_england_central,20.06,assumed (scenario)
+1732,hand_forged_england_central,20.26,assumed (scenario)
+1733,hand_forged_england_central,20.47,assumed (scenario)
+1734,hand_forged_england_central,20.67,assumed (scenario)
+1735,hand_forged_england_central,20.88,assumed (scenario)
+1736,hand_forged_england_central,21.09,assumed (scenario)
+1737,hand_forged_england_central,21.3,assumed (scenario)
+1738,hand_forged_england_central,21.52,assumed (scenario)
+1739,hand_forged_england_central,21.73,assumed (scenario)
+1740,hand_forged_england_central,21.95,assumed (scenario)
+1741,hand_forged_england_central,22.17,assumed (scenario)
+1742,hand_forged_england_central,22.4,assumed (scenario)
+1743,hand_forged_england_central,22.62,assumed (scenario)
+1744,hand_forged_england_central,22.85,assumed (scenario)
+1745,hand_forged_england_central,23.08,assumed (scenario)
+1746,hand_forged_england_central,23.31,assumed (scenario)
+1747,hand_forged_england_central,23.54,assumed (scenario)
+1748,hand_forged_england_central,23.78,assumed (scenario)
+1749,hand_forged_england_central,24.02,assumed (scenario)
+1750,hand_forged_england_central,24.26,assumed (scenario)
+1751,hand_forged_england_central,24.51,assumed (scenario)
+1752,hand_forged_england_central,24.75,assumed (scenario)
+1753,hand_forged_england_central,25,assumed (scenario)
+1754,hand_forged_england_central,25.25,assumed (scenario)
+1755,hand_forged_england_central,25.51,assumed (scenario)
+1756,hand_forged_england_central,25.76,assumed (scenario)
+1757,hand_forged_england_central,26.02,assumed (scenario)
+1758,hand_forged_england_central,26.28,assumed (scenario)
+1759,hand_forged_england_central,26.55,assumed (scenario)
+1760,hand_forged_england_central,26.81,assumed (scenario)
+1761,hand_forged_england_central,27.08,assumed (scenario)
+1762,hand_forged_england_central,27.35,assumed (scenario)
+1763,hand_forged_england_central,27.63,assumed (scenario)
+1764,hand_forged_england_central,27.91,assumed (scenario)
+1765,hand_forged_england_central,28.19,assumed (scenario)
+1766,hand_forged_england_central,28.47,assumed (scenario)
+1767,hand_forged_england_central,28.76,assumed (scenario)
+1768,hand_forged_england_central,29.05,assumed (scenario)
+1769,hand_forged_england_central,29.34,assumed (scenario)
+1770,hand_forged_england_central,29.63,assumed (scenario)
+1771,hand_forged_england_central,29.93,assumed (scenario)
+1772,hand_forged_england_central,30.23,assumed (scenario)
+1773,hand_forged_england_central,30.54,assumed (scenario)
+1774,hand_forged_england_central,30.84,assumed (scenario)
+1775,hand_forged_england_central,31.15,assumed (scenario)
+1776,hand_forged_england_central,31.47,assumed (scenario)
+1777,hand_forged_england_central,31.78,assumed (scenario)
+1778,hand_forged_england_central,32.1,assumed (scenario)
+1779,hand_forged_england_central,32.42,assumed (scenario)
+1780,hand_forged_england_central,32.75,assumed (scenario)
+1781,hand_forged_england_central,33.08,assumed (scenario)
+1782,hand_forged_england_central,33.41,assumed (scenario)
+1783,hand_forged_england_central,33.75,assumed (scenario)
+1784,hand_forged_england_central,34.09,assumed (scenario)
+1785,hand_forged_england_central,34.43,assumed (scenario)
+1786,hand_forged_england_central,34.77,assumed (scenario)
+1787,hand_forged_england_central,35.12,assumed (scenario)
+1788,hand_forged_england_central,35.48,assumed (scenario)
+1789,hand_forged_england_central,35.83,assumed (scenario)
+1790,hand_forged_england_central,36.19,assumed (scenario)
+1791,hand_forged_england_central,36.56,assumed (scenario)
+1792,hand_forged_england_central,36.92,assumed (scenario)
+1793,hand_forged_england_central,37.3,assumed (scenario)
+1794,hand_forged_england_central,37.67,assumed (scenario)
+1795,hand_forged_england_central,38.05,assumed (scenario)
+1796,hand_forged_england_central,38.43,assumed (scenario)
+1797,hand_forged_england_central,38.82,assumed (scenario)
+1798,hand_forged_england_central,39.21,assumed (scenario)
+1799,hand_forged_england_central,39.6,assumed (scenario)
+1800,hand_forged_england_central,40,assumed (scenario)
+1695,hand_forged_england_high,47.32,assumed (scenario)
+1696,hand_forged_england_high,47.56,assumed (scenario)
+1697,hand_forged_england_high,47.8,assumed (scenario)
+1698,hand_forged_england_high,48.04,assumed (scenario)
+1699,hand_forged_england_high,48.28,assumed (scenario)
+1700,hand_forged_england_high,48.52,assumed (scenario)
+1701,hand_forged_england_high,48.77,assumed (scenario)
+1702,hand_forged_england_high,49.01,assumed (scenario)
+1703,hand_forged_england_high,49.26,assumed (scenario)
+1704,hand_forged_england_high,49.5,assumed (scenario)
+1705,hand_forged_england_high,49.75,assumed (scenario)
+1706,hand_forged_england_high,50,assumed (scenario)
+1707,hand_forged_england_high,50.25,assumed (scenario)
+1708,hand_forged_england_high,50.5,assumed (scenario)
+1709,hand_forged_england_high,50.76,assumed (scenario)
+1710,hand_forged_england_high,51.01,assumed (scenario)
+1711,hand_forged_england_high,51.27,assumed (scenario)
+1712,hand_forged_england_high,51.52,assumed (scenario)
+1713,hand_forged_england_high,51.78,assumed (scenario)
+1714,hand_forged_england_high,52.04,assumed (scenario)
+1715,hand_forged_england_high,52.3,assumed (scenario)
+1716,hand_forged_england_high,52.56,assumed (scenario)
+1717,hand_forged_england_high,52.83,assumed (scenario)
+1718,hand_forged_england_high,53.09,assumed (scenario)
+1719,hand_forged_england_high,53.36,assumed (scenario)
+1720,hand_forged_england_high,53.63,assumed (scenario)
+1721,hand_forged_england_high,53.89,assumed (scenario)
+1722,hand_forged_england_high,54.16,assumed (scenario)
+1723,hand_forged_england_high,54.44,assumed (scenario)
+1724,hand_forged_england_high,54.71,assumed (scenario)
+1725,hand_forged_england_high,54.98,assumed (scenario)
+1726,hand_forged_england_high,55.26,assumed (scenario)
+1727,hand_forged_england_high,55.54,assumed (scenario)
+1728,hand_forged_england_high,55.81,assumed (scenario)
+1729,hand_forged_england_high,56.09,assumed (scenario)
+1730,hand_forged_england_high,56.38,assumed (scenario)
+1731,hand_forged_england_high,56.66,assumed (scenario)
+1732,hand_forged_england_high,56.94,assumed (scenario)
+1733,hand_forged_england_high,57.23,assumed (scenario)
+1734,hand_forged_england_high,57.51,assumed (scenario)
+1735,hand_forged_england_high,57.8,assumed (scenario)
+1736,hand_forged_england_high,58.09,assumed (scenario)
+1737,hand_forged_england_high,58.38,assumed (scenario)
+1738,hand_forged_england_high,58.68,assumed (scenario)
+1739,hand_forged_england_high,58.97,assumed (scenario)
+1740,hand_forged_england_high,59.27,assumed (scenario)
+1741,hand_forged_england_high,59.56,assumed (scenario)
+1742,hand_forged_england_high,59.86,assumed (scenario)
+1743,hand_forged_england_high,60.16,assumed (scenario)
+1744,hand_forged_england_high,60.46,assumed (scenario)
+1745,hand_forged_england_high,60.77,assumed (scenario)
+1746,hand_forged_england_high,61.07,assumed (scenario)
+1747,hand_forged_england_high,61.38,assumed (scenario)
+1748,hand_forged_england_high,61.68,assumed (scenario)
+1749,hand_forged_england_high,61.99,assumed (scenario)
+1750,hand_forged_england_high,62.3,assumed (scenario)
+1751,hand_forged_england_high,62.62,assumed (scenario)
+1752,hand_forged_england_high,62.93,assumed (scenario)
+1753,hand_forged_england_high,63.25,assumed (scenario)
+1754,hand_forged_england_high,63.56,assumed (scenario)
+1755,hand_forged_england_high,63.88,assumed (scenario)
+1756,hand_forged_england_high,64.2,assumed (scenario)
+1757,hand_forged_england_high,64.52,assumed (scenario)
+1758,hand_forged_england_high,64.85,assumed (scenario)
+1759,hand_forged_england_high,65.17,assumed (scenario)
+1760,hand_forged_england_high,65.5,assumed (scenario)
+1761,hand_forged_england_high,65.83,assumed (scenario)
+1762,hand_forged_england_high,66.16,assumed (scenario)
+1763,hand_forged_england_high,66.49,assumed (scenario)
+1764,hand_forged_england_high,66.82,assumed (scenario)
+1765,hand_forged_england_high,67.16,assumed (scenario)
+1766,hand_forged_england_high,67.49,assumed (scenario)
+1767,hand_forged_england_high,67.83,assumed (scenario)
+1768,hand_forged_england_high,68.17,assumed (scenario)
+1769,hand_forged_england_high,68.51,assumed (scenario)
+1770,hand_forged_england_high,68.86,assumed (scenario)
+1771,hand_forged_england_high,69.2,assumed (scenario)
+1772,hand_forged_england_high,69.55,assumed (scenario)
+1773,hand_forged_england_high,69.9,assumed (scenario)
+1774,hand_forged_england_high,70.25,assumed (scenario)
+1775,hand_forged_england_high,70.6,assumed (scenario)
+1776,hand_forged_england_high,70.95,assumed (scenario)
+1777,hand_forged_england_high,71.31,assumed (scenario)
+1778,hand_forged_england_high,71.67,assumed (scenario)
+1779,hand_forged_england_high,72.03,assumed (scenario)
+1780,hand_forged_england_high,72.39,assumed (scenario)
+1781,hand_forged_england_high,72.75,assumed (scenario)
+1782,hand_forged_england_high,73.11,assumed (scenario)
+1783,hand_forged_england_high,73.48,assumed (scenario)
+1784,hand_forged_england_high,73.85,assumed (scenario)
+1785,hand_forged_england_high,74.22,assumed (scenario)
+1786,hand_forged_england_high,74.59,assumed (scenario)
+1787,hand_forged_england_high,74.97,assumed (scenario)
+1788,hand_forged_england_high,75.34,assumed (scenario)
+1789,hand_forged_england_high,75.72,assumed (scenario)
+1790,hand_forged_england_high,76.1,assumed (scenario)
+1791,hand_forged_england_high,76.48,assumed (scenario)
+1792,hand_forged_england_high,76.86,assumed (scenario)
+1793,hand_forged_england_high,77.25,assumed (scenario)
+1794,hand_forged_england_high,77.64,assumed (scenario)
+1795,hand_forged_england_high,78.02,assumed (scenario)
+1796,hand_forged_england_high,78.42,assumed (scenario)
+1797,hand_forged_england_high,78.81,assumed (scenario)
+1798,hand_forged_england_high,79.2,assumed (scenario)
+1799,hand_forged_england_high,79.6,assumed (scenario)
+1800,hand_forged_england_high,80,assumed (scenario)
+1795,cut_us,3.27,extrapolated
+1796,cut_us,3.445,extrapolated
+1797,cut_us,3.629,extrapolated
+1798,cut_us,3.822,extrapolated
+1799,cut_us,4.026,extrapolated
+1800,cut_us,4.241,extrapolated
+1801,cut_us,4.468,extrapolated
+1802,cut_us,4.706,extrapolated
+1803,cut_us,4.957,extrapolated
+1804,cut_us,5.222,extrapolated
+1805,cut_us,5.501,extrapolated
+1806,cut_us,5.794,extrapolated
+1807,cut_us,6.104,extrapolated
+1808,cut_us,6.429,extrapolated
+1809,cut_us,6.773,extrapolated
+1810,cut_us,7.134,tabulated
+1811,cut_us,7.525,interpolated
+1812,cut_us,7.936,interpolated
+1813,cut_us,8.371,interpolated
+1814,cut_us,8.829,interpolated
+1815,cut_us,9.312,interpolated
+1816,cut_us,9.822,interpolated
+1817,cut_us,10.36,interpolated
+1818,cut_us,10.93,interpolated
+1819,cut_us,11.52,interpolated
+1820,cut_us,12.16,interpolated
+1821,cut_us,12.82,interpolated
+1822,cut_us,13.52,interpolated
+1823,cut_us,14.26,interpolated
+1824,cut_us,15.04,interpolated
+1825,cut_us,15.87,interpolated
+1826,cut_us,16.73,interpolated
+1827,cut_us,17.65,interpolated
+1828,cut_us,18.62,interpolated
+1829,cut_us,19.64,interpolated
+1830,cut_us,20.71,interpolated
+1831,cut_us,21.84,interpolated
+1832,cut_us,23.04,interpolated
+1833,cut_us,24.3,interpolated
+1834,cut_us,25.63,interpolated
+1835,cut_us,27.03,interpolated
+1836,cut_us,28.51,interpolated
+1837,cut_us,30.07,interpolated
+1838,cut_us,31.72,interpolated
+1839,cut_us,33.45,interpolated
+1840,cut_us,35.29,interpolated
+1841,cut_us,37.22,interpolated
+1842,cut_us,39.25,interpolated
+1843,cut_us,41.4,interpolated
+1844,cut_us,43.67,interpolated
+1845,cut_us,46.06,interpolated
+1846,cut_us,48.58,interpolated
+1847,cut_us,51.24,interpolated
+1848,cut_us,54.04,interpolated
+1849,cut_us,57,interpolated
+1850,cut_us,60.12,interpolated
+1851,cut_us,63.41,interpolated
+1852,cut_us,66.88,interpolated
+1853,cut_us,70.54,interpolated
+1854,cut_us,74.4,interpolated
+1855,cut_us,78.47,interpolated
+1856,cut_us,82.77,tabulated
+1857,cut_us,87.02,interpolated
+1858,cut_us,91.49,interpolated
+1859,cut_us,96.18,interpolated
+1860,cut_us,101.1,interpolated
+1861,cut_us,106.3,interpolated
+1862,cut_us,111.8,interpolated
+1863,cut_us,117.5,interpolated
+1864,cut_us,123.5,interpolated
+1865,cut_us,129.9,interpolated
+1866,cut_us,136.6,interpolated
+1867,cut_us,143.6,interpolated
+1868,cut_us,150.9,interpolated
+1869,cut_us,158.7,interpolated
+1870,cut_us,166.8,interpolated
+1871,cut_us,175.4,interpolated
+1872,cut_us,184.4,tabulated
+1873,cut_us,182.6,tabulated
+1874,cut_us,222.8,tabulated
+1875,cut_us,214.4,tabulated
+1876,cut_us,188.6,tabulated
+1877,cut_us,219,tabulated
+1878,cut_us,199.4,tabulated
+1879,cut_us,227.3,tabulated
+1880,cut_us,243.6,tabulated
+1881,cut_us,262.8,tabulated
+1882,cut_us,278.8,tabulated
+1883,cut_us,352.1,tabulated
+1884,cut_us,343.9,tabulated
+1885,cut_us,303.8,tabulated
+1886,cut_us,370.2,tabulated
+1887,cut_us,313.4,tabulated
+1888,cut_us,294.5,tabulated
+1889,cut_us,263.6,tabulated
+1890,cut_us,255.9,tabulated
+1891,cut_us,226.9,tabulated
+1892,cut_us,204.5,tabulated
+1893,cut_us,138.3,tabulated
+1894,cut_us,110,tabulated
+1895,cut_us,96.61,tabulated
+1896,cut_us,73.29,tabulated
+1897,cut_us,95.56,tabulated
+1898,cut_us,71.31,tabulated
+1899,cut_us,86.38,tabulated
+1900,cut_us,71.37,tabulated
+1901,cut_us,69.95,tabulated
+1902,cut_us,74.11,tabulated
+1903,cut_us,65.13,tabulated
+1904,cut_us,58.21,tabulated
+1905,cut_us,61.58,tabulated
+1906,cut_us,53.94,tabulated
+1907,cut_us,50.31,tabulated
+1908,cut_us,43.37,tabulated
+1909,cut_us,54.78,tabulated
+1910,cut_us,45.6,tabulated
+1911,cut_us,43.89,tabulated
+1912,cut_us,44.38,tabulated
+1913,cut_us,38.19,tabulated
+1914,cut_us,34.91,tabulated
+1915,cut_us,35.17,tabulated
+1916,cut_us,34.69,tabulated
+1917,cut_us,20.94,tabulated
+1918,cut_us,19,tabulated
+1919,cut_us,17.89,tabulated
+1920,cut_us,38.31,tabulated
+1886,wire_us,27.22,trade estimate
+1887,wire_us,56.7,trade estimate
+1888,wire_us,68.04,trade estimate
+1889,wire_us,110.4,trade estimate
+1890,wire_us,142.2,tabulated
+1891,wire_us,186.6,tabulated
+1892,wire_us,214.1,tabulated
+1893,wire_us,231.1,tabulated
+1894,wire_us,257.7,tabulated
+1895,wire_us,265,tabulated
+1896,wire_us,214.1,tabulated
+1897,wire_us,408.1,tabulated
+1898,wire_us,336.5,tabulated
+1899,wire_us,345.6,tabulated
+1900,wire_us,328.1,tabulated
+1901,wire_us,444.7,tabulated
+1902,wire_us,498.1,tabulated
+1903,wire_us,436.9,tabulated
+1904,wire_us,541,tabulated
+1905,wire_us,492.4,tabulated
+1906,wire_us,521,tabulated
+1907,wire_us,532.1,tabulated
+1908,wire_us,483.7,tabulated
+1909,wire_us,631.2,tabulated
+1910,wire_us,576.3,tabulated
+1911,wire_us,609.5,tabulated
+1912,wire_us,665,tabulated
+1913,wire_us,615.1,tabulated
+1914,wire_us,595.7,tabulated
+1915,wire_us,661.5,tabulated
+1916,wire_us,777.8,tabulated
+1917,wire_us,773,tabulated
+1918,wire_us,557,tabulated
+1919,wire_us,593.9,tabulated
+1920,wire_us,746.1,tabulated
+1921,wire_us,747.1,interpolated
+1922,wire_us,748.2,interpolated
+1923,wire_us,749.2,interpolated
+1924,wire_us,750.2,interpolated
+1925,wire_us,751.2,interpolated
+1926,wire_us,752.2,interpolated
+1927,wire_us,753.2,interpolated
+1928,wire_us,754.2,interpolated
+1929,wire_us,755.2,interpolated
+1930,wire_us,756.3,interpolated
+1931,wire_us,757.3,interpolated
+1932,wire_us,758.3,interpolated
+1933,wire_us,759.3,interpolated
+1934,wire_us,760.4,interpolated
+1935,wire_us,761.4,interpolated
+1936,wire_us,762.4,interpolated
+1937,wire_us,763.4,interpolated
+1938,wire_us,764.5,interpolated
+1939,wire_us,765.5,interpolated
+1940,wire_us,766.5,interpolated
+1941,wire_us,767.6,interpolated
+1942,wire_us,768.6,benchmark (absorption/price)
+1943,wire_us,675.1,interpolated
+1944,wire_us,593,interpolated
+1945,wire_us,520.8,benchmark (absorption/price)
+1946,wire_us,612.4,interpolated
+1947,wire_us,720,benchmark (absorption/price)
+1948,wire_us,776.1,interpolated
+1949,wire_us,836.7,interpolated
+1950,wire_us,901.9,benchmark (absorption/price)
+1951,wire_us,822.9,interpolated
+1952,wire_us,750.8,interpolated
+1953,wire_us,685.1,interpolated
+1954,wire_us,625,benchmark (absorption/price)
+1955,wire_us,613.6,interpolated
+1956,wire_us,602.4,interpolated
+1957,wire_us,591.3,interpolated
+1958,wire_us,580.5,benchmark (absorption/price)
+1959,wire_us,576.2,interpolated
+1960,wire_us,572,interpolated
+1961,wire_us,567.8,interpolated
+1962,wire_us,563.6,interpolated
+1963,wire_us,559.4,benchmark (absorption/price)
+1964,wire_us,545.5,interpolated
+1965,wire_us,531.9,interpolated
+1966,wire_us,518.6,interpolated
+1967,wire_us,505.7,benchmark (absorption/price)
+1968,wire_us,534.3,interpolated
+1969,wire_us,564.5,interpolated
+1970,wire_us,596.4,interpolated
+1971,wire_us,630.1,interpolated
+1972,wire_us,665.7,benchmark (absorption/price)
+1973,wire_us,659.2,interpolated
+1974,wire_us,652.7,interpolated
+1975,wire_us,646.3,interpolated
+1976,wire_us,640,interpolated
+1977,wire_us,633.7,benchmark (absorption/price)
+1978,wire_us,567.7,interpolated
+1979,wire_us,508.6,interpolated
+1980,wire_us,455.7,interpolated
+1981,wire_us,408.2,interpolated
+1982,wire_us,365.7,benchmark (absorption/price)
+1983,wire_us,408.2,interpolated
+1984,wire_us,455.7,interpolated
+1985,wire_us,508.6,interpolated
+1986,wire_us,567.7,interpolated
+1987,wire_us,633.7,benchmark (absorption/price)
+1988,wire_us,705.2,interpolated
+1989,wire_us,784.8,interpolated
+1990,wire_us,873.4,interpolated
+1991,wire_us,972,interpolated
+1992,wire_us,1082,benchmark (absorption/price)
+1993,wire_us,1114,interpolated
+1994,wire_us,1147,interpolated
+1995,wire_us,1181,interpolated
+1996,wire_us,1216,interpolated
+1997,wire_us,1252,interpolated
+1998,wire_us,1289,interpolated
+1999,wire_us,1327,interpolated
+2000,wire_us,1366,interpolated
+1942,wire_us_implied_production,768.4,derived (consumption x (1 - import share))
+1945,wire_us_implied_production,520.7,derived (consumption x (1 - import share))
+1947,wire_us_implied_production,719.8,derived (consumption x (1 - import share))
+1950,wire_us_implied_production,841.1,derived (consumption x (1 - import share))
+1954,wire_us_implied_production,541.5,derived (consumption x (1 - import share))
+1958,wire_us_implied_production,399.4,derived (consumption x (1 - import share))
+1963,wire_us_implied_production,281.1,derived (consumption x (1 - import share))
+1967,wire_us_implied_production,297.5,derived (consumption x (1 - import share))
+1972,wire_us_implied_production,314.5,derived (consumption x (1 - import share))
+1977,wire_us_implied_production,242.5,derived (consumption x (1 - import share))
+1982,wire_us_implied_production,106,derived (consumption x (1 - import share))
+1987,wire_us_implied_production,191.9,derived (consumption x (1 - import share))
+1992,wire_us_implied_production,772.7,derived (consumption x (1 - import share))
+2002,wire_us_implied_production,771,derived (consumption x (1 - import share))

@@ -3,6 +3,7 @@
 Each draw_* function draws onto a provided Axes. figures() returns [(name, build)] pairs.
 """
 import numpy as np
+import pandas as pd
 from matplotlib.ticker import NullFormatter
 
 import config as cfg
@@ -72,32 +73,77 @@ def draw_learning(ax, df, fits, hf_band):
     ax.legend(loc="lower left", fontsize=7.5, framealpha=0.9)
 
 
-def draw_annual_output(ax):
+KT_PER_KEG = cfg.LB_PER_KEG * cfg.KG_PER_LB / 1e6
+
+
+def output_all():
+    """Every annual-output value used anywhere in the analysis, one row per year x series [kt/yr]."""
+    rows = []
+    yrs = np.arange(1695, 1801)
+    for sc, (o1800, g) in cfg.HAND_FORGED_SCENARIOS.items():
+        rows.append(pd.DataFrame({"year": yrs, "series": f"hand_forged_england_{sc}",
+                                  "kt_per_yr": o1800 * np.exp(g * (yrs - 1800)),
+                                  "quality": "assumed (scenario)"}))
     cut = model.cut_output_kegs()
     wire = model.wire_output_kegs()
-    for out, tech in ((cut, "cut"), (wire, "wire")):
+    rows.append(cut.assign(series="cut_us", kt_per_yr=cut.kegs * KT_PER_KEG)[["year", "series", "kt_per_yr", "quality"]])
+    wq = wire.quality.where(~wire.year.between(1886, 1889), "trade estimate")
+    rows.append(wire.assign(series="wire_us", kt_per_yr=wire.kegs * KT_PER_KEG, quality=wq)[["year", "series", "kt_per_yr", "quality"]])
+    bm = model.wire_consumption_benchmarks()
+    bm = bm[bm.year <= cfg.LAST_YEAR + 2]
+    rows.append(pd.DataFrame({"year": bm.year, "series": "wire_us_implied_production",
+                              "kt_per_yr": bm.production_kegs * KT_PER_KEG,
+                              "quality": "derived (consumption x (1 - import share))"}))
+    return pd.concat(rows, ignore_index=True)
+
+
+def _masked(s, ok):
+    return s.where(ok)
+
+
+def draw_annual_output(ax, out):
+    hf = {sc: out[out.series == f"hand_forged_england_{sc}"].set_index("year").kt_per_yr
+          for sc in cfg.HAND_FORGED_SCENARIOS}
+    c = cfg.TECH_STYLE["hand_forged"]["color"]
+    ax.fill_between(hf["low"].index, hf["low"], hf["high"], color=c, alpha=0.15, lw=0,
+                    label="Hand-forged, England: assumed range (20 kt @1.5%/yr to 80 kt @0.5%/yr)")
+    ax.plot(hf["central"].index, hf["central"], color=c, lw=1.6, ls="--",
+            label="Hand-forged, England: central assumption (40 kt/yr in 1800, +1%/yr)")
+
+    for series, tech in (("cut_us", "cut"), ("wire_us", "wire")):
         st = cfg.TECH_STYLE[tech]
-        t = out.quality == "tabulated"
-        ax.plot(out.year, out.kegs / 1e6, color=st["color"], lw=1.2, label=f"{st['label']}")
-        ax.scatter(out.year[t], out.kegs[t] / 1e6, s=10, color=st["color"], zorder=3)
-    b = model.wire_consumption_benchmarks()
-    b = b[b.year <= cfg.LAST_YEAR + 2]
-    ax.scatter(b.year, b.consumption_kegs / 1e6, s=28, marker="D", facecolor="none",
-               edgecolor=cfg.TECH_STYLE["wire"]["color"], zorder=4,
-               label="Wire, US consumption benchmark (Sichel absorption / price)")
-    ax.scatter(b.year, b.production_kegs / 1e6, s=18, marker="x", color="0.35", zorder=4,
-               label="Wire, implied US production (consumption x (1 - import share))")
+        d = out[out.series == series].set_index("year")
+        ax.plot(d.index, d.kt_per_yr, color=st["color"], lw=1.0, ls=":", alpha=0.9)   # interpolation
+        tab = d.quality == "tabulated"
+        ax.plot(d.index, _masked(d.kt_per_yr, tab), color=st["color"], lw=1.6,
+                label=f"{st['label']}: tabulated annual (AISA)")
+        ax.scatter(d.index[tab], d.kt_per_yr[tab], s=9, color=st["color"], zorder=3)
+
+    cc = cfg.TECH_STYLE["cut"]["color"]
     p = model._production()["cut"]
-    for y in (1810, 1856):
-        ax.scatter([y], [p[y] / 1e6], s=40, marker="*", color=cfg.TECH_STYLE["cut"]["color"], zorder=5)
-    ax.plot([], [], "*", color=cfg.TECH_STYLE["cut"]["color"], label="Cut, benchmark (Gallatin 1810, Lesley 1856)")
-    ax.plot([], [], "o", ms=3, color="0.3", label="Dots = tabulated annual (AISA); lines between = interpolated")
+    ax.scatter([1810, 1856], [p[1810] * KT_PER_KEG, p[1856] * KT_PER_KEG], s=70, marker="*",
+               color=cc, zorder=5, label="Cut, US: benchmark (Gallatin 1810, Lesley 1856)")
+    wc = cfg.TECH_STYLE["wire"]["color"]
+    w = out[(out.series == "wire_us") & (out.quality == "trade estimate")]
+    ax.scatter(w.year, w.kt_per_yr, s=26, marker="^", facecolor="none", edgecolor=wc, zorder=5,
+               label="Wire, US: trade estimate (AISA / Swank, 1886-89)")
+    bm = model.wire_consumption_benchmarks()
+    bm = bm[bm.year <= cfg.LAST_YEAR + 2]
+    ax.scatter(bm.year, bm.consumption_kegs * KT_PER_KEG, s=30, marker="D", facecolor="none",
+               edgecolor=wc, zorder=5, label="Wire, US consumption: benchmark (Sichel absorption / price)")
+    ip = out[out.series == "wire_us_implied_production"]
+    ax.scatter(ip.year, ip.kt_per_yr, s=20, marker="x", color="0.35", zorder=5,
+               label="Wire, implied US production (consumption x (1 - import share))")
+    ax.plot([], [], color="0.4", lw=1.0, ls=":", label="Dotted = interpolated / extrapolated")
+
     ax.set_yscale("log")
+    ax.set_xlim(1690, 2005)
     ax.set_xlabel("Year")
-    ax.set_ylabel("US output [million 100-lb kegs / yr]")
-    ax.set_title("US Nail Output by Technology")
+    ax.set_ylabel("Annual output [kt / yr]  (1 kt = 22,046 100-lb kegs)")
+    ax.set_title("Nail Output by Technology")
     ax.yaxis.set_major_formatter(lambda v, _: f"{v:g}")
-    ax.legend(loc="lower right", fontsize=7.5)
+    ax.yaxis.set_minor_formatter(NullFormatter())
+    ax.legend(loc="upper left", fontsize=7.5, framealpha=0.9)
 
 
 def figures():
@@ -123,11 +169,15 @@ def figures():
         return fig, cfg.OUTPUT_ROOT / "learning_curves" / "nail_price_vs_cumulative_production.png"
 
     def output():
-        fig, ax = render.new_figure(figsize=(11, 6))
+        out = output_all()
+        (cfg.OUTPUT_ROOT / "production").mkdir(parents=True, exist_ok=True)
+        out.to_csv(cfg.OUTPUT_ROOT / "production" / "nail_output_by_technology.csv", index=False,
+                   float_format="%.4g")
+        fig, ax = render.new_figure(figsize=(12, 6.5))
         fig.get_layout_engine().set(rect=(0, 0.03, 1, 0.97))
-        draw_annual_output(ax)
+        draw_annual_output(ax, out)
         fig.text(0.01, 0.005, cfg.SOURCE_NOTE, fontsize=6.5, color="0.35", ha="left", va="bottom")
-        return fig, cfg.OUTPUT_ROOT / "production" / "us_nail_output_by_technology.png"
+        return fig, cfg.OUTPUT_ROOT / "production" / "nail_output_by_technology.png"
 
     return [("learning", learning), ("output", output)]
 
