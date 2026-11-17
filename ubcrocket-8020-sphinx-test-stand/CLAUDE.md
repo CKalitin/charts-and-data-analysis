@@ -22,7 +22,8 @@ stand/report.py     terminal tables, CSVs, summary.md
 stand/charts/       one module per figure family (runnable alone from results/.cache);
                     _render.py = the only matplotlib config (from the charting skill's
                     render.py) + palette, info box (skill's info_box.py), labels, views
-stand/viz.py        plotly stand.html
+stand/viz.py        stand.html: JSON payload + client-side plotly; click bracket -> free-body
+                    diagram (6 wrench comps per leg, leg frame) + capacity table; click joint/member
 tests/              validation suite (brief section 9 + unit checks)
 ```
 
@@ -32,6 +33,14 @@ Everything in the brief is implemented, plus 11 document figures; 18 tests pass 
 Burrard truss incl. AB = −5.763P, pinned rectangle couple + mechanism, bolt group B
 869 N, statics of the wrench transfer, global equilibrium + vanishing 3-2-1 reactions on
 every stand run, sandbag 196.4 kg, compression-only bearing, 2D run). Full 3D run ≈ 40 s.
+
+## stand.html viewer (2026-11-17)
+
+State <select> (envelope / any run-case / buckling mode), deformed overlay, forces/moments
+toggles, focus (orthographic zoom = scene.aspectratio, not eye distance). Gotchas: re-render
+from plotly_click must be deferred (setTimeout) or plotly's hover label recurses; render()
+copies the live camera + aspectratio into the layout before Plotly.react. Envelope legs of one
+bracket may come from different solves (each leg's own governing solve) — stated in the panel.
 
 ## Findings so far (defaults)
 
