@@ -128,7 +128,8 @@ SCHEMA: list[Param] = [
     S("model.front_frame_tol_mm", 5.0, "mm", "2D mode: |y - front_frame_y| tolerance"),
 
     # --- output -----------------------------------------------------------------
-    S("output.dir", "results", "", "results directory (2D runs go to <dir>/2d)"),
+    S("output.dir", "results", "", "results root: <dir>/3d, <dir>/2d, <dir>/variants/<name>"),
+    S("output.svg", False, "", "also write editable SVG next to every PNG figure"),
     S("output.deform_frac", 0.06, "-", "plot: max deformed displacement as a fraction of stand height"),
     S("output.plotlyjs", "inline", "", "inline (offline, ~4.5 MB) | cdn"),
     S("output.n_lowest", 10, "-", "rows in the lowest-SF tables"),

@@ -17,9 +17,11 @@ params: `params.yaml` · 12 solves + 7 sweep · targets: member SF ≥ 2, joint 
 | thrust-point tilt | 1.968° **> 0.25° flag** | k=1-bON/+x |
 | sandbag mass (net uplift / g) | **98.2 kg** (963 N) | all cases |
 | sandbag mass if spread uniformly on the base | 369 kg (overturning 681 N·m about the base centroid) | worst case |
-| 3-2-1 restraint reactions | 6.3e-10 × thrust (ok) | all valid solves |
+| 3-2-1 restraint reactions | 3.3e-10 × thrust (ok) | all valid solves |
 
 Displacements are relative to the best-fit rigid motion of the base nodes (i.e. to the ground).
+
+**In this folder:** [figures](#figures) (below, and in `figures/`) · `viewer.html` (interactive 3D, click any bracket for its free-body diagram; download and open locally) · `tables/members.csv`, `tables/joints.csv`, `tables/ktheta_sweep.csv` · `params_used.yaml` (exact inputs of this run)
 
 ## Lowest 10 joint SFs
 
@@ -75,13 +77,16 @@ SF = 1/U with U = Σ term demand/capacity (linear interaction). *Share* = that t
 
 Items whose utilisation peaks at an interior k_θ (value used in the envelope):
 
-- M19: U = 0.384 at k = 100 (ends 0.384 / 0.384)
+- M19: U = 0.384 at k = 10 (ends 0.384 / 0.384)
 - M29: U = 0.046 at k = 10 (ends 0.043 / 0.042)
-- M33: U = 0.107 at k = 100 (ends 0.107 / 0.107)
 - N12#0.0:a: U = 0.290 at k = 10 (ends 0.274 / 0.275)
 - N12#0.0:b: U = 0.200 at k = 10 (ends 0.194 / 0.179)
 - N14#0.0:a: U = 0.424 at k = 100 (ends 0.289 / 0.422)
 - N14#0.0:b: U = 0.523 at k = 100 (ends 0.355 / 0.518)
+- N2#0.0:a: U = 5.892 at k = 10 (ends 5.892 / 5.892)
+- N2#0.0:b: U = 1.231 at k = 10 (ends 1.231 / 1.231)
+- N2#1.0:a: U = 7.130 at k = 10 (ends 7.130 / 7.130)
+- N2#1.0:b: U = 1.231 at k = 10 (ends 1.231 / 1.231)
 - N28#0.0:b: U = 3.500 at k = 10 (ends 3.154 / 3.405)
 - N28#1.0:b: U = 0.449 at k = 10 (ends 0.195 / 0.400)
 - N28#2.0:a: U = 0.335 at k = 10 (ends 0.239 / 0.324)
@@ -104,3 +109,50 @@ Items whose utilisation peaks at an interior k_θ (value used in the envelope):
 | `bolts.preload_N` | 5000 N | assumption | 1/4-20 bolt preload F_i |
 | `bolts.mu` | 0.2 - | assumption | friction coefficient, one surface |
 | plate_other brackets | — | no capacity | forces reported only |
+
+## Figures
+
+### Safety factor by member and joint (front / side / plan)
+
+![stand_sf](figures/01_stand_sf.png)
+
+### Lowest safety factors
+
+![sf_ranking](figures/02_sf_ranking.png)
+
+### Joint SF and the share of each failure term
+
+![joint_sf_terms](figures/03_joint_sf_terms.png)
+
+### SF of the critical items in every load case
+
+![sf_by_case](figures/04_sf_by_case.png)
+
+### Thrust-point tilt and deflection by load case
+
+![thrust_by_case](figures/05_thrust_by_case.png)
+
+### Member axial force (load path)
+
+![axial_force](figures/06_axial_force.png)
+
+### Peak combined stress
+
+![peak_stress](figures/07_peak_stress.png)
+
+### Deflected shape (worst-tilt case)
+
+![deflection](figures/08_deflection.png)
+
+### Frame buckling mode
+
+![buckling_mode](figures/09_buckling_mode.png)
+
+### Sandbag demand on the base
+
+![sandbag_demand](figures/10_sandbag_demand.png)
+
+### SF vs joint rotational stiffness
+
+![ktheta_sweep](figures/11_ktheta_sweep.png)
+

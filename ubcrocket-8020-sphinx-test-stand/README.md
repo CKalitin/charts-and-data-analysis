@@ -20,22 +20,22 @@ source .venv/bin/activate
 
 | do this | command |
 |---|---|
-| full 3D run → `results/` | `python -m stand run` |
+| full 3D run → `results/3d/` | `python -m stand run` |
 | 2D side frame → `results/2d/` | `python -m stand run --2d` |
-| one load case | `python -m stand run --case +x` |
-| try a value without editing files → `results/set_DF2.5/` | `python -m stand run --set loads.DF=2.5` |
+| one load case → `results/variants/3d_case_px/` | `python -m stand run --case +x` |
+| try a value without editing files → `results/variants/3d_DF2.5/` | `python -m stand run --set loads.DF=2.5` |
 | re-draw figures only (no solve, ~10 s) | `python -m stand plots` |
 | re-draw one chart family | `python -m stand.charts.joint_terms` |
 | see every parameter / only changed ones | `python -m stand params` · `python -m stand params --changed` |
 | how each joint was modelled | `python -m stand model` |
 | validation tests | `python -m stand test` |
-| open the interactive viewer | `xdg-open results/stand.html` |
-| open the figures | `xdg-open results/figures/stand_sf.png` |
+| open the interactive viewer | `xdg-open results/3d/viewer.html` |
+| read the results | `results/3d/summary.md` (all figures inline) |
 | restore params.yaml defaults | `python -m stand params --reset --yes` |
 
 Edit `params.yaml` (units are in the key names); every run prints what differs from the
-defaults at the top. A run with changed parameters writes to its own `results/set_<changes>/`
-folder and its figure names carry the same suffix, so a variant never overwrites the baseline.
+defaults at the top. A run with changed parameters writes to its own
+`results/variants/<mode>_<changes>/` folder, so a variant never overwrites the baseline.
 
 3D direct-stiffness frame solver (numpy; scipy only for eigenvalues) for UBC Rocket's
 80/20 aluminium-extrusion engine test stand. Computes the factor of safety of every
@@ -44,30 +44,26 @@ the sandbag mass needed. A 2D side-frame mode reuses the same code.
 
 ## Outputs (`results/`)
 
-| file | what |
-|---|---|
-| `summary.md` | headline numbers, lowest-10 tables, mechanism checks, k_θ sweep, capacities, unverified inputs |
-| `members.csv` | per member: governing check/run/case, N, My, Mz, σ, SF yield, P_cr, SF buckle, beam-column |
-| `joints.csv` | per bracket leg / bolt group: six leg-frame components, every allowable, each U term, U, SF, SF per run, placeholders |
-| `ktheta_sweep.csv` | utilisation of every item at each k_θ |
-| `stand.html` | interactive 3D: dropdown for envelope / any run-case / buckling mode, ortho iso/front/side/top buttons, hover numbers |
-| `figures/*.png, *.svg` | document-ready figures, listed below |
+See [`results/README.md`](results/README.md). `results/3d/` (design result) and `results/2d/`
+share one layout: `summary.md` (with every figure inline), `viewer.html`, `figures/NN_*.png`,
+`tables/{members,joints,ktheta_sweep}.csv`, `params_used.yaml`. Set `output.svg: true` for
+editable SVGs next to the PNGs.
 
 ### Figures
 
-| file | shows |
+| figure | shows |
 |---|---|
-| `stand_sf` | true-scale front / side / plan, members and joints coloured by SF |
-| `sf_ranking` | lowest joint and member SFs, log scale |
-| `joint_sf_terms` | joint SF (log) beside each failure term's share of the demand |
-| `sf_by_case` | SF of the critical items in every load case |
-| `thrust_by_case` | thrust-axis tilt and thrust-point displacement per case, vs the tilt limit |
-| `axial_force` | load path: tension / compression, width ∝ \|N\| |
-| `peak_stress` | peak combined stress per sub-element, vs σ_y/SF and σ_y |
-| `deflection` | deflected shape of the worst-tilt case |
-| `buckling_mode` | lowest frame buckling mode and λ |
-| `sandbag_demand` | base line load in plan and the sandbag kg each base member needs |
-| `ktheta_sweep` | SF vs joint rotational stiffness (the P/R bounding test) |
+| `01_stand_sf` | true-scale front / side / plan, members and joints coloured by SF |
+| `02_sf_ranking` | lowest joint and member SFs, log scale |
+| `03_joint_sf_terms` | joint SF (log) beside each failure term's share of the demand |
+| `04_sf_by_case` | SF of the critical items in every load case |
+| `05_thrust_by_case` | thrust-axis tilt and thrust-point displacement per case, vs the tilt limit |
+| `06_axial_force` | load path: tension / compression, width ∝ \|N\| |
+| `07_peak_stress` | peak combined stress per sub-element, vs σ_y/SF and σ_y |
+| `08_deflection` | deflected shape of the worst-tilt case |
+| `09_buckling_mode` | lowest frame buckling mode and λ |
+| `10_sandbag_demand` | base line load in plan and the sandbag kg each base member needs |
+| `11_ktheta_sweep` | SF vs joint rotational stiffness (the P/R bounding test) |
 
 Colour is used by exception: red SF < 1, orange 1 ≤ SF < target, grey ≥ target. Each
 chart's info box lists the inputs that move the result.

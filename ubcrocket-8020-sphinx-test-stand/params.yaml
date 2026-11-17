@@ -89,7 +89,8 @@ model:
   front_frame_tol_mm:            5.0                          # 2D mode: |y - front_frame_y| tolerance
 
 output:
-  dir:                           results                      # results directory (2D runs go to <dir>/2d)
+  dir:                           results                      # results root: <dir>/3d, <dir>/2d, <dir>/variants/<name>
+  svg:                           false                        # also write editable SVG next to every PNG figure
   deform_frac:                   0.06                         # plot: max deformed displacement as a fraction of stand height
   plotlyjs:                      inline                       # inline (offline, ~4.5 MB) | cdn
   n_lowest:                      10                           # rows in the lowest-SF tables

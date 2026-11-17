@@ -93,6 +93,7 @@ model:
   front_frame_tol_mm: 5.0
 output:
   dir: results
+  svg: false
   deform_frac: 0.06
   plotlyjs: inline
   n_lowest: 10

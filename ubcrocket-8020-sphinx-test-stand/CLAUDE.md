@@ -18,8 +18,9 @@ stand/joints.py     leg/bolt-group geometry (prepare) and checks; capacities()
 stand/members.py    yield, braced-length Euler/Johnson, beam-column, tau
 stand/analysis.py   Engine: runs x cases, bearing active set, mechanism eig, buckling, sweep
 stand/envelope.py   worst over valid solves -> rows for CSV/plots
-stand/report.py     terminal tables, CSVs, summary.md
-stand/charts/       one module per figure family (runnable alone from results/.cache);
+stand/report.py     terminal tables, CSVs, summary.md (+ figures inline), results/README.md index
+stand/charts/       one module per figure family (runnable alone from results/3d/.cache);
+                    files numbered by _render.FIGURE_ORDER; PNG only unless output.svg
                     _render.py = the only matplotlib config (from the charting skill's
                     render.py) + palette, info box (skill's info_box.py), labels, views
 stand/viz.py        stand.html: JSON payload + client-side plotly; click bracket -> free-body
@@ -34,7 +35,12 @@ Burrard truss incl. AB = −5.763P, pinned rectangle couple + mechanism, bolt gr
 869 N, statics of the wrench transfer, global equilibrium + vanishing 3-2-1 reactions on
 every stand run, sandbag 196.4 kg, compression-only bearing, 2D run). Full 3D run ≈ 40 s.
 
-## stand.html viewer (2026-11-17)
+## Results layout
+
+results/{3d,2d}/ {summary.md, viewer.html, figures/NN_*.png, tables/*.csv, params_used.yaml};
+non-default runs -> results/variants/<mode>_<changes>[_case_...]/ (stand/__main__._out_dir).
+
+## viewer.html (2026-11-17)
 
 State <select> (envelope / any run-case / buckling mode), deformed overlay, forces/moments
 toggles, focus (orthographic zoom = scene.aspectratio, not eye distance). Gotchas: re-render

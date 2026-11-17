@@ -46,7 +46,10 @@ def cmd_run(args) -> None:
     env = envelope.build(study, p)
     print(report.console(study, env, p))
     out = _out_dir(args, p, mode)
-    files = report.write_all(study, env, p, out)
+    from .charts import names as figure_names
+    files = report.write_all(study, env, p, out, None if args.no_plots else figure_names(study, env, p))
+    if not getattr(args, "out", None):
+        files.append(report.write_index(PROJECT_DIR / p.si.output.dir))
     from .charts import _render
     _render.save_cache(study, env, p, out)
     if not args.no_plots:
@@ -59,23 +62,24 @@ def _rel(f: Path) -> str:
 
 
 def _out_dir(args, p, mode) -> Path:
-    """results/[2d/][set_<changes>/][case_<cases>/] — a variant never overwrites the defaults."""
+    """results/3d, results/2d; anything non-default -> results/variants/<mode>_<changes>[_case_<cases>]
+    so a variant never overwrites the defaults."""
     if getattr(args, "out", None):
         return Path(args.out)
     from .charts._render import suffix
-    out = PROJECT_DIR / p.si.output.dir
-    if mode == "2d":
-        out = out / "2d"
-    if p.changes:
-        out = out / ("set" + suffix(p))
-    if getattr(args, "case", None):
-        out = out / ("case_" + "_".join(args.case).replace("+", "p").replace("-", "m"))
-    return out
+    root = PROJECT_DIR / p.si.output.dir
+    cases = getattr(args, "case", None)
+    if not p.changes and not cases:
+        return root / mode
+    name = mode + suffix(p)
+    if cases:
+        name += "_case_" + "_".join(cases).replace("+", "p").replace("-", "m")
+    return root / "variants" / name
 
 
 def _plots(study, env, p, out: Path) -> list[Path]:
     from . import charts, report, viz
-    files = [viz.write_html(study, env, p, out / "stand.html")]
+    files = [viz.write_html(study, env, p, out / "viewer.html")]
     files += charts.render_all(study, env, p, out / "figures", log=lambda s: print(report.dim(f"plots   {s}")))
     return files
 
@@ -166,7 +170,7 @@ def main(argv=None) -> None:
     common(r)
     r.add_argument("--2d", dest="two_d", action="store_true", help="front side frame only (x-z plane)")
     r.add_argument("--case", action="append", help="only this load case (repeatable), e.g. --case +x")
-    r.add_argument("--out", help="output directory (default results/, results/2d/)")
+    r.add_argument("--out", help="output directory (default results/3d, results/2d)")
     r.add_argument("--no-plots", action="store_true", help="skip stand.html and figures/")
     r.set_defaults(fn=cmd_run)
 

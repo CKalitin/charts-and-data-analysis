@@ -1,6 +1,6 @@
 """Chart families. Each module: figures(study, env, p) -> [(name, build)], runnable alone:
 
-    python -m stand.charts.ranking [results_dir]     # re-render one family from the cache
+    python -m stand.charts.ranking [results/3d]     # re-render one family from the cache
     python -m stand plots [--2d]                     # re-render every family from the cache
 
 Families are imported lazily so `python -m stand.charts.<family>` runs cleanly.
@@ -25,7 +25,17 @@ def render_all(study, env, p, out: Path, log=print) -> list[Path]:
     from . import _render as R
     files = []
     t0 = time.time()
-    for name, build in plan(study, env, p):
-        files += R.save_fig(build(), out / f"{name}{R.suffix(p)}")
-    log(f"{len(files) // 2} figures in {time.time() - t0:.1f} s")
+    if out.is_dir():                     # no stale figures from renamed/removed charts
+        for f in out.glob("*.png"):
+            f.unlink()
+        for f in out.glob("*.svg"):
+            f.unlink()
+    items = plan(study, env, p)
+    for name, build in items:
+        files += R.save_fig(build(), out / R.fig_stem(name), p.si.output.svg)
+    log(f"{len(items)} figures in {time.time() - t0:.1f} s")
     return files
+
+
+def names(study, env, p) -> list[str]:
+    return [n for n, _ in plan(study, env, p)]
