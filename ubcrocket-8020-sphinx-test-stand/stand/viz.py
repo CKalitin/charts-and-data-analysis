@@ -1,15 +1,14 @@
-"""Interactive viewer: results/stand.html — 3D model + free-body inspector.
+"""Interactive viewer: results/<mode>/viewer.html — 3D model + per-bracket free-body diagrams.
 
 Everything is drawn client-side from one embedded JSON payload:
-  - members (undeformed, coloured by SF; optional deformed overlay),
-  - joint markers (ring, worst bracket SF) and one marker per bracket (diamond),
+  - 3D: members (undeformed, coloured by SF; optional deformed overlay), joint rings, every
+    bracket drawn as its outline (triangle L-angle profile / plate outline) with its bolts,
   - a state <select>: design envelope, every run/case, the buckling mode.
-Click a member, joint or bracket.  A bracket click draws its free-body diagram:
-for each leg / bolt group the 6 wrench components acting ON THAT LEG'S MEMBER,
-about the bolt point (group centroid for plates), in the leg frame
-(x along the slot, y across, z = bolt axis, + = pull-off) — forces solid with one
-arrowhead, moments dashed with two — and a table: value, capacity, share of the
-leg utilisation U, SF if that term acted alone, leg SF, governing run/case.
+Click a bracket: the panel draws one isometric SVG free-body diagram per leg (bracket shape,
+member faces dashed, bolts): the wrench the bracket puts on that leg's member at its bolt
+(plates: group centroid), in the leg frame x slot / y across / z bolt axis (+ pull-off).
+In-face forces orange, bolt-axis force green, moments purple curls (right-hand rule); the
+governing load is boxed.  Below each: value, capacity, share of U, SF alone, what carries it.
 """
 from __future__ import annotations
 
@@ -22,6 +21,7 @@ import numpy as np
 
 from .analysis import Solve, Study
 from .envelope import Envelope
+from .joints import _closest_on_line_a
 from .charts._render import (CRIT, HAIR, INK, INK2, MUTED, SAFE_JOINT, SAFE_MEMBER, SERIES, SERIOUS,
                              TERM_LABEL, deform_scale)
 
@@ -42,38 +42,40 @@ def _vec(a, sig=5):
 
 
 def _leg_items(br, r, caps) -> list[list]:
-    """Rows [label, value, unit, capacity|None, U_term|None] for one leg row."""
+    """Rows [label, value, unit, capacity|None, U_term|None, carried by] for one leg row."""
     F = [r["Fx"], r["Fy"], r["Fz"]]
     M = [r["Mx"], r["My"], r["Mz"]]
     if br.type == "triangle":
         return [
-            ["Fx (along slot)", F[0], "N", None, None],
-            ["Fy (across slot)", F[1], "N", None, None],
-            ["shear √(Fx²+Fy²) vs μF_i", math.hypot(F[0], F[1]), "N", caps.F_fric, r["U_shear"]],
-            ["Fz (+ pull-off) vs F_i", F[2], "N", caps.F_pull, r["U_pull"]],
-            ["Mx tilt vs F_i·a", M[0], "N·m", caps.M_tilt, r["U_Mx"]],
-            ["My tilt vs F_i·a", M[1], "N·m", caps.M_tilt, r["U_My"]],
-            ["Mz twist vs μF_i·r_f", M[2], "N·m", caps.M_twist, r["U_Mz"]],
+            ["Fx along slot", F[0], "N", None, None, "friction"],
+            ["Fy across slot", F[1], "N", None, None, "friction, then bearing"],
+            ["→ shear √(Fx²+Fy²)", math.hypot(F[0], F[1]), "N", caps.F_fric, r["U_shear"], "friction μF_i"],
+            ["Fz (+ pull-off)", F[2], "N", caps.F_pull, r["U_pull"],
+             "bolt tension" if F[2] > 0 else "face contact"],
+            ["Mx tilt", M[0], "N·m", caps.M_tilt, r["U_Mx"], "bolt + edge couple F_i·a"],
+            ["My tilt", M[1], "N·m", caps.M_tilt, r["U_My"], "bolt + edge couple F_i·a"],
+            ["Mz twist", M[2], "N·m", caps.M_twist, r["U_Mz"], "friction torque μF_i·r_f (weak)"],
         ]
-    items = [[f"F{c}", F[i], "N", None, None] for i, c in enumerate("xyz")]
-    items += [[f"M{c}", M[i], "N·m", None, None] for i, c in enumerate("xyz")]
+    items = [[f"F{c}", F[i], "N", None, None, "bolt group"] for i, c in enumerate("xyz")]
+    items += [[f"M{c}", M[i], "N·m", None, None, "bolt group"] for i, c in enumerate("xyz")]
     if br.type == "plate_t5":
         items += [
-            ["max bolt shear vs μF_i", max(r["f_bolt_max"], r["f_bolt_slot_max"]), "N", caps.F_fric,
-             r["U_shear"]],
-            ["max bolt pull vs F_i", r["Fz_bolt_max"], "N", caps.F_pull, r["U_pull"]],
-            ["plate bend at bolt line (|Mx|)", abs(M[0]), "N·m",
-             caps.plate_M_line_A if r["leg"] == "A" else caps.plate_M_line_B, r["U_bend_line"]],
+            ["→ max bolt shear", max(r["f_bolt_max"], r["f_bolt_slot_max"]), "N", caps.F_fric,
+             r["U_shear"], "friction μF_i per bolt"],
+            ["→ max bolt pull", r["Fz_bolt_max"], "N", caps.F_pull, r["U_pull"], "bolt tension F_i"],
+            ["→ plate bend at bolt line", abs(M[0]), "N·m",
+             caps.plate_M_line_A if r["leg"] == "A" else caps.plate_M_line_B, r["U_bend_line"],
+             "plate section σ_y·b·t²/6"],
         ]
         if r["leg"] == "B":
             lo = r["M_stem_lower_hole"] / caps.plate_M_lower_hole
             ne = r["M_stem_neck"] / caps.plate_M_neck
             if lo >= ne:
-                items.append(["stem bend at lower hole", r["M_stem_lower_hole"], "N·m",
-                              caps.plate_M_lower_hole, r["U_bend_stem"]])
+                items.append(["→ stem bend at lower hole", r["M_stem_lower_hole"], "N·m",
+                              caps.plate_M_lower_hole, r["U_bend_stem"], "plate section"])
             else:
-                items.append(["stem bend at neck", r["M_stem_neck"], "N·m", caps.plate_M_neck,
-                              r["U_bend_stem"]])
+                items.append(["→ stem bend at neck", r["M_stem_neck"], "N·m", caps.plate_M_neck,
+                              r["U_bend_stem"], "plate section"])
     return items
 
 
@@ -82,7 +84,8 @@ def _leg_json(br, r, caps, src: str) -> dict:
         "leg": r["leg"], "member": int(r["member"]), "opt": r["option"], "src": src,
         "F": _vec([r["Fx"], r["Fy"], r["Fz"]]), "M": _vec([r["Mx"], r["My"], r["Mz"]]),
         "U": _r(r["U"]), "SF": _r(r["SF"]), "gov": TERM_LABEL.get(r["gov_term"], r["gov_term"]),
-        "items": [[lab, _r(v), u, _r(c), _r(U)] for lab, v, u, c, U in _leg_items(br, r, caps)],
+        "govk": r["gov_term"],
+        "items": [[lab, _r(v), u, _r(c), _r(U), by] for lab, v, u, c, U, by in _leg_items(br, r, caps)],
     }
 
 
@@ -152,7 +155,11 @@ def payload(study: Study, env: Envelope, p) -> dict:
                              "frame": [_vec(row) for row in lg.frame],
                              "bolts": None if lg.bolts is None else [_vec(b * 1e3) for b in lg.bolts]}
                             for lg in o.legs]
-        brackets.append({"i": i, "label": br.label, "joint": br.joint, "index": br.index, "copy": br.copy,
+        O = br.X
+        if br.type in ("plate_t5", "plate_other"):
+            ma, mb = m.geom(br.a), m.geom(br.b)
+            O = _closest_on_line_a(ma.p0, ma.e, mb.p0, mb.e)
+        brackets.append({"O": _vec(O * 1e3), "i": i, "label": br.label, "joint": br.joint, "index": br.index, "copy": br.copy,
                          "type": br.type, "a": int(br.a), "b": int(br.b), "face": br.face, "note": br.note,
                          "X": _vec(br.X * 1e3), "opts": opts})
     bearings = [{"k": k, "label": b.label, "joint": b.joint, "end_of": int(b.end_of), "bears_on": int(b.bears_on),
@@ -178,7 +185,15 @@ def payload(study: Study, env: Envelope, p) -> dict:
         st["info"] = f"first frame buckling mode of {lam_s.key}, arbitrary amplitude; forces are that solve's"
         states.append(st)
     tp = m.thrust_point * 1e3
+    tri, pl = si.triangle, si.plate
+    h, bw, sw = pl.base_half_height * 1e3, pl.base_width * 1e3, pl.stem_width * 1e3
+    te, top = pl.stem_taper_end_v * 1e3, pl.top_edge_v * 1e3
+    dims = {"tri_bolt": _r(tri.bolt_from_corner * 1e3), "tri_leg": _r(tri.bolt_from_corner * 1e3 + 12.7),
+            "face": 25.4,
+            "plate": [[-bw / 2, -h], [bw / 2, -h], [bw / 2, h], [sw / 2, te], [sw / 2, top], [-sw / 2, top],
+                      [-sw / 2, te], [-bw / 2, h]]}
     return {
+        "dims": dims,
         "mode": m.mode, "x": [_vec(r, 5) for r in x_mm], "members": members, "brackets": brackets,
         "bearings": bearings, "joints": joints, "states": states,
         "thrust": {"at": _vec(tp), "N": _r(study.solves[0].loads.summary["thrust_factored_N"])},
@@ -301,13 +316,19 @@ h1 { font-size:15px; margin:0 0 2px; } .sub { color:var(--muted); font-size:12px
 #stateinfo { color:var(--muted); font-size:11.5px; width:100%; }
 .view { display:flex; gap:14px; align-items:stretch; }
 #plot { flex:1 1 auto; min-width:0; height:760px; }
-.insp { flex:0 0 470px; height:760px; overflow:auto; border-left:1px solid var(--hair); padding:2px 0 0 14px; }
+.insp { flex:0 0 560px; height:760px; overflow:auto; border-left:1px solid var(--hair); padding:2px 0 0 14px; }
 .insp h3 { font-size:13px; margin:0 0 2px; } .insp h4 { font-size:12px; margin:12px 0 2px; color:var(--ink2); font-weight:600; }
 .insp .k { color:var(--muted); font-size:11.5px; }
 .insp .legsf { font-size:18px; font-weight:600; font-variant-numeric:tabular-nums; }
 .key { display:flex; flex-wrap:wrap; gap:4px 12px; font-size:11.5px; color:var(--ink2); margin:6px 0; }
 .sw { display:inline-block; width:18px; height:0; border-top:3px solid; vertical-align:middle; margin-right:4px; }
 .sw.d { border-top-style:dashed; }
+.pill { background:#fdf0d5; border:1px solid var(--crit); border-radius:3px; padding:0 4px; font-weight:700; }
+.nav { display:flex; justify-content:space-between; align-items:center; margin:0 0 6px; }
+.nav button:disabled { opacity:.35; cursor:default; }
+.leg { border-top:1px solid var(--hair); margin-top:10px; padding-top:2px; }
+svg.fbd { width:100%; height:auto; max-height:420px; display:block; margin:6px 0 4px; }
+table.legt td.by { color:var(--muted); font-size:11px; white-space:normal; }
 .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(420px,1fr)); gap:24px; margin-top:16px; }
 h2 { font-size:12px; color:var(--ink2); margin:0 0 6px; font-weight:600; }
 table { border-collapse:collapse; width:100%; font-size:12px; }
@@ -332,16 +353,13 @@ ul { margin:4px 0 0; padding-left:18px; color:var(--ink2); } code { font-size:11
 <div class="bar">
   <select id="state" aria-label="result state"></select>
   <label><input type="checkbox" id="deformed"> deformed</label>
-  <label><input type="checkbox" id="showF" checked> forces</label>
-  <label><input type="checkbox" id="showM" checked> moments</label>
-  <label><input type="checkbox" id="showBr" checked> bracket markers</label>
   <span class="grp" id="cams"></span>
   <span class="grp"><button id="focus" title="zoom to the selection">focus</button><button id="clear">clear</button></span>
   <div id="stateinfo"></div>
 </div>
 <div class="view"><div id="plot"></div><div class="insp" id="insp"></div></div>
-<div class="help">Click a member, a joint (ring) or a bracket (diamond). Colours: red SF &lt; 1, orange 1 ≤ SF &lt; target, grey ≥ target.
-Bracket arrows are the wrench acting on each leg's member, about its bolt point, in the leg frame. Camera icon saves a 3× PNG.</div>
+<div class="help">Click a member, a joint (ring) or a bracket (its outline). Colours: red SF &lt; 1, orange 1 ≤ SF &lt; target, grey ≥ target.
+A bracket click opens its free-body diagram per leg in the panel. Camera icon saves a 3× PNG.</div>
 <div class="grid"><div><h2>Lowest joint SFs (envelope) — click a row</h2>%%JT%%</div><div><h2>Lowest member SFs (envelope) — click a row</h2>%%MT%%</div></div>
 <div class="grid"><div><h2>Parameters changed from defaults</h2><ul>%%CHANGES%%</ul>
 <h2 style="margin-top:12px">Model notes</h2><ul>%%NOTES%%</ul></div>
@@ -359,37 +377,65 @@ const C = D.colors, X = D.x;
 const plot = document.getElementById('plot'), insp = document.getElementById('insp');
 const sel = { kind: null, id: null };
 let S = D.states[0];
-const ui = { deformed: false, F: true, M: true, br: true };
-const AX = ['x', 'y', 'z'];
+const ui = { deformed: false };
+// FBD palette (as the reference sketch): in-plane force orange, bolt-axis force green, moments purple
+const FB = { fxy: '#e0622c', fz: '#16a06c', m: '#6b5fd3', plate: '#d9d7d1', plateEdge: '#77756f',
+  ghost: '#efeeea', face: '#a9a7a1', ink: '#1d1c1a', muted: '#8a8984', gov: '#fdf0d5' };
 
-// ------------------------------------------------------------------ helpers
+// ------------------------------------------------------------------ vector helpers
 const fin = v => v !== null && v !== undefined && isFinite(v);
 const fmt = (v, d) => !fin(v) ? '–' : (Math.abs(v) >= 1000 ? v.toFixed(0) : v.toFixed(d === undefined ? 1 : d));
 const sfTxt = v => !fin(v) ? '∞' : v >= 100 ? '>100' : v.toFixed(2);
-function sfClass(v, t) { return !fin(v) ? 'ok' : v < 1 ? 'crit' : v < t ? 'warn' : 'ok'; }
-function binOf(v, t) { return !fin(v) ? 2 : v < 1 ? 0 : v < t ? 1 : 2; }
-const add = (a, b, k) => [a[0] + k * b[0], a[1] + k * b[1], a[2] + k * b[2]];
+const sfClass = (v, t) => !fin(v) ? 'ok' : v < 1 ? 'crit' : v < t ? 'warn' : 'ok';
+const binOf = (v, t) => !fin(v) ? 2 : v < 1 ? 0 : v < t ? 1 : 2;
+const add = (a, b, k = 1) => [a[0] + k * b[0], a[1] + k * b[1], a[2] + k * b[2]];
 const sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+const mul = (a, k) => [a[0] * k, a[1] * k, a[2] * k];
+const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
 const norm = a => Math.hypot(a[0], a[1], a[2]);
+const unit = a => mul(a, 1 / (norm(a) || 1));
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-function legsOf(i) { return S.legs[i] || []; }
-function bracketSF(i) {
-  let m = Infinity; for (const l of legsOf(i)) if (fin(l.SF)) m = Math.min(m, l.SF); return m;
-}
-function legGeom(i, l) {
-  const o = D.brackets[i].opts[l.opt]; return o ? o.find(g => g.name === l.leg) : null;
-}
-function bracketPos(i) {
-  const b = D.brackets[i], ls = legsOf(i);
-  const opt = ls.length ? b.opts[ls[0].opt] : Object.values(b.opts)[0];
-  if (!opt) return b.X;
-  const c = [0, 0, 0]; opt.forEach(g => { c[0] += g.P[0] / opt.length; c[1] += g.P[1] / opt.length; c[2] += g.P[2] / opt.length; });
-  let p = add(b.X, sub(c, b.X), 0.55);
-  if (b.copy) p = add(p, opt[0].frame[2], 6 * b.copy);
-  return p;
+const legsOf = i => S.legs[i] || [];
+function bracketSF(i) { let m = Infinity; for (const l of legsOf(i)) if (fin(l.SF)) m = Math.min(m, l.SF); return m; }
+function optOf(i) { const b = D.brackets[i], ls = legsOf(i); return (ls.length && b.opts[ls[0].opt]) || Object.values(b.opts)[0]; }
+function legGeom(i, l) { const o = D.brackets[i].opts[l.opt]; return o ? o.find(g => g.name === l.leg) : null; }
+
+// ------------------------------------------------------------------ bracket shape in a local frame
+// u = leg-a / member-a slot direction, v = leg-b direction made orthogonal, w = u x v.
+// Triangle: L-angle inside the corner, plate a in (u,w) at v=0, plate b in (v,w) at u=0, two
+// triangular gussets at the plate edges.  Plate: the brief's outline in (u,v), w = plate normal.
+function shapeOf(i) {
+  const b = D.brackets[i], opt = optOf(i);
+  const u = unit(opt[0].frame[0]), eb = opt[1].frame[0];
+  const v = unit(sub(eb, mul(u, dot(eb, u)))), w = cross(u, v);
+  const O = b.type === 'triangle' ? b.X : b.O;
+  const toL = g => { const d = sub(g, O); return [dot(d, u), dot(d, v), dot(d, w)]; };
+  const dirL = g => [dot(g, u), dot(g, v), dot(g, w)];
+  const toG = l => add(add(add(O, u, l[0]), v, l[1]), w, l[2]);
+  const polys = [], faces = [];
+  const F = D.dims.face;
+  if (b.type === 'triangle') {
+    const ea = [1, 0, 0], ebl = unit(dirL(eb)), Lg = D.dims.tri_leg, h = F / 2;
+    const P = (s, e, t) => add(mul(e, s), [0, 0, t]);
+    polys.push({ leg: 'a', pts: [P(0, ea, -h), P(Lg, ea, -h), P(Lg, ea, h), P(0, ea, h)] });
+    polys.push({ leg: 'b', pts: [P(0, ebl, -h), P(Lg, ebl, -h), P(Lg, ebl, h), P(0, ebl, h)] });
+    for (const t of [-h, h]) polys.push({ leg: 'g', pts: [P(0, ea, t), P(0.8 * Lg, ea, t), P(0.8 * Lg, ebl, t)] });
+    const Lf = 2.1 * Lg, hf = 0.62 * F;
+    faces.push({ leg: 'a', pts: [P(-4, ea, -hf), P(Lf, ea, -hf), P(Lf, ea, hf), P(-4, ea, hf)], at: P(Lf, ea, hf) });
+    faces.push({ leg: 'b', pts: [P(-4, ebl, -hf), P(Lf, ebl, -hf), P(Lf, ebl, hf), P(-4, ebl, hf)], at: P(Lf, ebl, -hf) });
+  } else {
+    polys.push({ leg: 'p', pts: D.dims.plate.map(q => [q[0], q[1], 0]) });
+    const bA = opt[0].bolts.map(toL), bB = opt[1].bolts.map(toL);
+    const uMin = Math.min(...bA.map(q => q[0])) - 25, uMax = Math.max(...bA.map(q => q[0])) + 25;
+    const vMax = Math.max(...bB.map(q => q[1])) + 25, h = F / 2;
+    faces.push({ leg: 'A', pts: [[uMin, -h, -1], [uMax, -h, -1], [uMax, h, -1], [uMin, h, -1]], at: [uMax, -h, -1] });
+    faces.push({ leg: 'B', pts: [[-h, h, -1], [h, h, -1], [h, vMax, -1], [-h, vMax, -1]], at: [h, vMax, -1] });
+  }
+  return { b, opt, u, v, w, O, toL, dirL, toG, polys, faces };
 }
 
-// ------------------------------------------------------------------ traces
+// ------------------------------------------------------------------ 3D traces
 function memberTraces() {
   const names = ['SF < 1', `1 ≤ SF < ${D.targets.member}`, `SF ≥ ${D.targets.member}`];
   const cols = [C.crit, C.serious, C.safe_member];
@@ -436,88 +482,49 @@ function jointTrace() {
     for (const i of j.br) { const v = bracketSF(i); if (v < w) { w = v; wi = i; } }
     const b = binOf(w, D.targets.joint);
     x.push(j.at[0]); y.push(j.at[1]); z.push(j.at[2]);
-    c.push([C.crit, C.serious, C.safe_joint][b]); s.push(sel.kind === 'joint' && sel.id === j.id ? 20 : b < 2 ? 13 : 9);
+    c.push([C.crit, C.serious, C.safe_joint][b]); s.push(sel.kind === 'joint' && sel.id === j.id ? 22 : 15);
     t.push(`<b>${j.id}</b> · ${j.br.length} bracket(s), ${j.be.length} bearing(s)<br>worst bracket SF <b>${sfTxt(w)}</b>` +
       (wi !== null ? ` (${D.brackets[wi].label})` : ''));
     cd.push(['j', j.id]);
   }
   return { type: 'scatter3d', mode: 'markers', x, y, z, hovertext: t, hoverinfo: 'text', customdata: cd,
-    name: 'joint (worst bracket)', marker: { symbol: 'circle-open', size: s, color: c, line: { width: 3, color: c } } };
+    name: 'joint (worst bracket)', marker: { symbol: 'circle-open', size: s, color: c, opacity: 0.7, line: { width: 2, color: c } } };
 }
-function bracketTrace() {
-  if (!ui.br) return [];
-  const x = [], y = [], z = [], c = [], s = [], t = [], cd = [];
+// each bracket drawn as its outline (triangle: L-angle side profile; plate: outline) + bolt dots
+function bracketTraces() {
+  const groups = [0, 1, 2, 3].map(() => ({ x: [], y: [], z: [], t: [], cd: [] }));
+  const bolts = { x: [], y: [], z: [] };
   D.brackets.forEach((b, i) => {
-    const p = bracketPos(i), v = bracketSF(i), k = binOf(v, D.targets.joint), ls = legsOf(i);
-    x.push(p[0]); y.push(p[1]); z.push(p[2]);
-    c.push(sel.kind === 'bracket' && sel.id === i ? C.sel : [C.crit, C.serious, C.safe_joint][k]);
-    s.push(sel.kind === 'bracket' && sel.id === i ? 9 : 5);
-    t.push(`<b>${b.label}</b> ${b.type} · M${b.a}–M${b.b}<br>SF <b>${sfTxt(v)}</b>` +
-      ls.map(l => `<br>leg ${l.leg} on M${l.member}: SF ${sfTxt(l.SF)} · ${l.gov}`).join(''));
-    cd.push(['b', i]);
+    const sh = shapeOf(i), v = bracketSF(i), ls = legsOf(i);
+    const g = groups[sel.kind === 'bracket' && sel.id === i ? 3 : binOf(v, D.targets.joint)];
+    const off = b.copy ? mul(sh.w, 8 * b.copy) : [0, 0, 0];
+    const txt = `<b>${b.label}</b> ${b.type} · M${b.a}–M${b.b}<br>SF <b>${sfTxt(v)}</b>` +
+      ls.map(l => `<br>leg ${l.leg} on M${l.member}: SF ${sfTxt(l.SF)} · ${l.gov}`).join('') + '<br><i>click for its free-body diagram</i>';
+    let loops;
+    if (b.type === 'triangle') {   // the gusset triangle on the face side + both plates' outer edges
+      const L = D.dims.tri_leg, ea = [1, 0, 0], ebl = unit(sh.dirL(sh.opt[1].frame[0]));
+      loops = [[[0, 0, 0], mul(ea, L), mul(ebl, L), [0, 0, 0]]];
+    } else loops = [sh.polys[0].pts.concat([sh.polys[0].pts[0]])];
+    for (const lp of loops) {
+      for (const q of lp) { const p = add(sh.toG(q), off); g.x.push(p[0]); g.y.push(p[1]); g.z.push(p[2]); g.t.push(txt); g.cd.push(['b', i]); }
+      g.x.push(null); g.y.push(null); g.z.push(null); g.t.push(null); g.cd.push(null);
+    }
+    for (const leg of sh.opt) for (const p of (leg.bolts || [leg.P])) { const q = add(p, off); bolts.x.push(q[0]); bolts.y.push(q[1]); bolts.z.push(q[2]); }
   });
-  return [{ type: 'scatter3d', mode: 'markers', x, y, z, hovertext: t, hoverinfo: 'text', customdata: cd,
-    name: 'bracket', marker: { symbol: 'diamond', size: s, color: c, line: { width: 0.5, color: '#fff' } } }];
+  const cols = [C.crit, C.serious, C.safe_joint, C.sel];
+  const out = groups.map((g, k) => ({ type: 'scatter3d', mode: 'lines', x: g.x, y: g.y, z: g.z, hovertext: g.t, hoverinfo: 'text',
+    customdata: g.cd, name: k === 3 ? 'selected bracket' : k === 0 ? 'bracket' : '', showlegend: k === 0,
+    line: { color: cols[k], width: k === 3 ? 8 : 5 } }));
+  out.push({ type: 'scatter3d', mode: 'markers', ...bolts, hoverinfo: 'skip', showlegend: false,
+    marker: { size: 2, color: C.ink } });
+  return out;
 }
 function thrustTrace() {
-  const a = D.thrust.at;
-  return [{ type: 'scatter3d', mode: 'lines', x: [a[0], a[0]], y: [a[1], a[1]], z: [a[2], a[2] + 0.12 * D.span],
-      line: { color: C.ink, width: 4 }, hoverinfo: 'skip', showlegend: false },
-    cone([[a[0], a[1], a[2] + 0.12 * D.span]], [[0, 0, 1]], C.ink, 0.025 * D.span, `thrust ${fmt(D.thrust.N, 0)} N (factored)`)];
-}
-function cone(pts, dirs, color, size, hover) {
-  return { type: 'cone', x: pts.map(p => p[0]), y: pts.map(p => p[1]), z: pts.map(p => p[2]),
-    u: dirs.map(d => d[0] * size), v: dirs.map(d => d[1] * size), w: dirs.map(d => d[2] * size),
-    sizemode: 'absolute', sizeref: 1, anchor: 'tip', showscale: false, colorscale: [[0, color], [1, color]],
-    hovertext: hover, hoverinfo: hover ? 'text' : 'skip', showlegend: false, lighting: { ambient: 0.9 } };
-}
-
-// free-body diagram of the selected bracket
-function fbdTraces() {
-  if (sel.kind !== 'bracket') return [];
-  const i = sel.id, b = D.brackets[i], ls = legsOf(i), out = [];
-  const L = 0.035 * D.span, head = 0.004 * D.span;
-  let Fref = 0, Mref = 0;
-  for (const l of ls) for (let c = 0; c < 3; c++) { Fref = Math.max(Fref, Math.abs(l.F[c] || 0)); Mref = Math.max(Mref, Math.abs(l.M[c] || 0)); }
-  // bracket body: corner -> each bolt point, bolts
-  for (const l of ls) {
-    const g = legGeom(i, l); if (!g) continue;
-    out.push({ type: 'scatter3d', mode: 'lines', x: [b.X[0], g.P[0]], y: [b.X[1], g.P[1]], z: [b.X[2], g.P[2]],
-      line: { color: C.ink2, width: 9 }, hoverinfo: 'skip', showlegend: false });
-    const bolts = g.bolts || [g.P];
-    out.push({ type: 'scatter3d', mode: 'markers', x: bolts.map(q => q[0]), y: bolts.map(q => q[1]), z: bolts.map(q => q[2]),
-      marker: { size: 4, color: C.ink, symbol: 'circle' }, hovertext: `leg ${l.leg} bolt${bolts.length > 1 ? 's' : ''} on M${l.member}`,
-      hoverinfo: 'text', showlegend: false });
-  }
-  out.push({ type: 'scatter3d', mode: 'markers', x: [b.X[0]], y: [b.X[1]], z: [b.X[2]], hovertext: `${b.label} corner X`,
-    hoverinfo: 'text', marker: { size: 4, color: C.sel, symbol: 'square' }, showlegend: false });
-  const tx = [], ty = [], tz = [], tt = [], tc = [];
-  const cones = [[], [], []].map(() => ({ p: [], d: [], h: [] }));
-  for (const l of ls) {
-    const g = legGeom(i, l); if (!g) continue;
-    for (const kind of ['F', 'M']) {
-      if ((kind === 'F' && !ui.F) || (kind === 'M' && !ui.M)) continue;
-      const ref = kind === 'F' ? Fref : Mref, unit = kind === 'F' ? 'N' : 'N·m';
-      for (let c = 0; c < 3; c++) {
-        const v = l[kind][c]; if (!fin(v) || ref <= 0 || Math.abs(v) < 0.03 * ref) continue;
-        const len = Math.max(L * Math.abs(v) / ref, 2.2 * head), dir = g.frame[c].map(q => q * Math.sign(v));
-        const tip = add(g.P, dir, len);
-        const hov = `leg ${l.leg} on M${l.member}: ${kind}${AX[c]} = ${fmt(v)} ${unit}`;
-        out.push({ type: 'scatter3d', mode: 'lines', x: [g.P[0], tip[0]], y: [g.P[1], tip[1]], z: [g.P[2], tip[2]],
-          line: { color: C.ax[c], width: kind === 'F' ? 7 : 6, dash: kind === 'F' ? 'solid' : 'dash' },
-          hovertext: [hov, hov], hoverinfo: 'text', showlegend: false });
-        cones[c].p.push(tip); cones[c].d.push(dir); cones[c].h.push(hov);
-        if (kind === 'M') { const t2 = add(tip, dir, -1.6 * head); cones[c].p.push(t2); cones[c].d.push(dir); cones[c].h.push(hov); }
-        if (Math.abs(v) < 0.1 * ref) continue;
-        const lp = add(tip, dir, 1.5 * head);
-        tx.push(lp[0]); ty.push(lp[1]); tz.push(lp[2]); tt.push(`${kind}${AX[c]}${l.leg} ${fmt(v)}`); tc.push(C.ax[c]);
-      }
-    }
-  }
-  cones.forEach((q, c) => { if (q.p.length) out.push(cone(q.p, q.d, C.ax[c], head, q.h)); });
-  if (tt.length) out.push({ type: 'scatter3d', mode: 'text', x: tx, y: ty, z: tz, text: tt, hoverinfo: 'skip',
-    textfont: { size: 11, color: tc }, showlegend: false });
-  return out;
+  const a = D.thrust.at, top = [a[0], a[1], a[2] + 0.12 * D.span];
+  return [{ type: 'scatter3d', mode: 'lines', x: [a[0], top[0]], y: [a[1], top[1]], z: [a[2], top[2]],
+    line: { color: C.ink, width: 4 }, hovertext: `thrust ${fmt(D.thrust.N, 0)} N (factored)`, hoverinfo: 'text', showlegend: false },
+  { type: 'cone', x: [top[0]], y: [top[1]], z: [top[2]], u: [0], v: [0], w: [0.025 * D.span], sizemode: 'absolute', sizeref: 1,
+    anchor: 'tip', showscale: false, colorscale: [[0, C.ink], [1, C.ink]], hoverinfo: 'skip', showlegend: false }];
 }
 function bearingTraces() {
   if (sel.kind !== 'joint') return [];
@@ -525,44 +532,155 @@ function bearingTraces() {
   return j.be.map(k => {
     const be = D.bearings[k], f = S.bearing[k];
     return { type: 'scatter3d', mode: 'markers', x: [be.X[0]], y: [be.X[1]], z: [be.X[2]],
-      marker: { size: 7, symbol: 'square', color: f[1] ? C.ax[0] : C.muted },
+      marker: { size: 7, symbol: 'square', color: f[1] ? FB.fz : C.muted },
       hovertext: `${be.label}: ${f[1] ? fmt(f[0], 0) + ' N compression' : 'open'}`, hoverinfo: 'text', showlegend: false };
   });
 }
 
+// ------------------------------------------------------------------ SVG free-body diagram (one leg)
+// isometric: u -> right-down, v -> up, w -> left-down (the reference sketch's view)
+const K = 3.2;   // px per mm
+const iso = l => [K * 0.866 * (l[0] - l[2]), K * (0.5 * (l[0] + l[2]) - l[1])];
+const depth = l => l[0] + l[2] - 0.3 * l[1];   // larger = nearer the viewer
+
+function arrowHead(tip, dir2, size, color) {
+  const n = Math.hypot(dir2[0], dir2[1]) || 1, d = [dir2[0] / n, dir2[1] / n], p = [-d[1], d[0]];
+  const b = [tip[0] - d[0] * size, tip[1] - d[1] * size];
+  return `<path d="M${tip[0]},${tip[1]} L${b[0] + p[0] * size * 0.42},${b[1] + p[1] * size * 0.42} L${b[0] - p[0] * size * 0.42},${b[1] - p[1] * size * 0.42} Z" fill="${color}"/>`;
+}
+function fbdSVG(i, legIdx) {
+  const sh = shapeOf(i), b = sh.b, ls = legsOf(i), l = ls[legIdx], g = legGeom(i, l);
+  const el = [], labels = [], pts = [];
+  const P2 = l3 => { const p = iso(l3); pts.push(p); return p; };
+  const poly = (ps, attrs) => `<path d="${ps.map((q, k) => (k ? 'L' : 'M') + q[0].toFixed(1) + ',' + q[1].toFixed(1)).join(' ')} Z" ${attrs}/>`;
+  // member faces (dashed), then bracket plates (far to near), then bolts
+  for (const f of sh.faces) {
+    el.push(poly(f.pts.map(P2), `fill="none" stroke="${FB.face}" stroke-width="0.9" stroke-dasharray="3 3"`));
+    const mid = b.type === 'triangle' ? (f.leg === 'a' ? b.a : b.b) : (f.leg === 'A' ? b.a : b.b);
+    labels.push({ at: iso(f.at), text: `M${mid} face (leg ${f.leg})`, color: FB.muted, size: 11, fixed: true });
+  }
+  const polys = sh.polys.slice().sort((p, q) => Math.max(...p.pts.map(depth)) - Math.max(...q.pts.map(depth)));
+  for (const p of polys) {
+    const active = p.leg === l.leg || p.leg === 'p';
+    const fill = p.leg === 'g' ? '#e6e4df' : active ? FB.plate : FB.ghost;
+    el.push(poly(p.pts.map(P2), `fill="${fill}" fill-opacity="0.92" stroke="${FB.plateEdge}" stroke-width="1" stroke-linejoin="round"`));
+  }
+  for (const leg of sh.opt) for (const bp of (leg.bolts || [leg.P])) {
+    const q = P2(sh.toL(bp)), on = leg.name === l.leg;
+    el.push(`<circle cx="${q[0]}" cy="${q[1]}" r="${on ? 4.2 : 3}" fill="${on ? FB.ink : FB.muted}"/>`);
+  }
+  // wrench at the bolt point (group centroid for plates)
+  const B = sh.toL(g.P), B2 = iso(B);
+  const ax = g.frame.map(f => unit(sh.dirL(f)));
+  const Fm = Math.max(...l.F.map(Math.abs)), Mm = Math.max(...l.M.map(Math.abs));
+  const govC = { U_shear: Math.abs(l.F[0]) >= Math.abs(l.F[1]) ? 'F0' : 'F1', U_pull: 'F2', U_Mx: 'M0', U_My: 'M1', U_Mz: 'M2',
+    U_bend_line: 'M0' }[l.govk];
+  const tiny = [];
+  const arrows = [];
+  for (let c = 0; c < 3; c++) {
+    const v = l.F[c];
+    if (!fin(v) || Fm <= 0 || Math.abs(v) < 0.02 * Fm) { tiny.push('F' + 'xyz'[c]); continue; }
+    const len = 18 + 26 * Math.sqrt(Math.abs(v) / Fm), d = mul(ax[c], Math.sign(v));
+    const tip3 = add(B, d, len), tip = P2(tip3), dir2 = [tip[0] - B2[0], tip[1] - B2[1]];
+    const col = c === 2 ? FB.fz : FB.fxy, nd = Math.hypot(...dir2) || 1;
+    const shaftEnd = [tip[0] - dir2[0] / nd * 9, tip[1] - dir2[1] / nd * 9];
+    arrows.push({ depth: depth(tip3), svg: `<line x1="${B2[0]}" y1="${B2[1]}" x2="${shaftEnd[0]}" y2="${shaftEnd[1]}" stroke="${col}" stroke-width="2.6" stroke-linecap="round"/>` + arrowHead(tip, dir2, 11, col) });
+    labels.push({ at: [tip[0] + dir2[0] / nd * 8, tip[1] + dir2[1] / nd * 8], dir: dir2, color: col, gov: govC === 'F' + c,
+      text: `F${'xyz'[c]} ${fmt(Math.abs(v))} N` });
+  }
+  for (let c = 0; c < 3; c++) {
+    const v = l.M[c];
+    if (!fin(v) || Mm <= 0 || Math.abs(v) < 0.02 * Mm) { tiny.push('M' + 'xyz'[c]); continue; }
+    const a = ax[c], sF = Math.abs(l.F[c]) >= 0.02 * Fm ? Math.sign(l.F[c]) : 1;
+    const cen = add(B, a, sF * 27), r = 6.5;
+    let e1 = cross(a, Math.abs(a[2]) < 0.9 ? [0, 0, 1] : [1, 0, 0]); e1 = unit(e1); const e2 = cross(a, e1);
+    const sg = Math.sign(v), n = 36, th0 = 0.6, span = 5.0, path = [];
+    let last, prev;
+    for (let k = 0; k <= n; k++) {
+      const th = th0 + sg * span * k / n;
+      const q = P2(add(cen, add(mul(e1, r * Math.cos(th)), mul(e2, r * Math.sin(th)))));
+      path.push(q); prev = last; last = q;
+    }
+    const cen2 = iso(cen);
+    const guide = `<line x1="${B2[0]}" y1="${B2[1]}" x2="${cen2[0]}" y2="${cen2[1]}" stroke="${FB.m}" stroke-width="0.8" stroke-dasharray="2 2" opacity="0.6"/>`;
+    arrows.push({ depth: depth(cen) + 0.1, svg: guide + `<path d="${path.slice(0, -2).map((q, k) => (k ? 'L' : 'M') + q[0].toFixed(1) + ',' + q[1].toFixed(1)).join(' ')}" fill="none" stroke="${FB.m}" stroke-width="2.2" stroke-linecap="round"/>` +
+      arrowHead(last, [last[0] - path[n - 3][0], last[1] - path[n - 3][1]], 9, FB.m) });
+    // label outside the ring, away from the bolt
+    const out2 = [cen2[0] - B2[0], cen2[1] - B2[1]], no = Math.hypot(...out2) || 1, rr = Math.max(...path.map(q => Math.hypot(q[0] - cen2[0], q[1] - cen2[1])));
+    labels.push({ at: [cen2[0] + out2[0] / no * (rr + 6), cen2[1] + out2[1] / no * (rr + 6)], dir: out2, color: FB.m, gov: govC === 'M' + c,
+      text: `M${'xyz'[c]} ${fmt(Math.abs(v))} N·m` });
+  }
+  arrows.sort((p, q) => p.depth - q.depth).forEach(a => el.push(a.svg));
+  // leg-frame triad, small, beside the drawing
+  // labels: greedy placement, no overlaps
+  const boxes = [];
+  const W = t => t.length * 6.3 + 8, H = 16;
+  const hit = (bx) => boxes.some(o => bx[0] < o[2] && bx[2] > o[0] && bx[1] < o[3] && bx[3] > o[1]);
+  const txt = [];
+  for (const lb of labels.sort((p, q) => (q.fixed ? 0 : 1) - (p.fixed ? 0 : 1))) {
+    const w = W(lb.text) * (lb.size ? lb.size / 12 : 1);
+    const d = lb.dir || [1, 0], dn = Math.hypot(...d) || 1, ux = d[0] / dn, uy = d[1] / dn;
+    // anchor the box on the side the arrow points to
+    const base = [lb.at[0] + (ux >= 0 ? 0 : -w), lb.at[1] + (Math.abs(uy) > 0.5 ? (uy > 0 ? 2 : -H - 2) : -H / 2)];
+    const cands = [[0, 0], [0, -H], [0, H], [0, -2 * H], [0, 2 * H], [w / 2, 0], [-w / 2, 0], [0, -3 * H], [0, 3 * H]];
+    let bx = null;
+    for (const c of cands) { const t = [base[0] + c[0], base[1] + c[1]]; const cand = [t[0], t[1], t[0] + w, t[1] + H]; if (!hit(cand)) { bx = cand; break; } }
+    if (!bx) bx = [base[0], base[1], base[0] + w, base[1] + H];
+    boxes.push(bx); pts.push([bx[0], bx[1]], [bx[2], bx[3]]);
+    const bg = lb.gov ? `<rect x="${bx[0]}" y="${bx[1]}" width="${w}" height="${H}" rx="3" fill="${FB.gov}" stroke="${C.crit}" stroke-width="1"/>`
+      : lb.fixed ? '' : `<rect x="${bx[0]}" y="${bx[1]}" width="${w}" height="${H}" rx="3" fill="#fff" fill-opacity="0.85"/>`;
+    txt.push(bg + `<text x="${bx[0] + 4}" y="${bx[1] + H - 4.5}" fill="${lb.color}" font-size="${lb.size || 12}" font-weight="${lb.gov ? 700 : 500}">${esc(lb.text)}</text>`);
+  }
+  const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
+  const pad = 10, x0 = Math.min(...xs) - pad, y0 = Math.min(...ys) - pad, x1 = Math.max(...xs) + pad, y1 = Math.max(...ys) + pad;
+  // triad (leg frame) in the lower-left corner
+  const T0 = [x0 + 16, y1 + 6], tri = [];
+  ax.forEach((a, c) => {
+    const d = iso(a), n = Math.hypot(...d) || 1, e = [T0[0] + d[0] / n * 22 * Math.max(0.35, n / (K * 1.0)), T0[1] + d[1] / n * 22 * Math.max(0.35, n / (K * 1.0))];
+    tri.push(`<line x1="${T0[0]}" y1="${T0[1]}" x2="${e[0]}" y2="${e[1]}" stroke="${FB.muted}" stroke-width="1.2"/>` + arrowHead(e, [e[0] - T0[0], e[1] - T0[1]], 5, FB.muted) +
+      `<text x="${e[0] + (e[0] >= T0[0] ? 3 : -9)}" y="${e[1] + 4}" font-size="10" fill="${FB.muted}">${'xyz'[c]}</text>`);
+  });
+  const vb = [x0 - 4, y0, (x1 - x0) + 8, (y1 - y0) + 34];
+  const foot = `<text x="${T0[0] + 34}" y="${T0[1] + 6}" font-size="10" fill="${FB.muted}">leg ${l.leg} frame: x slot · y across · z bolt axis (+ pull-off)${tiny.length ? ' · ≈0: ' + tiny.join(', ') : ''}</text>`;
+  return `<svg class="fbd" viewBox="${vb.join(' ')}" xmlns="http://www.w3.org/2000/svg" font-family="Inter, DejaVu Sans, system-ui, sans-serif">${el.join('')}${tri.join('')}${foot}${txt.join('')}</svg>`;
+}
+
 // ------------------------------------------------------------------ inspector
 function sfSpan(v, t) { return `<span class="${sfClass(v, t)}">${sfTxt(v)}</span>`; }
-function legTable(l, b) {
-  const rows = l.items.map(([lab, v, u, cap, U]) => {
+function legTable(l) {
+  const Umax = Math.max(...l.items.map(q => fin(q[4]) ? q[4] : -1));
+  const rows = l.items.map(([lab, v, u, cap, U, by]) => {
     const share = fin(U) && fin(l.U) && l.U > 0 ? (100 * U / l.U).toFixed(0) + ' %' : '';
     const alone = fin(U) ? (U > 0 ? sfSpan(1 / U, D.targets.joint) : '∞') : '';
-    const gov = fin(U) && fin(l.U) && l.U > 0 && Math.abs(U - Math.max(...l.items.map(q => fin(q[4]) ? q[4] : -1))) < 1e-12;
+    const gov = fin(U) && U > 0 && Math.abs(U - Umax) < 1e-12;
     return `<tr class="${fin(cap) ? 'chk' : 'sub'}${gov ? ' gov' : ''}"><td>${esc(lab)}</td><td class="num">${fmt(v)} ${u}</td>` +
-      `<td class="num">${fin(cap) ? fmt(cap) + ' ' + u : ''}</td><td class="num">${share}</td><td class="num">${alone}</td></tr>`;
+      `<td class="num">${fin(cap) ? fmt(cap) + ' ' + u : ''}</td><td class="num">${share}</td><td class="num">${alone}</td><td class="by">${esc(by)}</td></tr>`;
   }).join('');
-  return `<table><thead><tr><th>component / check</th><th class="num">value</th><th class="num">capacity</th>` +
-    `<th class="num">share of U</th><th class="num">SF alone</th></tr></thead><tbody>${rows}</tbody></table>`;
+  return `<table class="legt"><thead><tr><th>load</th><th class="num">value</th><th class="num">capacity</th>` +
+    `<th class="num">share of U</th><th class="num">SF alone</th><th>carried by</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+function ranked() {
+  return D.brackets.map((b, i) => [bracketSF(i), i]).filter(q => legsOf(q[1]).length)
+    .sort((p, q) => (fin(p[0]) ? p[0] : 1e9) - (fin(q[0]) ? q[0] : 1e9)).map(q => q[1]);
 }
 function showBracket(i) {
-  const b = D.brackets[i], ls = legsOf(i), v = bracketSF(i);
-  const j = D.joints.find(q => q.id === b.joint);
-  let h = `<h3>${b.label} · ${b.type}${b.copy ? ' (copy ' + (b.copy + 1) + ')' : ''} — SF ${sfSpan(v, D.targets.joint)}</h3>` +
-    `<div class="k">joint <button class="lnk" data-joint="${b.joint}">${b.joint}</button> · legs a on M${b.a}, b on M${b.b} · face ${b.face}` +
-    `${b.note ? ' · ' + esc(b.note) : ''}</div>`;
-  h += `<div class="key"><span><span class="sw" style="border-color:${C.ax[0]}"></span>x slot</span>` +
-    `<span><span class="sw" style="border-color:${C.ax[1]}"></span>y across</span>` +
-    `<span><span class="sw" style="border-color:${C.ax[2]}"></span>z bolt axis (+ pull-off)</span>` +
-    `<span><span class="sw"></span>force</span><span><span class="sw d"></span>moment (double head)</span></div>`;
-  h += `<div class="k">Wrench acting on each leg's member, about the bolt point (plates: group centroid), in that leg's frame. ` +
-    `Legs act in series: bracket SF = min over legs. U = Σ term utilisations (linear interaction), SF = 1/U.</div>`;
-  for (const l of ls) {
-    const g = legGeom(i, l);
-    const off = g ? norm(sub(g.P, b.X)).toFixed(1) : '?';
-    h += `<h4>leg ${l.leg} on M${l.member} — SF <span class="legsf ${sfClass(l.SF, D.targets.joint)}">${sfTxt(l.SF)}</span>` +
+  const b = D.brackets[i], ls = legsOf(i), v = bracketSF(i), rk = ranked(), pos = rk.indexOf(i);
+  let h = `<div class="nav"><button class="lnk" data-step="-1" ${pos <= 0 ? 'disabled' : ''}>◀ lower SF</button>` +
+    `<span class="k">${pos + 1} of ${rk.length} by SF</span><button class="lnk" data-step="1" ${pos >= rk.length - 1 ? 'disabled' : ''}>higher SF ▶</button></div>` +
+    `<h3>${b.label} · ${b.type === 'triangle' ? 'triangle bracket' : b.type}${b.copy ? ' (copy ' + (b.copy + 1) + ')' : ''} — SF ${sfSpan(v, D.targets.joint)}</h3>` +
+    `<div class="k">joint <button class="lnk" data-joint="${b.joint}">${b.joint}</button> · leg a on M${b.a}, leg b on M${b.b} · face ${b.face}` +
+    `${b.note ? ' · ' + esc(b.note) : ''}</div>` +
+    `<div class="k">Each leg is drawn alone: the loads the bracket puts on that leg's member at its bolt (plates: bolt-group centre), ` +
+    `in the leg's own x, y, z. Arrows point the way the load acts; values are magnitudes (signed values in the table). ` +
+    `Legs act in series, so the bracket SF is the lower leg SF. U = Σ term utilisations, SF = 1/U.</div>`;
+  h += `<div class="key"><span><span class="sw" style="border-color:${FB.fxy}"></span>Fx, Fy in the face</span>` +
+    `<span><span class="sw" style="border-color:${FB.fz}"></span>Fz bolt axis</span><span><span class="sw" style="border-color:${FB.m}"></span>moment (curl, right-hand rule)</span>` +
+    `<span><span class="pill">label</span> governs</span></div>`;
+  ls.forEach((l, k) => {
+    h += `<div class="leg"><h4>leg ${l.leg} on M${l.member} — SF <span class="legsf ${sfClass(l.SF, D.targets.joint)}">${sfTxt(l.SF)}</span>` +
       ` <span class="k">U ${fin(l.U) ? l.U.toFixed(2) : '–'} · governs ${esc(l.gov || '–')}</span></h4>` +
-      `<div class="k">${esc(l.src)} · corner option ${esc(l.opt)} · bolt point ${off} mm from corner X` +
-      `${g && g.bolts ? ' · ' + g.bolts.length + ' bolts' : ''}</div>` + legTable(l, b);
-  }
+      `<div class="k">${esc(l.src)} · corner option ${esc(l.opt)}</div>` + fbdSVG(i, k) + legTable(l) + `</div>`;
+  });
   if (!ls.length) h += '<p class="k">no result rows for this bracket</p>';
   if (S.key === 'envelope') h += `<p class="k">Envelope: each leg shows the solve that governs it, so legs can come from different solves.</p>`;
   insp.innerHTML = h;
@@ -570,7 +688,7 @@ function showBracket(i) {
 function showJoint(id) {
   const j = D.joints.find(q => q.id === id);
   let h = `<h3>Joint ${j.id}</h3><div class="k">members ${j.members.map(m => `<button class="lnk" data-member="${m}">M${m}</button>`).join(' ')}` +
-    ` · at (${j.at.map(q => q.toFixed(0)).join(', ')}) mm</div><h4>Brackets</h4>`;
+    ` · at (${j.at.map(q => q.toFixed(0)).join(', ')}) mm</div><h4>Brackets — click for the free-body diagram</h4>`;
   h += `<table><thead><tr><th>bracket</th><th>type</th><th>legs</th><th class="num">SF</th><th>governs</th><th>run/case</th></tr></thead><tbody>`;
   for (const i of j.br) {
     const b = D.brackets[i], ls = legsOf(i), v = bracketSF(i);
@@ -580,7 +698,7 @@ function showJoint(id) {
   }
   h += `</tbody></table>`;
   if (j.be.length) {
-    h += `<h4>Bearing (compression-only, along the bearing member's axis)</h4><table><thead><tr><th>contact</th>` +
+    h += `<h4>Bearing (end of one member pressing on another; compression only)</h4><table><thead><tr><th>contact</th>` +
       `<th class="num">force</th><th>state</th><th>run/case</th></tr></thead><tbody>`;
     for (const k of j.be) {
       const be = D.bearings[k], f = S.bearing[k];
@@ -605,9 +723,11 @@ function showMember(id) {
     `<h4>Joints on this member</h4>${js.map(j => `<button class="lnk" data-joint="${j.id}">${j.id}</button>`).join(' ') || '<span class="k">none</span>'}`;
 }
 function showNothing() {
-  insp.innerHTML = `<h3>Inspector</h3><p class="k">Click a bracket (diamond) for its free-body diagram, a joint (ring) for its brackets ` +
+  const w = ranked()[0];
+  insp.innerHTML = `<h3>Inspector</h3><p class="k">Click a bracket (its outline in the 3D view) for its free-body diagram, a joint (ring) for its brackets ` +
     `and bearing forces, or a member for its checks. The state menu switches between the design envelope and any single run/case.</p>` +
-    `<p class="k">${D.brackets.length} bracket springs · ${D.joints.length} joints · ${D.members.length} members · ${D.bearings.length} bearing contacts.</p>`;
+    (w !== undefined ? `<p><button class="lnk" data-spring="${w}">open the lowest-SF bracket (${D.brackets[w].label}, SF ${sfTxt(bracketSF(w))})</button></p>` : '') +
+    `<p class="k">${D.brackets.length} brackets · ${D.joints.length} joints · ${D.members.length} members · ${D.bearings.length} bearing contacts.</p>`;
 }
 function inspect() {
   if (sel.kind === 'bracket') showBracket(sel.id);
@@ -642,12 +762,10 @@ function render() {
   layout.showlegend = plot.clientWidth > 600;
   const fl = plot._fullLayout && plot._fullLayout.scene;
   if (fl) { layout.scene.camera = JSON.parse(JSON.stringify(fl.camera)); layout.scene.aspectratio = { ...fl.aspectratio }; }
-  const tr = [...memberTraces(), ...deformedTrace(), ...thrustTrace(), jointTrace(), ...bracketTrace(),
-    ...bearingTraces(), ...fbdTraces()];
+  const tr = [...memberTraces(), ...deformedTrace(), ...thrustTrace(), jointTrace(), ...bracketTraces(), ...bearingTraces()];
   Plotly.react(plot, tr, layout, { displaylogo: false, responsive: true,
     toImageButtonOptions: { format: 'png', scale: 3, filename: 'stand' } });
 }
-// scene normalised coordinates of a data point (aspectmode manual: box spans ±ar/2)
 function toScene(p) { return { x: ((p[0] - rng[0][0]) / span[0] - 0.5) * ar[0], y: ((p[1] - rng[1][0]) / span[1] - 0.5) * ar[1], z: ((p[2] - rng[2][0]) / span[2] - 0.5) * ar[2] }; }
 function focusPoint() {
   if (sel.kind === 'bracket') return D.brackets[sel.id].X;
@@ -657,15 +775,16 @@ function focusPoint() {
 }
 function focus() {
   const p = focusPoint(); if (!p) return;
-  const f = sel.kind === 'bracket' ? 10 : 2.5, c0 = toScene(p), c = { x: c0.x * f, y: c0.y * f, z: c0.z * f };
+  const f = sel.kind === 'bracket' ? 4 : 2.5, c0 = toScene(p), c = { x: c0.x * f, y: c0.y * f, z: c0.z * f };
   const cam = plot._fullLayout.scene.camera, e = cam.eye, o = cam.center;
   const d = [e.x - o.x, e.y - o.y, e.z - o.z], n = norm(d) || 1;
   Plotly.relayout(plot, { 'scene.aspectratio': { x: ar[0] * f, y: ar[1] * f, z: ar[2] * f },
     'scene.camera': { center: c, eye: { x: c.x + d[0] * 1.8 / n, y: c.y + d[1] * 1.8 / n, z: c.z + d[2] * 1.8 / n },
       up: cam.up, projection: { type: 'orthographic' } } });
 }
+
 // ------------------------------------------------------------------ wiring
-function select(kind, id) { sel.kind = kind; sel.id = id; render(); inspect(); }
+function select(kind, id) { sel.kind = kind; sel.id = id; render(); inspect(); insp.scrollTop = 0; }
 const sSel = document.getElementById('state');
 D.states.forEach((s, k) => { const o = document.createElement('option'); o.value = k; o.textContent = s.title; if (!s.valid) o.style.color = C.muted; sSel.appendChild(o); });
 function setState(k) {
@@ -676,8 +795,7 @@ function setState(k) {
   render(); inspect();
 }
 sSel.addEventListener('change', e => setState(+e.target.value));
-for (const [id, key] of [['deformed', 'deformed'], ['showF', 'F'], ['showM', 'M'], ['showBr', 'br']])
-  document.getElementById(id).addEventListener('change', e => { ui[key] = e.target.checked; render(); });
+document.getElementById('deformed').addEventListener('change', e => { ui.deformed = e.target.checked; render(); });
 const cams = document.getElementById('cams');
 for (const [k, v] of Object.entries(CAMS)) {
   const b = document.createElement('button'); b.textContent = k;
@@ -688,11 +806,12 @@ for (const [k, v] of Object.entries(CAMS)) {
 document.getElementById('focus').onclick = focus;
 document.getElementById('clear').onclick = () => select(null, null);
 document.addEventListener('click', e => {
-  const t = e.target.closest('[data-spring],[data-joint],[data-member]'); if (!t) return;
+  const t = e.target.closest('[data-spring],[data-joint],[data-member],[data-step]'); if (!t || t.disabled) return;
+  if (t.dataset.step !== undefined) { const rk = ranked(), k = rk.indexOf(sel.id) + (+t.dataset.step); if (rk[k] !== undefined) select('bracket', rk[k]); return; }
   if (t.dataset.spring !== undefined) select('bracket', +t.dataset.spring);
   else if (t.dataset.joint !== undefined) select('joint', t.dataset.joint);
   else select('member', +t.dataset.member);
-  if (t.closest('.grid')) { plot.scrollIntoView({ behavior: 'smooth', block: 'center' }); focus(); }
+  if (t.closest('.grid')) { document.querySelector('.view').scrollIntoView({ behavior: 'smooth', block: 'start' }); focus(); }
 });
 setState(0);
 plot.on('plotly_click', ev => {

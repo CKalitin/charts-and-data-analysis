@@ -23,8 +23,8 @@ stand/charts/       one module per figure family (runnable alone from results/3d
                     files numbered by _render.FIGURE_ORDER; PNG only unless output.svg
                     _render.py = the only matplotlib config (from the charting skill's
                     render.py) + palette, info box (skill's info_box.py), labels, views
-stand/viz.py        stand.html: JSON payload + client-side plotly; click bracket -> free-body
-                    diagram (6 wrench comps per leg, leg frame) + capacity table; click joint/member
+stand/viz.py        viewer.html: JSON payload + client-side plotly 3D; click bracket -> isometric SVG
+                    free-body diagram per leg (styled on the user's sketch) + capacity table
 tests/              validation suite (brief section 9 + unit checks)
 ```
 
@@ -42,8 +42,8 @@ non-default runs -> results/variants/<mode>_<changes>[_case_...]/ (stand/__main_
 
 ## viewer.html (2026-11-17)
 
-State <select> (envelope / any run-case / buckling mode), deformed overlay, forces/moments
-toggles, focus (orthographic zoom = scene.aspectratio, not eye distance). Gotchas: re-render
+State <select> (envelope / any run-case / buckling mode), deformed overlay, bracket stepping by
+SF, FBD drawn in SVG (not in the 3D scene: overlapping 3D arrows were unreadable), focus (orthographic zoom = scene.aspectratio, not eye distance). Gotchas: re-render
 from plotly_click must be deferred (setTimeout) or plotly's hover label recurses; render()
 copies the live camera + aspectratio into the layout before Plotly.react. Envelope legs of one
 bracket may come from different solves (each leg's own governing solve) — stated in the panel.
