@@ -1,0 +1,1142 @@
+{
+ "units": "mm",
+ "source": "Assembly_1.step",
+ "profiles": {
+  "1010": "80/20 1010",
+  "1020": "80/20 1020 (2x1)"
+ },
+ "joints": [
+  {
+   "id": "N1",
+   "at": [
+    315.3,
+    -310.3,
+    18.4
+   ],
+   "members": [
+    16,
+    20,
+    28
+   ],
+   "bearing": [
+    {
+     "end_of": 16,
+     "bears_on": 20
+    },
+    {
+     "end_of": 28,
+     "bears_on": 20
+    }
+   ],
+   "brackets": [
+    {
+     "type": "triangle",
+     "a": 20,
+     "b": 16,
+     "face": "+y",
+     "count": 1,
+     "note": ""
+    },
+    {
+     "type": "triangle",
+     "a": 20,
+     "b": 28,
+     "face": "+y",
+     "count": 1,
+     "note": ""
+    }
+   ]
+  },
+  {
+   "id": "N2",
+   "at": [
+    315.3,
+    -20.3,
+    18.4
+   ],
+   "members": [
+    20,
+    23,
+    33
+   ],
+   "bearing": [
+    {
+     "end_of": 23,
+     "bears_on": 20
+    },
+    {
+     "end_of": 33,
+     "bears_on": 20
+    }
+   ],
+   "brackets": [
+    {
+     "type": "triangle",
+     "a": 33,
+     "b": 20,
+     "face": "+y",
+     "count": 1,
+     "note": ""
+    },
+    {
+     "type": "triangle",
+     "a": 23,
+     "b": 20,
+     "face": "+y",
+     "count": 1,
+     "note": ""
+    }
+   ]
+  },
+  {
+   "id": "N3",
+   "at": [
+    465.2,
+    -310.3,
+    18.4
+   ],
+   "members": [
+    2,
+    28
+   ],
+   "bearing": [
+    {
+     "end_of": 2,
+     "bears_on": 28
+    }
+   ],
+   "brackets": [
+    {
+     "type": "triangle",
+     "a": 28,
+     "b": 2,
+     "face": "+y",
+     "count": 1,
+     "note": ""
+    }
+   ]
+  },
+  {
+   "id": "N4",
+   "at": [
+    465.2,
+    -20.3,
+    18.4
+   ],
+   "members": [
+    23,
+    29
+   ],
+   "bearing": [
+    {
+     "end_of": 29,
+     "bears_on": 23
+    }
+   ],
+   "brackets": [
+    {
+     "type": "triangle",
+     "a": 23,
+     "b": 29,
+     "face": "+y",
+     "count": 1,
+     "note": ""
+    }
+   ]
+  },
+  {
+   "id": "N5",
+   "at": [
+    765.2,
+    -310.3,
+    18.4
+   ],
+   "members": [
+    3,
+    28,
+    34
+   ],
+   "bearing": [
+    {
+     "end_of": 28,
+     "bears_on": 3
+    },
+    {
+     "end_of": 34,
+     "bears_on": 3
+    }
+   ],
+   "brackets": [
+    {
+     "type": "triangle",
+     "a": 28,
+     "b": 3,
+     "face": "+y",
+     "count": 1,
+     "note": ""
+    },
+    {
+     "type": "triangle",
+     "a": 34,
+     "b": 3,
+     "face": "+y",
+     "count": 1,
+     "note": ""
+    }
+   ]
+  },
+  {
+   "id": "N6",
+   "at": [
+    765.2,
+    -20.3,
+    18.4
+   ],
+   "members": [
+    3,
+    23,
+    31
+   ],
+   "bearing": [
+    {
+     "end_of": 23,
+     "bears_on": 3
+    },
+    {
+     "end_of": 31,
+     "bears_on": 3
+    }
+   ],
+   "brackets": [
+    {
+     "type": "triangle",
+     "a": 23,
+     "b": 3,
+     "face": "+y",
+     "count": 1,
+     "note": ""
+    },
+    {
+     "type": "triangle",
+     "a": 31,
+     "b": 3,
+     "face": "+y",
+     "count": 1,
+     "note": ""
+    }
+   ]
+  },
+  {
+   "id": "N7",
+   "at": [
+    1025.2,
+    -310.3,
+    18.4
+   ],
+   "members": [
+    22,
+    25,
+    34
+   ],
+   "bearing": [
+    {
+     "end_of": 25,
+     "bears_on": 22
+    },
+    {
+     "end_of": 34,
+     "bears_on": 22
+    }
+   ],
+   "brackets": [
+    {
+     "type": "triangle",
+     "a": 22,
+     "b": 34,
+     "face": "+y",
+     "count": 1,
+     "note": ""
+    },
+    {
+     "type": "triangle",
+     "a": 22,
+     "b": 25,
+     "face": "+y",
+     "count": 1,
+     "note": ""
+    }
+   ]
+  },
+  {
+   "id": "N8",
+   "at": [
+    1025.2,
+    -20.3,
+    18.4
+   ],
+   "members": [
+    19,
+    22,
+    31
+   ],
+   "bearing": [
+    {
+     "end_of": 19,
+     "bears_on": 22
+    },
+    {
+     "end_of": 31,
+     "bears_on": 22
+    }
+   ],
+   "brackets": [
+    {
+     "type": "triangle",
+     "a": 31,
+     "b": 22,
+     "face": "+y",
+     "count": 1,
+     "note": ""
+    },
+    {
+     "type": "triangle",
+     "a": 19,
+     "b": 22,
+     "face": "+y",
+     "count": 1,
+     "note": ""
+    }
+   ]
+  },
+  {
+   "id": "N9",
+   "at": [
+    1125.2,
+    -310.3,
+    18.4
+   ],
+   "members": [
+    1,
+    25
+   ],
+   "bearing": [
+    {
+     "end_of": 1,
+     "bears_on": 25
+    }
+   ],
+   "brackets": [
+    {
+     "type": "triangle",
+     "a": 25,
+     "b": 1,
+     "face": "+y",
+     "count": 1,
+     "note": ""
+    }
+   ]
+  },
+  {
+   "id": "N10",
+   "at": [
+    1125.2,
+    -20.3,
+    18.4
+   ],
+   "members": [
+    19,
+    21
+   ],
+   "bearing": [
+    {
+     "end_of": 21,
+     "bears_on": 19
+    }
+   ],
+   "brackets": [
+    {
+     "type": "triangle",
+     "a": 21,
+     "b": 19,
+     "face": "+y",
+     "count": 1,
+     "note": ""
+    }
+   ]
+  },
+  {
+   "id": "N11",
+   "at": [
+    471.9,
+    -310.1,
+    1051.7
+   ],
+   "members": [
+    2,
+    4,
+    8
+   ],
+   "bearing": [
+    {
+     "end_of": 2,
+     "bears_on": 4
+    },
+    {
+     "end_of": 8,
+     "bears_on": 4
+    }
+   ],
+   "brackets": [
+    {
+     "type": "triangle",
+     "a": 8,
+     "b": 4,
+     "face": "+y",
+     "count": 1,
+     "note": ""
+    },
+    {
+     "type": "triangle",
+     "a": 2,
+     "b": 8,
+     "face": "+y",
+     "count": 1,
+     "note": ""
+    }
+   ]
+  },
+  {
+   "id": "N12",
+   "at": [
+    471.9,
+    -20.6,
+    1051.7
+   ],
+   "members": [
+    0,
+    4,
+    29
+   ],
+   "bearing": [
+    {
+     "end_of": 0,
+     "bears_on": 4
+    },
+    {
+     "end_of": 29,
+     "bears_on": 4
+    }
+   ],
+   "brackets": [
+    {
+     "type": "triangle",
+     "a": 0,
+     "b": 4,
+     "face": "+y",
+     "count": 1,
+     "note": ""
+    },
+    {
+     "type": "triangle",
+     "a": 29,
+     "b": 0,
+     "face": "+y",
+     "count": 1,
+     "note": ""
+    }
+   ]
+  },
+  {
+   "id": "N13",
+   "at": [
+    1110.2,
+    -305.3,
+    1058.2
+   ],
+   "members": [
+    1,
+    8,
+    24
+   ],
+   "bearing": [
+    {
+     "end_of": 8,
+     "bears_on": 1
+    },
+    {
+     "end_of": 24,
+     "bears_on": 1
+    }
+   ],
+   "brackets": [
+    {
+     "type": "triangle",
+     "a": 8,
+     "b": 1,
+     "face": "+y",
+     "count": 1,
+     "note": ""
+    },
+    {
+     "type": "triangle",
+     "a": 24,
+     "b": 1,
+     "face": "+y",
+     "count": 1,
+     "note": ""
+    }
+   ]
+  },
+  {
+   "id": "N14",
+   "at": [
+    1110.2,
+    -25.4,
+    1058.2
+   ],
+   "members": [
+    0,
+    21,
+    24
+   ],
+   "bearing": [
+    {
+     "end_of": 0,
+     "bears_on": 21
+    },
+    {
+     "end_of": 24,
+     "bears_on": 21
+    }
+   ],
+   "brackets": [
+    {
+     "type": "triangle",
+     "a": 0,
+     "b": 21,
+     "face": "+y",
+     "count": 1,
+     "note": ""
+    },
+    {
+     "type": "triangle",
+     "a": 21,
+     "b": 24,
+     "face": "+y",
+     "count": 1,
+     "note": ""
+    }
+   ]
+  },
+  {
+   "id": "N15",
+   "at": [
+    525.2,
+    -310.1,
+    1068.2
+   ],
+   "members": [
+    8,
+    13
+   ],
+   "bearing": [
+    {
+     "end_of": 13,
+     "bears_on": 8
+    }
+   ],
+   "brackets": [
+    {
+     "type": "triangle",
+     "a": 13,
+     "b": 8,
+     "face": "+y",
+     "count": 1,
+     "note": ""
+    }
+   ]
+  },
+  {
+   "id": "N16",
+   "at": [
+    525.2,
+    -20.4,
+    1068.2
+   ],
+   "members": [
+    0,
+    5
+   ],
+   "bearing": [
+    {
+     "end_of": 5,
+     "bears_on": 0
+    }
+   ],
+   "brackets": [
+    {
+     "type": "triangle",
+     "a": 0,
+     "b": 5,
+     "face": "+y",
+     "count": 1,
+     "note": ""
+    }
+   ]
+  },
+  {
+   "id": "N17",
+   "at": [
+    1138.5,
+    -303.6,
+    1528.1
+   ],
+   "members": [
+    1,
+    18,
+    26
+   ],
+   "bearing": [],
+   "brackets": [
+    {
+     "type": "triangle",
+     "a": 26,
+     "b": 18,
+     "face": "+y",
+     "count": 1,
+     "note": ""
+    },
+    {
+     "type": "triangle",
+     "a": 26,
+     "b": 1,
+     "face": "+y",
+     "count": 1,
+     "note": ""
+    }
+   ]
+  },
+  {
+   "id": "N18",
+   "at": [
+    1138.5,
+    -27,
+    1528.1
+   ],
+   "members": [
+    21,
+    26,
+    32
+   ],
+   "bearing": [],
+   "brackets": [
+    {
+     "type": "triangle",
+     "a": 26,
+     "b": 32,
+     "face": "+y",
+     "count": 1,
+     "note": ""
+    },
+    {
+     "type": "triangle",
+     "a": 21,
+     "b": 26,
+     "face": "+y",
+     "count": 1,
+     "note": ""
+    }
+   ]
+  },
+  {
+   "id": "N19",
+   "at": [
+    531.9,
+    -310.1,
+    1671.4
+   ],
+   "members": [
+    12,
+    13,
+    35
+   ],
+   "bearing": [
+    {
+     "end_of": 12,
+     "bears_on": 35
+    },
+    {
+     "end_of": 13,
+     "bears_on": 35
+    }
+   ],
+   "brackets": [
+    {
+     "type": "triangle",
+     "a": 13,
+     "b": 12,
+     "face": "+y",
+     "count": 1,
+     "note": ""
+    },
+    {
+     "type": "triangle",
+     "a": 13,
+     "b": 35,
+     "face": "+y",
+     "count": 1,
+     "note": ""
+    },
+    {
+     "type": "triangle",
+     "a": 12,
+     "b": 35,
+     "face": "+y",
+     "count": 1,
+     "note": ""
+    }
+   ]
+  },
+  {
+   "id": "N20",
+   "at": [
+    531.9,
+    -20.1,
+    1671.4
+   ],
+   "members": [
+    5,
+    6,
+    35
+   ],
+   "bearing": [
+    {
+     "end_of": 5,
+     "bears_on": 35
+    },
+    {
+     "end_of": 6,
+     "bears_on": 35
+    }
+   ],
+   "brackets": [
+    {
+     "type": "triangle",
+     "a": 5,
+     "b": 6,
+     "face": "+y",
+     "count": 1,
+     "note": ""
+    },
+    {
+     "type": "triangle",
+     "a": 5,
+     "b": 35,
+     "face": "+y",
+     "count": 1,
+     "note": ""
+    },
+    {
+     "type": "triangle",
+     "a": 6,
+     "b": 35,
+     "face": "+y",
+     "count": 1,
+     "note": ""
+    }
+   ]
+  },
+  {
+   "id": "N21",
+   "at": [
+    741.6,
+    -310.1,
+    1678.1
+   ],
+   "members": [
+    9,
+    12
+   ],
+   "bearing": [
+    {
+     "end_of": 9,
+     "bears_on": 12
+    }
+   ],
+   "brackets": [
+    {
+     "type": "plate_t5",
+     "a": 12,
+     "b": 9,
+     "face": "+y",
+     "count": 1,
+     "note": ""
+    }
+   ]
+  },
+  {
+   "id": "N22",
+   "at": [
+    741.6,
+    -20.1,
+    1678.1
+   ],
+   "members": [
+    6,
+    7
+   ],
+   "bearing": [
+    {
+     "end_of": 7,
+     "bears_on": 6
+    }
+   ],
+   "brackets": [
+    {
+     "type": "plate_t5",
+     "a": 6,
+     "b": 7,
+     "face": "+y",
+     "count": 1,
+     "note": ""
+    }
+   ]
+  },
+  {
+   "id": "N23",
+   "at": [
+    1140.2,
+    -305.2,
+    1678.1
+   ],
+   "members": [
+    11,
+    12,
+    18
+   ],
+   "bearing": [
+    {
+     "end_of": 11,
+     "bears_on": 18
+    },
+    {
+     "end_of": 12,
+     "bears_on": 18
+    }
+   ],
+   "brackets": [
+    {
+     "type": "triangle",
+     "a": 11,
+     "b": 18,
+     "face": "+y",
+     "count": 1,
+     "note": ""
+    },
+    {
+     "type": "triangle",
+     "a": 12,
+     "b": 18,
+     "face": "+y",
+     "count": 1,
+     "note": ""
+    }
+   ]
+  },
+  {
+   "id": "N24",
+   "at": [
+    1140.2,
+    -25.2,
+    1678.1
+   ],
+   "members": [
+    6,
+    11,
+    32
+   ],
+   "bearing": [
+    {
+     "end_of": 6,
+     "bears_on": 32
+    },
+    {
+     "end_of": 11,
+     "bears_on": 32
+    }
+   ],
+   "brackets": [
+    {
+     "type": "triangle",
+     "a": 11,
+     "b": 32,
+     "face": "+y",
+     "count": 1,
+     "note": ""
+    },
+    {
+     "type": "triangle",
+     "a": 6,
+     "b": 32,
+     "face": "+y",
+     "count": 1,
+     "note": ""
+    }
+   ]
+  },
+  {
+   "id": "N25",
+   "at": [
+    1125.1,
+    -310.2,
+    2356
+   ],
+   "members": [
+    9,
+    10,
+    18
+   ],
+   "bearing": [
+    {
+     "end_of": 10,
+     "bears_on": 9
+    },
+    {
+     "end_of": 10,
+     "bears_on": 18
+    }
+   ],
+   "brackets": [
+    {
+     "type": "plate_t5",
+     "a": 18,
+     "b": 10,
+     "face": "+y",
+     "count": 1,
+     "note": ""
+    }
+   ]
+  },
+  {
+   "id": "N26",
+   "at": [
+    1125.1,
+    -20.2,
+    2356
+   ],
+   "members": [
+    7,
+    15,
+    32
+   ],
+   "bearing": [
+    {
+     "end_of": 15,
+     "bears_on": 7
+    },
+    {
+     "end_of": 15,
+     "bears_on": 32
+    }
+   ],
+   "brackets": [
+    {
+     "type": "plate_t5",
+     "a": 32,
+     "b": 15,
+     "face": "+y",
+     "count": 1,
+     "note": ""
+    }
+   ]
+  },
+  {
+   "id": "N27",
+   "at": [
+    1151.8,
+    -305.3,
+    2484.6
+   ],
+   "members": [
+    9,
+    18,
+    27,
+    36
+   ],
+   "bearing": [
+    {
+     "end_of": 9,
+     "bears_on": 18
+    }
+   ],
+   "brackets": [
+    {
+     "type": "triangle",
+     "a": 36,
+     "b": 18,
+     "face": "+y",
+     "count": 1,
+     "note": ""
+    },
+    {
+     "type": "triangle",
+     "a": 36,
+     "b": 27,
+     "face": "+y",
+     "count": 1,
+     "note": ""
+    },
+    {
+     "type": "triangle",
+     "a": 18,
+     "b": 27,
+     "face": "+y",
+     "count": 1,
+     "note": ""
+    },
+    {
+     "type": "triangle",
+     "a": 9,
+     "b": 18,
+     "face": "+y",
+     "count": 1,
+     "note": "diagonal top; added from chat (not in tool export)"
+    }
+   ]
+  },
+  {
+   "id": "N28",
+   "at": [
+    1151.8,
+    -25.3,
+    2484.6
+   ],
+   "members": [
+    7,
+    14,
+    32,
+    36
+   ],
+   "bearing": [
+    {
+     "end_of": 7,
+     "bears_on": 32
+    }
+   ],
+   "brackets": [
+    {
+     "type": "triangle",
+     "a": 36,
+     "b": 32,
+     "face": "+y",
+     "count": 1,
+     "note": ""
+    },
+    {
+     "type": "triangle",
+     "a": 14,
+     "b": 36,
+     "face": "+y",
+     "count": 1,
+     "note": ""
+    },
+    {
+     "type": "triangle",
+     "a": 32,
+     "b": 14,
+     "face": "+y",
+     "count": 1,
+     "note": ""
+    },
+    {
+     "type": "triangle",
+     "a": 7,
+     "b": 32,
+     "face": "+y",
+     "count": 1,
+     "note": "diagonal top; added from chat (not in tool export)"
+    }
+   ]
+  },
+  {
+   "id": "N29",
+   "at": [
+    1299,
+    -303.6,
+    2495.7
+   ],
+   "members": [
+    10,
+    17,
+    27
+   ],
+   "bearing": [],
+   "brackets": [
+    {
+     "type": "triangle",
+     "a": 17,
+     "b": 27,
+     "face": "+y",
+     "count": 1,
+     "note": ""
+    },
+    {
+     "type": "plate_t5",
+     "a": 27,
+     "b": 10,
+     "face": "+y",
+     "count": 1,
+     "note": ""
+    },
+    {
+     "type": "triangle",
+     "a": 17,
+     "b": 27,
+     "face": "+y",
+     "count": 1,
+     "note": ""
+    }
+   ]
+  },
+  {
+   "id": "N30",
+   "at": [
+    1299,
+    -27,
+    2495.7
+   ],
+   "members": [
+    14,
+    15,
+    17
+   ],
+   "bearing": [],
+   "brackets": [
+    {
+     "type": "triangle",
+     "a": 17,
+     "b": 14,
+     "face": "+y",
+     "count": 1,
+     "note": ""
+    },
+    {
+     "type": "plate_t5",
+     "a": 14,
+     "b": 15,
+     "face": "+y",
+     "count": 1,
+     "note": ""
+    },
+    {
+     "type": "triangle",
+     "a": 14,
+     "b": 17,
+     "face": "+y",
+     "count": 1,
+     "note": ""
+    }
+   ]
+  }
+ ]
+}
