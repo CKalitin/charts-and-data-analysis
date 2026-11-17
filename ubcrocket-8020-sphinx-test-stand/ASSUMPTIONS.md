@@ -46,6 +46,18 @@ Every number or modelling choice not confirmed by the user. Move an entry to
 11. **Sandbag line load** (brief): linear in plan position; besides the brief's
     net-uplift mass the report also gives the mass if bags are spread uniformly (must
     cover the most-downward demand).
+12. **Ground mode** (`run --ground`, results/3d_ground). Winkler springs, one per base node
+    at 25 mm spacing, at the beam underside: k_v = k_s · 25.4 mm · tributary length,
+    k_s = 150 MN/m³ (compacted gravel, typical 100–200; swept 50/150/500), horizontal
+    = 0.5 k_v while in contact; a spring opens when its point lifts (active set, iterated
+    with the bearing contacts). Ground assumed flat; no 3-2-1 restraint (the ground holds
+    the stand). The 1020 cross beam M3 uses the same 25.4 mm contact width.
+13. **Sandbag placement (Claude's choice).** 4 equal stations, 300 mm bags on the thrust-end
+    outriggers M19/M25 centred under the thrust line (x ≈ 1270 mm) and 155 mm bags on both
+    stubs of cross beam M22. Mass from rigid-body statics with FS 1.5 against tipping over
+    every footprint edge and against lift (thrust + misalignment destabilise; stand +
+    rocket weight stabilise), rounded up to 5 kg. Bag weight is applied to the beam as a
+    uniform load over the bag length (all of it, none to the ground beside the beam).
 
 ## Confirmed
 

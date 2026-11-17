@@ -62,12 +62,13 @@ def new_figure(w_in: float, h_in: float, foot: bool = True) -> Figure:
 
 # reading order of the figures; files are numbered from it (01_stand_sf.png, ...)
 FIGURE_ORDER = ["stand_sf", "sf_ranking", "joint_sf_terms", "sf_by_case", "thrust_by_case", "axial_force",
-                "peak_stress", "deflection", "buckling_mode", "sandbag_demand", "ktheta_sweep"]
+                "peak_stress", "deflection", "buckling_mode", "sandbag_demand", "ground_reaction", "ground_by_case", "ktheta_sweep"]
 
 
-def fig_stem(name: str) -> str:
-    """'stand_sf' -> '01_stand_sf' (unknown names go last, unnumbered)."""
-    return f"{FIGURE_ORDER.index(name) + 1:02d}_{name}" if name in FIGURE_ORDER else name
+def fig_stem(name: str, present: list[str] | None = None) -> str:
+    """'stand_sf' -> '01_stand_sf', numbered in FIGURE_ORDER among the figures present in this run."""
+    order = [n for n in FIGURE_ORDER if present is None or n in present]
+    return f"{order.index(name) + 1:02d}_{name}" if name in order else name
 
 
 def save_fig(fig: Figure, path: Path, svg: bool = False) -> list[Path]:
@@ -259,6 +260,7 @@ def main(figures_fn) -> None:
     t0 = time.time()
     plan = figures_fn(study, env, p)
     for name, build in plan:
-        for f in save_fig(build(), out / "figures" / fig_stem(name), p.si.output.svg):
+        from . import names
+        for f in save_fig(build(), out / "figures" / fig_stem(name, names(study, env, p)), p.si.output.svg):
             print(f"  wrote {f.relative_to(PROJECT_DIR) if f.is_relative_to(PROJECT_DIR) else f}")
     print(f"{len(plan)} chart(s) in {time.time() - t0:.1f} s")

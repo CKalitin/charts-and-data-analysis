@@ -53,6 +53,9 @@ class Solve:
     phi: np.ndarray | None = None
     valid: bool = True
     note: str = ""
+    contact: tuple = ()                   # ground mode: contact spring closed?
+    ground_F: np.ndarray | None = None    # ground mode: (n_contacts, 3) force on the stand, N
+    k_s: float = np.nan                   # ground mode: subgrade modulus used
 
     @property
     def key(self) -> str:
@@ -70,6 +73,8 @@ class Study:
     eig_checks: list[dict]
     caps: joints.Caps
     timings: dict = field(default_factory=dict)
+    bags: object = None                   # loads.Bags (ground mode)
+    ground_sweep: list = field(default_factory=list)   # [(k_s, [Solve...])] run R
 
 
 class Engine:
@@ -84,6 +89,18 @@ class Engine:
         self.segs = {mid: members.braced_segments(model, mid, p) for mid in model.members}
         self.case_loads: dict[str, loads.CaseLoads] = {}
         self._kbr: dict[float, tuple[np.ndarray, list[fem.Spring]]] = {}
+        self.bags = None
+        self.k_s = p.si.ground.k_s if model.ground_mode else np.nan
+        if model.ground_mode:
+            g = p.si.ground
+            self.bags = loads.size_sandbags(model, p, list(p.si.loads.cases))
+            # unit-k_s contact stiffness per spring (6x6 at its node) and its 3x6 map
+            self.g_T = [c.T() for c in model.ground]
+            self.g_K1 = []
+            for c, T in zip(model.ground, self.g_T):
+                kv = g.contact_width * c.trib
+                Kc = np.diag([g.kh_ratio * kv, g.kh_ratio * kv, kv])
+                self.g_K1.append(T.T @ Kc @ T)
 
     # ---------------------------------------------------------------- assembly
     def bracket_K(self, kr_f: float):
@@ -96,51 +113,92 @@ class Engine:
             self._kbr[kr_f] = (K, springs)
         return self._kbr[kr_f]
 
-    def K_for(self, kr_f: float, active) -> np.ndarray:
+    def K_for(self, kr_f: float, active, contact=(), k_s: float = np.nan) -> np.ndarray:
         K = self.K_frame + self.bracket_K(kr_f)[0]
         for on, s, kb in zip(active, self.bear_springs, self.K_bear):
             if on:
                 d = s.dofs
                 K[np.ix_(d, d)] += kb
+        for on, c, k1 in zip(contact, self.m.ground, getattr(self, "g_K1", [])):
+            if on:
+                d = slice(6 * c.node, 6 * c.node + 6)
+                K[d, d] += k_s * k1
         return K
+
+    def ground_forces(self, u: np.ndarray, contact, k_s: float) -> tuple[np.ndarray, np.ndarray]:
+        """(n_contacts, 3) contact forces on the stand, and the matching nodal vector."""
+        g = self.p.si.ground
+        Fc = np.zeros((len(self.m.ground), 3))
+        G = np.zeros(self.m.n_dof)
+        for i, (on, c, T) in enumerate(zip(contact, self.m.ground, self.g_T)):
+            if not on:
+                continue
+            kv = k_s * g.contact_width * c.trib
+            d = T @ u[6 * c.node:6 * c.node + 6]
+            f = -np.array([g.kh_ratio * kv, g.kh_ratio * kv, kv]) * d
+            Fc[i] = f
+            G[6 * c.node:6 * c.node + 6] += T.T @ f
+        return Fc, G
+
+    def contact_gap(self, u: np.ndarray) -> np.ndarray:
+        """Vertical displacement of every contact point (< 0 = pressed into the ground)."""
+        return np.array([(T @ u[6 * c.node:6 * c.node + 6])[2] for c, T in zip(self.m.ground, self.g_T)])
 
     def loads_for(self, case: str) -> loads.CaseLoads:
         if case not in self.case_loads:
-            self.case_loads[case] = loads.build_case(self.m, self.p, case)
+            self.case_loads[case] = loads.build_case(self.m, self.p, case, self.bags)
         return self.case_loads[case]
 
     # ---------------------------------------------------------------- solve
-    def solve(self, run: RunSpec, case: str, cache: dict) -> Solve:
+    def key(self, run: RunSpec, active, contact, k_s):
+        return (run.k_theta, active, contact, k_s if contact else None)
+
+    def solve(self, run: RunSpec, case: str, cache: dict, k_s: float | None = None) -> Solve:
         m = self.m
         L = self.loads_for(case)
+        k_s = self.k_s if k_s is None else k_s
         nb = len(m.bearings)
         active = tuple([run.bearing] * nb)
+        contact = tuple([True] * len(m.ground))
         seen = []
         it = 0
         while True:
             it += 1
-            key = (run.k_theta, active)
+            key = self.key(run, active, contact, k_s)
             if key not in cache:
-                cache[key] = fem.Solver(self.K_for(run.k_theta, active), m.all_fixed)
+                cache[key] = fem.Solver(self.K_for(run.k_theta, active, contact, k_s), m.all_fixed)
             S = cache[key]
             u = S.solve(L.F)
-            if not run.bearing:
+            new = active
+            if run.bearing:
+                gaps = np.array([(s.rel(u)[:3] @ b.n) for s, b in zip(self.bear_springs, m.bearings)])
+                # rel = motion of end_of (b side) relative to bears_on at X; closing if > 0
+                new = tuple(bool(g > 0) for g in gaps)
+            new_c = contact
+            if m.ground_mode:
+                new_c = tuple(bool(dz < 0) for dz in self.contact_gap(u))   # pressed in = in contact
+                if not any(new_c):
+                    raise RuntimeError(f"{run.label}/{case}: the stand lifts off the ground everywhere")
+            if new == active and new_c == contact:
                 break
-            gaps = np.array([(s.rel(u)[:3] @ b.n) for s, b in zip(self.bear_springs, m.bearings)])
-            # rel = motion of end_of (b side) relative to bears_on at X; closing if > 0
-            new = tuple(bool(g > 0) for g in gaps)
-            if new == active:
-                break
-            if new in seen or it > 60:
+            if (new, new_c) in seen or it > 80:
                 break                       # cycling: keep the last solved (consistent) set
-            seen.append(active)
-            active = new
+            seen.append((active, contact))
+            active, contact = new, new_c
         bearing_forces = np.array([
             (s.Ks[:3, :3] @ s.rel(u)[:3]) @ b.n if on else 0.0
             for s, b, on in zip(self.bear_springs, m.bearings, active)])
-        return self._post(run, case, u, L, active, it, bearing_forces, S)
+        s = self._post(run, case, u, L, active, it, bearing_forces, S, contact, k_s)
+        if m.ground_mode:
+            # every contact pattern is its own dense factorisation (~100 MB at this size):
+            # do the buckling eigenproblem now, then free all contact-specific solvers
+            self.buckling(s, cache)
+            full = tuple([True] * len(m.ground))
+            for k in [k for k in cache if len(k) > 2 and k[2] and k[2] != full]:
+                del cache[k]
+        return s
 
-    def _post(self, run, case, u, L, active, it, bearing_forces, S) -> Solve:
+    def _post(self, run, case, u, L, active, it, bearing_forces, S, contact=(), k_s=np.nan) -> Solve:
         m, si = self.m, self.si
         E, G = m.E, m.G
         internal, axial = {}, np.zeros(len(m.elements))
@@ -169,7 +227,12 @@ class Engine:
         tilt = np.degrees(np.hypot(ut[3], ut[4]))
         # equilibrium audit: applied + base (in F) + reactions must vanish
         R = np.zeros(m.n_dof)
-        R[S.fixed] = S.reactions(u, L.F)
+        Fc = None
+        if m.ground_mode:
+            Fc, Gv = self.ground_forces(u, contact, k_s)
+            R += Gv                                # ground springs are part of K: not in S.reactions
+        if len(S.fixed):
+            R[S.fixed] += S.reactions(u, L.F)
         T = L.summary["thrust_factored_N"]
         res = loads.nodal_resultant(L.F + R, m.x, L.base_centroid)
         eq = float(np.abs(res).max() / T)
@@ -178,12 +241,14 @@ class Engine:
         rel = float(np.abs(restraint).max() / T)
         plane = float(np.abs(R[m.fixed_plane]).max() / T) if m.fixed_plane else 0.0
         return Solve(run, case, u, ur, L, active, it, bearing_forces, internal, axial, Wb, member_rows,
-                     joint_rows, float(disp[i_max]), i_max, ut[:3].copy(), float(tilt), eq, rel, plane)
+                     joint_rows, float(disp[i_max]), i_max, ut[:3].copy(), float(tilt), eq, rel, plane,
+                     contact=tuple(contact), ground_F=Fc, k_s=k_s)
 
     # ---------------------------------------------------------------- stability
     def buckling(self, s: Solve, cache) -> None:
         m = self.m
-        S = cache[(s.run.k_theta, s.active)]
+        key = self.key(s.run, s.active, s.contact, s.k_s)
+        S = cache.get(key) or fem.Solver(self.K_for(s.run.k_theta, s.active, s.contact, s.k_s), m.all_fixed)
         Kg = fem.assemble_kg(m.n_nodes, m.elements, s.axial)
         f = S.free
         lam, phi = fem.buckling_lambda(S.Kff, Kg[np.ix_(f, f)])
@@ -196,9 +261,10 @@ class Engine:
     def eig_check(self, run: RunSpec, cache) -> dict:
         m = self.m
         active = tuple([run.bearing] * len(m.bearings))
-        key = (run.k_theta, active)
+        contact = tuple([True] * len(m.ground))
+        key = self.key(run, active, contact, self.k_s)
         if key not in cache:
-            cache[key] = fem.Solver(self.K_for(run.k_theta, active), m.all_fixed)
+            cache[key] = fem.Solver(self.K_for(run.k_theta, active, contact, self.k_s), m.all_fixed)
         S = cache[key]
         vals, vecs = fem.lowest_modes(S.Kff, k=6)
         tol = self.si.checks.mech_eig_rel_tol
@@ -256,7 +322,8 @@ def run_study(model: StandModel, p, cases: list[str] | None = None, log=print) -
             s.note = "mechanism - pinned result invalid; joints carry moment"
     t2 = time.time()
     for s in solves:
-        eng.buckling(s, cache)
+        if not np.isfinite(s.lam):
+            eng.buckling(s, cache)
     t3 = time.time()
 
     # ---- k_theta sweep on the governing case (worst item over valid solves)
@@ -278,9 +345,38 @@ def run_study(model: StandModel, p, cases: list[str] | None = None, log=print) -
         s.valid = s.max_disp <= d_lim or f >= si.springs.k_theta_rigid
         if not s.valid:
             s.note = f"mechanism-dominated: max displacement {s.max_disp * 1e3:.3g} mm > {d_lim * 1e3:.3g} mm"
-        eng.buckling(s, cache)
+        if not np.isfinite(s.lam):
+            eng.buckling(s, cache)
         sweep.append(s)
     t4 = time.time()
+    gsweep = []
+    if model.ground_mode:
+        for ks in si.ground.k_s_sweep:
+            if abs(ks - eng.k_s) < 1e-6 * eng.k_s:
+                gsweep.append((ks, [s for s in solves if s.run.name == "R"]))
+                continue
+            gsweep.append((ks, [eng.solve(r, c, cache, ks) for r in default_runs(p) if r.name == "R"
+                                for c in cases]))
+    t5 = time.time()
     return Study(model, solves, sweep, gov.case, gov.run.bearing, mech_cases, eig, eng.caps,
                  {"eig": t1 - t0, "solve": t2 - t1, "buckling": t3 - t2, "sweep": t4 - t3,
-                  "total": t4 - t0})
+                  "ground_sweep": t5 - t4, "total": t5 - t0}, eng.bags, gsweep)
+
+
+# ---------------------------------------------------------------- ground mode helpers
+def base_joint_sf(study: Study, s: Solve) -> float:
+    """Lowest SF of any bracket leg on a joint that involves a base member."""
+    base = set(study.model.geo.base_members)
+    v = [r["SF"] for r in s.joint_rows if np.isfinite(r["SF"]) and (r["a"] in base or r["b"] in base)]
+    return min(v) if v else np.inf
+
+
+def ground_stats(study: Study, s: Solve, mu: float) -> dict:
+    m = study.model
+    F = s.ground_F
+    q = np.array([F[i, 2] / c.trib if c.trib > 0 else 0.0 for i, c in enumerate(m.ground)])
+    on = np.array(s.contact, bool)
+    N = float(F[:, 2].sum())
+    H = float(np.hypot(F[:, 0].sum(), F[:, 1].sum()))
+    return {"N": N, "H": H, "slide_FS": mu * N / H if H > 1e-6 * max(N, 1.0) else np.inf, "q_peak": float(q.max()),
+            "contact": float(on.mean()), "base_joint_SF": base_joint_sf(study, s)}

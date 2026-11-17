@@ -11,7 +11,7 @@ import importlib
 import time
 from pathlib import Path
 
-FAMILIES = ["stand_sf", "ranking", "joint_terms", "cases", "forces", "deflection", "base_load", "sweep"]
+FAMILIES = ["stand_sf", "ranking", "joint_terms", "cases", "forces", "deflection", "base_load", "ground", "sweep"]
 
 
 def plan(study, env, p):
@@ -31,8 +31,9 @@ def render_all(study, env, p, out: Path, log=print) -> list[Path]:
         for f in out.glob("*.svg"):
             f.unlink()
     items = plan(study, env, p)
+    present = [n for n, _ in items]
     for name, build in items:
-        files += R.save_fig(build(), out / R.fig_stem(name), p.si.output.svg)
+        files += R.save_fig(build(), out / R.fig_stem(name, present), p.si.output.svg)
     log(f"{len(items)} figures in {time.time() - t0:.1f} s")
     return files
 

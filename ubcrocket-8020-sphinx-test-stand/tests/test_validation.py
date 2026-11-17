@@ -269,3 +269,38 @@ def test_2d_mode_runs(p):
     for s in st.solves:
         assert s.eq_residual < 1e-6 and s.restraint_rel < p.si.checks.restraint_tol_rel
         assert s.loads.summary["thrust_factored_N"] == pytest.approx(0.5 * 2224)
+
+
+# --------------------------------------------------------------------------- ground mode
+@pytest.fixture(scope="module")
+def ground_solves():
+    pg = params.load(overrides={"base.mode": "ground"})
+    g = geometry.load(pg.si.inputs.geometry, pg.si.inputs.brackets)
+    m = model.build(g, pg, "3d")
+    eng = analysis.Engine(m, pg)
+    cache = {}
+    run = analysis.RunSpec("R", pg.si.springs.k_theta_rigid, True)
+    return pg, eng, [eng.solve(run, c, cache) for c in ("none", "+y")]
+
+
+def test_ground_equilibrium_and_compression_only(ground_solves):
+    """Applied loads + bags + ground springs balance; every closed contact pushes up,
+    every open contact carries nothing (the ground never pulls)."""
+    pg, eng, sols = ground_solves
+    for s in sols:
+        assert s.eq_residual < 1e-6
+        Fz = s.ground_F[:, 2]
+        on = np.array(s.contact)
+        assert (Fz[on] >= -1e-9).all()
+        assert np.allclose(s.ground_F[~on], 0.0)
+        # total ground reaction = bags + weight - thrust
+        b = eng.bags
+        W = b.total_kg * pg.si.model.g
+        assert Fz.sum() == pytest.approx(W - s.loads.applied_resultant[2], rel=1e-6)
+
+
+def test_sandbags_meet_tipping_FS(ground_solves):
+    pg, eng, _ = ground_solves
+    for ch in eng.bags.checks:
+        assert ch["FS_tip"] >= pg.si.sandbags.FS_tip - 1e-9
+        assert ch["FS_lift"] >= pg.si.sandbags.FS_tip - 1e-9

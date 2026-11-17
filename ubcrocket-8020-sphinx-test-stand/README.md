@@ -22,6 +22,7 @@ source .venv/bin/activate
 |---|---|
 | full 3D run → `results/3d/` | `python -m stand run` |
 | 2D side frame → `results/2d/` | `python -m stand run --2d` |
+| base on gravel + sandbags → `results/3d_ground/` (~3 min) | `python -m stand run --ground` |
 | one load case → `results/variants/3d_case_px/` | `python -m stand run --case +x` |
 | try a value without editing files → `results/variants/3d_DF2.5/` | `python -m stand run --set loads.DF=2.5` |
 | re-draw figures only (no solve, ~10 s) | `python -m stand plots` |

@@ -55,7 +55,181 @@ def base_q(theta, p, c) -> np.ndarray:
     return np.array([cx - w * dy, cy + w * dx, a + bx * dx + by * dy])
 
 
-def build_case(model: StandModel, p, case: str) -> CaseLoads:
+@dataclass
+class Bags:
+    """Sandbags sized by rigid-body statics (ground mode)."""
+    stations: list[tuple[int, float, float]]      # (member, centre s, length) SI
+    kg_each: float
+    kg_needed: float                              # before rounding
+    gov: str                                      # what sized them
+    hull: np.ndarray                              # footprint polygon (plan, CCW), m
+    z0: float                                     # ground level
+    checks: list[dict] = field(default_factory=list)   # per case: worst edge, FS achieved
+
+    @property
+    def total_kg(self) -> float:
+        return self.kg_each * len(self.stations)
+
+    def points(self, model: StandModel) -> np.ndarray:
+        return np.array([model.members[mid].point(s) for mid, s, _ in self.stations])
+
+
+def _applied(model: StandModel, p, case: str):
+    """Point loads + element loads of the applied (non-base) loads, and their resultant
+    split into destabilising (thrust, misalignment) and gravity parts, about c."""
+    si = p.si
+    sc = model.load_scale
+    T = si.loads.thrust * si.loads.DF
+    sx, sy = parse_case(case)
+    if model.mode == "2d" and sy:
+        raise ValueError(f"2D mode has no out-of-plane case ({case})")
+    tp = model.thrust_point
+    dest = [(model.thrust_node, np.array([0, 0, sc * T]), tp, f"thrust {T:.0f} N x{sc:g}")]
+    grav = [(model.thrust_node, np.array([0, 0, -sc * si.loads.rocket_weight]), tp, "rocket weight")]
+    if sx or sy:
+        Fh = sc * T * np.array([sx * si.loads.misalign_x, sy * si.loads.misalign_y, 0.0])
+        dest.append((model.thrust_node, Fh, tp, f"misalignment {case}"))
+    for pl in model.lumped:
+        grav.append((pl.node, pl.F, pl.at, pl.what))
+    elem_q: dict[int, list[np.ndarray]] = {}
+    if si.loads.self_weight:
+        for k, e in enumerate(model.elements):
+            q = np.array([0, 0, -e.sec.w])
+            elem_q[k] = [q.copy(), q.copy()]
+    X = model.x
+    base = model.base_elements
+    Ls = np.array([model.elements[k].L for k in base])
+    mids = np.array([0.5 * (X[model.elements[k].n1] + X[model.elements[k].n2]) for k in base])
+    c = (Ls[:, None] * mids).sum(0) / Ls.sum()
+    R_dest, R_grav = np.zeros(6), np.zeros(6)
+    for (_, F, at, _) in dest:
+        R_dest += _point_resultant(F, at, c)
+    for (_, F, at, _) in grav:
+        R_grav += _point_resultant(F, at, c)
+    for k, (q1, q2) in elem_q.items():
+        e = model.elements[k]
+        R_grav += _segment_resultant(X[e.n1], X[e.n2], q1, q2, c)
+    return dest + grav, elem_q, R_dest, R_grav, c, Ls
+
+
+def footprint(model: StandModel) -> tuple[np.ndarray, float]:
+    """Plan convex hull (CCW) of the base member ends, and ground level (beam undersides)."""
+    from scipy.spatial import ConvexHull
+    pts = np.array([q[:2] for mid in model.geo.base_members if mid in model.members
+                    for q in (model.members[mid].p0, model.members[mid].p1)])
+    h = ConvexHull(pts)
+    z0 = min(c.P[2] for c in model.ground) if model.ground else float(model.x[model.base_nodes][:, 2].min())
+    return pts[h.vertices], z0
+
+
+def edge_moment(R: np.ndarray, c: np.ndarray, A: np.ndarray, t: np.ndarray) -> float:
+    """Moment of resultant R = [F; M about c] about the line through A along t (+ = tips over it
+    when t runs CCW round the footprint)."""
+    return float((R[3:] + np.cross(c - A, R[:3])) @ t)
+
+
+def size_sandbags(model: StandModel, p, cases: list[str]) -> Bags:
+    """Equal bag mass per station so that, as a rigid body on its footprint, the stand has
+    FS_tip against tipping over every footprint edge and against lift, in every case:
+        W * sum_k d_k,e  >=  FS * M_dest,e - M_grav,e        (per edge e)
+        n * W            >=  FS * F_up - W_frame             (lift)
+    d_k,e = inward distance of bag k from edge e (plan)."""
+    si = p.si
+    sb = si.sandbags
+    stations = [(int(m), float(s) * 1e-3, float(L) * 1e-3) for m, s, L in sb.stations]
+    for mid, s, L in stations:
+        if mid not in model.members or not (0 <= s - L / 2 and s + L / 2 <= model.members[mid].L + 1e-9):
+            raise ValueError(f"sandbag station M{mid} @ {s * 1e3:.0f} mm (length {L * 1e3:.0f}) is off its member")
+    hull, z0 = footprint(model)
+    bp = np.array([model.members[mid].point(s) for mid, s, _ in stations])
+    FS = sb.FS_tip
+    need, gov, checks = 0.0, "", []
+    for case in cases:
+        _, _, Rd, Rg, c, _ = _applied(model, p, case)
+        worst = None
+        for i in range(len(hull)):
+            A2, B2 = hull[i], hull[(i + 1) % len(hull)]
+            A = np.r_[A2, z0]
+            t = np.r_[(B2 - A2) / np.linalg.norm(B2 - A2), 0.0]
+            Md, Mg = edge_moment(Rd, c, A, t), -edge_moment(Rg, c, A, t)    # Mg > 0 stabilises
+            rel = bp[:, :2] - A2
+            d = t[0] * rel[:, 1] - t[1] * rel[:, 0]                        # inward distance
+            if Md <= 0:
+                continue
+            w = (FS * Md - Mg) / d.sum() if d.sum() > 0 else np.inf
+            if worst is None or w > worst[0]:
+                worst = (w, i, Md, Mg, d.sum())
+            if w > need:
+                need, gov = w, f"tipping over footprint edge {i} ({A2[0]*1e3:.0f},{A2[1]*1e3:.0f})->" \
+                               f"({B2[0]*1e3:.0f},{B2[1]*1e3:.0f}) mm, case {case}"
+        w_lift = (FS * Rd[2] + Rg[2]) / len(stations)                       # Rg[2] < 0 (weight)
+        if w_lift > need:
+            need, gov = w_lift, f"lift, case {case}"
+        checks.append({"case": case, "edge": worst[1] if worst else None, "M_over": worst[2] if worst else 0.0,
+                       "M_frame": worst[3] if worst else 0.0, "sum_d": worst[4] if worst else 0.0,
+                       "F_up": Rd[2], "W_frame": -Rg[2]})
+    g = si.model.g
+    kg = max(need, 0.0) / g
+    kg_r = float(np.ceil(kg / sb.round_to - 1e-9) * sb.round_to) if sb.round_to > 0 else kg
+    bags = Bags(stations, kg_r, kg, gov, hull, z0, checks)
+    for ch in bags.checks:                         # FS actually achieved with the rounded bags
+        W = kg_r * g
+        ch["FS_tip"] = ((W * ch["sum_d"] + ch["M_frame"]) / ch["M_over"]) if ch["M_over"] > 0 else np.inf
+        ch["FS_lift"] = (W * len(stations) + ch["W_frame"]) / ch["F_up"] if ch["F_up"] > 0 else np.inf
+    return bags
+
+
+def build_case(model: StandModel, p, case: str, bags: Bags | None = None) -> CaseLoads:
+    if model.ground_mode:
+        return _build_ground_case(model, p, case, bags)
+    return _build_line_case(model, p, case)
+
+
+def _build_ground_case(model: StandModel, p, case: str, bags: Bags) -> CaseLoads:
+    """Applied loads + sandbags; the ground springs supply the rest (no assumed base load)."""
+    si = p.si
+    point, elem_q, Rd, Rg, c, Ls = _applied(model, p, case)
+    X = model.x
+    W = bags.kg_each * si.model.g
+    R_bags = np.zeros(6)
+    for mid, s, L in bags.stations:          # uniform line load over the bag, element by element
+        a, b = s - L / 2, s + L / 2
+        q = np.array([0, 0, -W / L])
+        for k in model.member_elements[mid]:
+            e = model.elements[k]
+            s1, s2 = model.node_s[e.n1], model.node_s[e.n2]
+            ov = max(0.0, min(b, s2) - max(a, s1))
+            if ov <= 0:
+                continue
+            qe = q * ov / e.L                 # exact total force, smeared over the element
+            cur = elem_q.setdefault(k, [np.zeros(3), np.zeros(3)])
+            cur[0] = cur[0] + qe
+            cur[1] = cur[1] + qe
+            R_bags += _segment_resultant(X[e.n1], X[e.n2], qe, qe, c)
+    F = np.zeros(model.n_dof)
+    for (n, Fp, at, _) in point:
+        F[6 * n:6 * n + 3] += Fp
+        F[6 * n + 3:6 * n + 6] += np.cross(at - X[n], Fp)
+    feq_local = {}
+    for k, (q1, q2) in elem_q.items():
+        e = model.elements[k]
+        fl = fem.linear_load_feq(e.L, e.R @ q1, e.R @ q2)
+        feq_local[k] = fl
+        F[e.dofs] += fem.big_T(e.R).T @ fl
+    g = si.model.g
+    R_app = Rd + Rg
+    summary = {
+        "thrust_factored_N": model.load_scale * si.loads.thrust * si.loads.DF,
+        "Fz_applied_N": R_app[2], "sandbag_net_kg": R_app[2] / g, "sandbag_uniform_kg": np.nan,
+        "F_horizontal_N": float(np.hypot(R_app[0], R_app[1])),
+        "M_overturn_Nm": float(np.hypot(R_app[3], R_app[4])), "M_yaw_Nm": float(R_app[5]),
+        "bags_kg_each": bags.kg_each, "bags_total_kg": bags.total_kg, "bags_gov": bags.gov,
+    }
+    return CaseLoads(case, F, {k: (v[0], v[1]) for k, v in elem_q.items()}, feq_local, point,
+                     R_app, R_bags, np.zeros(6), c, (0.0, 0.0), float(Ls.sum()), summary)
+
+
+def _build_line_case(model: StandModel, p, case: str) -> CaseLoads:
     si = p.si
     sc = model.load_scale
     T = si.loads.thrust * si.loads.DF

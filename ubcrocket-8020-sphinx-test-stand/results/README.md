@@ -6,7 +6,8 @@ tables and every figure inline.
 
 | folder | what |
 |---|---|
-| [`3d/`](3d/summary.md) | full 3D stand, default parameters (**the design result**) |
+| [`3d/`](3d/summary.md) | full 3D stand, brief's base model: sandbag line load that exactly balances the stand |
+| [`3d_ground/`](3d_ground/summary.md) | full 3D stand resting on compression-only gravel springs with discrete sandbags (`run --ground`): real ground reaction, bag sizing, lift-off |
 | [`2d/`](2d/summary.md) | 2D side frame (cross-check of the 3D model, in-plane cases only) |
 | `variants/` | runs with changed parameters or a subset of cases, e.g. `variants/3d_DF2.5/` (created by `--set` / `--case`) |
 

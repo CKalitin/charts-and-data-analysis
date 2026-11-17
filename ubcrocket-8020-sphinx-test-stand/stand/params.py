@@ -25,7 +25,7 @@ DEFAULT_PARAMS_PATH = PROJECT_DIR / "params.yaml"
 UNIT_SI = {
     "mm": 1e-3, "mm2": 1e-6, "mm4": 1e-12, "m": 1.0,
     "N": 1.0, "N/m": 1.0, "MPa": 1e6, "GPa": 1e9,
-    "m/s2": 1.0, "deg": 1.0, "-": 1.0, "": 1.0,
+    "m/s2": 1.0, "deg": 1.0, "-": 1.0, "": 1.0, "MN/m3": 1e6, "kg": 1.0,
 }
 
 
@@ -126,6 +126,24 @@ SCHEMA: list[Param] = [
     S("model.g_m_s2", 9.80665, "m/s2", "gravity, for sandbag mass"),
     S("model.front_frame_y_mm", -20.0, "mm", "2D mode: side frame kept"),
     S("model.front_frame_tol_mm", 5.0, "mm", "2D mode: |y - front_frame_y| tolerance"),
+
+    # --- base support -----------------------------------------------------------
+    S("base.mode", "line", "",
+      "line = brief: sandbag line load that exactly balances the stand | ground = base on "
+      "compression-only gravel springs + discrete sandbags (3D only; `run --ground`)", "assumption"),
+    S("ground.k_s_MN_per_m3", 150.0, "MN/m3",
+      "modulus of subgrade reaction, compacted gravel (typical 100-200)", "assumption"),
+    S("ground.k_s_sweep_MN_per_m3", [50.0, 150.0, 500.0], "MN/m3", "sensitivity: run R re-solved at each k_s"),
+    S("ground.contact_width_mm", 25.4, "mm", "width of extrusion face on the ground"),
+    S("ground.spacing_mm", 25.0, "mm", "base members split this fine; one contact spring per node"),
+    S("ground.kh_ratio", 0.5, "-", "horizontal / vertical contact stiffness (friction, sticking)", "assumption"),
+    S("ground.mu", 0.5, "-", "aluminium on gravel friction, for the sliding check", "assumption"),
+    S("sandbags.stations", [[19, 225.0, 300.0], [25, 225.0, 300.0], [22, 522.5, 155.0], [22, 77.5, 155.0]], "",
+      "bags: [member, centre along member mm, length mm]; default = thrust-end outriggers M19/M25 "
+      "under the thrust line + both stubs of cross beam M22", "assumption"),
+    S("sandbags.FS_tip", 1.5, "-", "stabilising / overturning moment about every footprint edge (and lift)",
+      "assumption"),
+    S("sandbags.round_to_kg", 5.0, "kg", "bag mass per station rounded up to this"),
 
     # --- output -----------------------------------------------------------------
     S("output.dir", "results", "", "results root: <dir>/3d, <dir>/2d, <dir>/variants/<name>"),

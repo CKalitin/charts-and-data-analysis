@@ -72,6 +72,20 @@ class BearingSpring:
 
 
 @dataclass
+class GroundContact:
+    node: int
+    member: int
+    trib: float             # tributary length along the member (m)
+    P: np.ndarray           # contact point (beam underside)
+    r: np.ndarray           # P - x[node]
+
+    def T(self) -> np.ndarray:
+        """3x6: displacement of the contact point from the node's 6 DOFs (u + theta x r)."""
+        rx = np.array([[0, -self.r[2], self.r[1]], [self.r[2], 0, -self.r[0]], [-self.r[1], self.r[0], 0]])
+        return np.hstack([np.eye(3), -rx])
+
+
+@dataclass
 class PointLoad:
     node: int
     F: np.ndarray           # N, global
@@ -108,6 +122,11 @@ class StandModel:
     stubs: dict[int, Member] = field(default_factory=dict)    # 2D joint stubs (no elements)
     E: float = 0.0
     G: float = 0.0
+    ground: list = field(default_factory=list)    # ground mode: GroundContact per base node
+
+    @property
+    def ground_mode(self) -> bool:
+        return bool(self.ground)
 
     def geom(self, mid: int) -> Member:
         return self.members[mid] if mid in self.members else self.stubs[mid]
@@ -304,6 +323,9 @@ def build(geo: Geometry, p, mode: str = "3d") -> StandModel:
             joints = [j for j in joints if j.brackets or j.bearing]
 
     # ---- stations along each member
+    ground_mode = si.base.mode == "ground"
+    if ground_mode and mode != "3d":
+        raise ModelError("base.mode = ground is 3D only")
     merge = si.model.station_merge
     stations: dict[int, list[float]] = {i: [0.0, m.L] for i, m in members.items()}
     for j in joints:
@@ -326,7 +348,8 @@ def build(geo: Geometry, p, mode: str = "3d") -> StandModel:
             merged.append(s)
         fine = [merged[0]]
         for s0, s1 in zip(merged[:-1], merged[1:]):
-            n = max(1, int(np.ceil((s1 - s0) / si.model.max_subelement - 1e-9)))
+            msub = (si.ground.spacing if ground_mode and mid in geo.base_members else si.model.max_subelement)
+            n = max(1, int(np.ceil((s1 - s0) / msub - 1e-9)))
             fine += list(np.linspace(s0, s1, n + 1)[1:])
         sec, R = member_section(m, p)
         sections[mid] = sec
@@ -429,11 +452,28 @@ def build(geo: Geometry, p, mode: str = "3d") -> StandModel:
     if mode == "2d":
         for n in range(len(x)):
             fixed_plane += [6 * n + 1, 6 * n + 3, 6 * n + 5]       # uy, rx, rz
+    ground = []
+    if ground_mode:
+        # the ground carries the stand: no 3-2-1 restraint; one contact spring per base node,
+        # at the beam underside (half depth below the centreline)
+        fixed, desc = [], ["none: base on compression-only ground springs"]
+        z_c = min(x[n][2] for n in base_nodes)
+        for mid in base_members:
+            ns = member_nodes[mid]
+            ss = [node_s[n] for n in ns]
+            half = 0.5 * sections[mid].depth_z if hasattr(sections[mid], "depth_z") else 0.0127
+            for k, n in enumerate(ns):
+                lo = ss[k] - (ss[k] - ss[k - 1]) / 2 if k > 0 else ss[k]
+                hi = ss[k] + (ss[k + 1] - ss[k]) / 2 if k < len(ns) - 1 else ss[k]
+                P = np.array([x[n][0], x[n][1], z_c - half])
+                ground.append(GroundContact(n, mid, hi - lo, P, P - np.asarray(x[n])))
+        notes.append(f"ground mode: {len(ground)} contact springs on {len(base_members)} base members, "
+                     f"no 3-2-1 restraint")
 
     return StandModel(geo, mode, members, sections, x, node_member, node_s, member_nodes, elements,
                       member_elements, joint_node, brackets, bearings, joints, thrust_node,
                       thrust_point, load_scale, base_elements, base_nodes, fixed, fixed_plane, desc, lumped,
-                      notes, stub_members, E, G)
+                      notes, stub_members, E, G, ground)
 
 
 def sections_weight(m: Member, p) -> float:

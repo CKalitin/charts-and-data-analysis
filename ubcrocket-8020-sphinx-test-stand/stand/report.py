@@ -9,6 +9,7 @@ from pathlib import Path
 import numpy as np
 import yaml
 
+from . import analysis
 from . import params as params_mod
 from .analysis import Study
 from .envelope import Envelope
@@ -72,7 +73,7 @@ def header(p, m, mode: str, case_filter) -> str:
     out.append(dim(f"model   {len(m.members)} members · {len(m.elements)} elements · {m.n_nodes} nodes · "
                    f"{m.n_dof} DOF · {len(m.joints)} joints · {len(m.brackets)} bracket springs · "
                    f"{len(m.bearings)} bearings"))
-    out.append(dim(f"restr   3-2-1: " + " | ".join(m.restraint_desc)))
+    out.append(dim(("restr   " if m.ground_mode else "restr   3-2-1: ") + " | ".join(m.restraint_desc)))
     for n in m.notes:
         out.append(yellow(f"note    {n}"))
     return "\n".join(out)
@@ -101,8 +102,17 @@ def console(study: Study, env: Envelope, p) -> str:
                + (green("ok") if ok else red("FAIL"))
                + (dim(f" · mechanism solves (round-off) {max(s.restraint_rel for s in inv):.0e}") if inv else ""))
     sb = env.sandbag
-    out.append(f"base    sandbag >= {bold(f'{sb['net_kg']:.1f} kg')} (net uplift {sb['uplift_N']:.0f} N / g)"
-               f" · {sb['uniform_kg']:.0f} kg if spread uniformly (overturning {sb['M_overturn_Nm']:.0f} N·m)")
+    if study.bags is not None:
+        b = study.bags
+        gs = [analysis.ground_stats(study, s, si.ground.mu) for s in val if s.run.name == "R"]
+        out.append(f"base    ground springs k_s {si.ground.k_s / 1e6:.0f} MN/m³ · sandbags "
+                   f"{bold(f'{len(b.stations)} x {b.kg_each:.0f} kg = {b.total_kg:.0f} kg')} (FS {si.sandbags.FS_tip:g}: {b.gov})")
+        out.append(f"ground  contact {100 * min(g['contact'] for g in gs):.0f}-{100 * max(g['contact'] for g in gs):.0f} % of base"
+                   f" · peak {max(g['q_peak'] for g in gs) / 1e3:.1f} kN/m · sliding FS ≥ {min(g['slide_FS'] for g in gs):.1f}"
+                   f" · lowest base-joint SF {min(g['base_joint_SF'] for g in gs):.2f} (run R)")
+    else:
+        out.append(f"base    sandbag >= {bold(f'{sb['net_kg']:.1f} kg')} (net uplift {sb['uplift_N']:.0f} N / g)"
+                   f" · {sb['uniform_kg']:.0f} kg if spread uniformly (overturning {sb['M_overturn_Nm']:.0f} N·m)")
     lam, lk = env.lam
     out.append(f"frame   buckling λ = {sf_str(lam, tm, 0)}  {dim(lk)}")
     th = env.thrust
@@ -189,11 +199,20 @@ def summary_md(study: Study, env: Envelope, p, figures: list[str] | None = None)
              f"(x {th['disp_mm'][0]:+.2f}, y {th['disp_mm'][1]:+.2f}, z {th['disp_mm'][2]:+.2f}) | {th['disp_solve']} |")
     L.append(f"| thrust-point tilt | {th['tilt_deg']:.3f}° {'**> ' + format(si.checks.tilt_limit, 'g') + '° flag**' if th['tilt_flag'] else '(ok)'} "
              f"| {th['tilt_solve']} |")
-    L.append(f"| sandbag mass (net uplift / g) | **{sb['net_kg']:.1f} kg** ({sb['uplift_N']:.0f} N) | all cases |")
-    L.append(f"| sandbag mass if spread uniformly on the base | {sb['uniform_kg']:.0f} kg "
+    if study.bags is not None:
+        b = study.bags
+        L.append(f"| sandbags (FS {si.sandbags.FS_tip:g} on tipping and lift) | **{len(b.stations)} × {b.kg_each:.0f} kg "
+                 f"= {b.total_kg:.0f} kg** | {b.gov} |")
+    L.append(f"| sandbag mass (net uplift / g, FS 1) | **{sb['net_kg']:.1f} kg** ({sb['uplift_N']:.0f} N) | all cases |")
+    if study.bags is None:
+      L.append(f"| sandbag mass if spread uniformly on the base | {sb['uniform_kg']:.0f} kg "
              f"(overturning {sb['M_overturn_Nm']:.0f} N·m about the base centroid) | worst case |")
-    L.append(f"| 3-2-1 restraint reactions | {worst_r:.1e} × thrust "
-             f"({'ok' if worst_r < si.checks.restraint_tol_rel else 'FAIL'}) | all valid solves |\n")
+    if study.bags is None:
+        L.append(f"| 3-2-1 restraint reactions | {worst_r:.1e} × thrust "
+                 f"({'ok' if worst_r < si.checks.restraint_tol_rel else 'FAIL'}) | all valid solves |\n")
+    else:
+        L.append("")
+        L += ground_md(study, p)
     L.append("Displacements are relative to the best-fit rigid motion of the base nodes (i.e. to the ground).\n")
     L.append("**In this folder:** [figures](#figures) (below, and in `figures/`) · `viewer.html` (interactive 3D, "
              "click any bracket for its free-body diagram; download and open locally) · `tables/members.csv`, "
@@ -268,7 +287,7 @@ def summary_md(study: Study, env: Envelope, p, figures: list[str] | None = None)
         from .charts._render import fig_stem
         L.append("\n## Figures\n")
         for name in figures:
-            L.append(f"### {FIGURE_TITLES.get(name, name)}\n\n![{name}](figures/{fig_stem(name)}.png)\n")
+            L.append(f"### {FIGURE_TITLES.get(name, name)}\n\n![{name}](figures/{fig_stem(name, figures)}.png)\n")
     return "\n".join(L) + "\n"
 
 
@@ -283,6 +302,8 @@ FIGURE_TITLES = {
     "deflection": "Deflected shape (worst-tilt case)",
     "buckling_mode": "Frame buckling mode",
     "sandbag_demand": "Sandbag demand on the base",
+    "ground_reaction": "Ground reaction on the base (governing case)",
+    "ground_by_case": "Ground reaction by load case (plan)",
     "ktheta_sweep": "SF vs joint rotational stiffness",
 }
 
@@ -319,7 +340,8 @@ tables and every figure inline.
 
 | folder | what |
 |---|---|
-| [`3d/`](3d/summary.md) | full 3D stand, default parameters (**the design result**) |
+| [`3d/`](3d/summary.md) | full 3D stand, brief's base model: sandbag line load that exactly balances the stand |
+| [`3d_ground/`](3d_ground/summary.md) | full 3D stand resting on compression-only gravel springs with discrete sandbags (`run --ground`): real ground reaction, bag sizing, lift-off |
 | [`2d/`](2d/summary.md) | 2D side frame (cross-check of the 3D model, in-plane cases only) |
 | `variants/` | runs with changed parameters or a subset of cases, e.g. `variants/3d_DF2.5/` (created by `--set` / `--case`) |
 
@@ -341,3 +363,42 @@ def write_index(root: Path) -> Path:
     root.mkdir(parents=True, exist_ok=True)
     (root / "README.md").write_text(RESULTS_INDEX)
     return root / "README.md"
+
+
+def ground_md(study, p) -> list[str]:
+    """Ground-contact section: bags, per-case contact, k_s sensitivity."""
+    si, b, m = p.si, study.bags, study.model
+    g = si.model.g
+    L = ["## Ground contact\n",
+         f"Base on {len(m.ground)} compression-only contact springs (k_s = {si.ground.k_s / 1e6:.0f} MN/m³, "
+         f"compacted gravel; {si.ground.contact_width * 1e3:.1f} mm wide; horizontal = {si.ground.kh_ratio:g} × "
+         f"vertical). No assumed base load: the ground pushes up only where the base presses down.\n",
+         "**Sandbags** (rigid-body statics, equal mass per station, rounded up to "
+         f"{si.sandbags.round_to:g} kg):\n",
+         "| station | where | mass |\n|---|---|---|"]
+    for (mid, s0, Lb), P in zip(b.stations, b.points(m)):
+        L.append(f"| M{mid} @ {s0 * 1e3:.0f} mm, {Lb * 1e3:.0f} mm long | x {P[0] * 1e3:.0f}, y {P[1] * 1e3:.0f} mm "
+                 f"| {b.kg_each:.0f} kg |")
+    L.append(f"\nSized by {b.gov} (needs {b.kg_needed:.1f} kg each before rounding).\n")
+    L.append("| case | FS tipping | FS lift | contact | peak q kN/m | sliding FS (μ "
+             f"{si.ground.mu:g}) | lowest base-joint SF |\n|---|---|---|---|---|---|---|")
+    for ch in b.checks:
+        sols = [s for s in study.solves if s.valid and s.run.name == "R" and s.case == ch["case"]]
+        gs = [analysis.ground_stats(study, s, si.ground.mu) for s in sols]
+        L.append(f"| {ch['case']} | {ch['FS_tip']:.2f} | {ch['FS_lift']:.2f} | "
+                 f"{100 * min(x['contact'] for x in gs):.0f} % | {max(x['q_peak'] for x in gs) / 1e3:.1f} | "
+                 f"{_fs(min(x['slide_FS'] for x in gs))} | {min(x['base_joint_SF'] for x in gs):.2f} |")
+    if study.ground_sweep:
+        L.append("\n**Sensitivity to ground stiffness** (run R, all cases):\n")
+        L.append("| k_s MN/m³ | lowest base-joint SF | lowest joint SF | peak q kN/m | least contact |\n|---|---|---|---|---|")
+        for ks, sols in study.ground_sweep:
+            gs = [analysis.ground_stats(study, s, si.ground.mu) for s in sols]
+            jmin = min(r["SF"] for s in sols for r in s.joint_rows if np.isfinite(r["SF"]))
+            L.append(f"| {ks / 1e6:.0f} | {min(x['base_joint_SF'] for x in gs):.2f} | {jmin:.2f} | "
+                     f"{max(x['q_peak'] for x in gs) / 1e3:.1f} | {100 * min(x['contact'] for x in gs):.0f} % |")
+    L.append("")
+    return L
+
+
+def _fs(v: float) -> str:
+    return "∞" if not np.isfinite(v) else f"{v:.1f}"

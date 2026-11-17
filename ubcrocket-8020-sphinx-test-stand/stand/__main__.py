@@ -19,7 +19,10 @@ from .params import PROJECT_DIR
 
 
 def _load(args):
-    return params_mod.load(args.params, params_mod.parse_set(args.set))
+    over = params_mod.parse_set(args.set)
+    if getattr(args, "ground", False):
+        over["base.mode"] = "ground"
+    return params_mod.load(args.params, over)
 
 
 def _build(p, mode):
@@ -71,6 +74,8 @@ def _out_dir(args, p, mode) -> Path:
     cases = getattr(args, "case", None)
     if not p.changes and not cases:
         return root / mode
+    if [c.key for c in p.changes] == ["base.mode"] and p.si.base.mode == "ground" and not cases:
+        return root / f"{mode}_ground"
     name = mode + suffix(p)
     if cases:
         name += "_case_" + "_".join(cases).replace("+", "p").replace("-", "m")
@@ -169,6 +174,8 @@ def main(argv=None) -> None:
     r = sub.add_parser("run", help="solve every run/case and write results/")
     common(r)
     r.add_argument("--2d", dest="two_d", action="store_true", help="front side frame only (x-z plane)")
+    r.add_argument("--ground", action="store_true",
+                   help="base on compression-only gravel springs + sandbags -> results/3d_ground/")
     r.add_argument("--case", action="append", help="only this load case (repeatable), e.g. --case +x")
     r.add_argument("--out", help="output directory (default results/3d, results/2d)")
     r.add_argument("--no-plots", action="store_true", help="skip stand.html and figures/")
@@ -177,6 +184,7 @@ def main(argv=None) -> None:
     pl = sub.add_parser("plots", help="re-render html + figures from the last run's cache (no solve)")
     common(pl)
     pl.add_argument("--2d", dest="two_d", action="store_true")
+    pl.add_argument("--ground", action="store_true")
     pl.add_argument("--case", action="append")
     pl.add_argument("--out")
     pl.set_defaults(fn=cmd_plots)

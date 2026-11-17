@@ -92,6 +92,8 @@ def build(study, env, p):
 
 
 def figures(study, env, p):
+    if study.model.ground_mode:
+        return []                      # replaced by charts/ground.py
     return [("sandbag_demand", lambda: build(study, env, p))]
 
 

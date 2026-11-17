@@ -105,6 +105,8 @@ def _state_from_solve(study: Study, s: Solve, title: str, dshape_mm, src_members
         "legs": legs,
         "bearing": [[_r(f), bool(on), s.key] for f, on in zip(s.bearing_forces, s.active)],
         "dshape": None if dshape_mm is None else [_vec(r, 4) for r in dshape_mm.reshape(-1, 6)[:, :3]],
+        "ground": None if s.ground_F is None else
+        [_r(s.ground_F[i, 2] / c.trib if c.trib > 0 else 0.0, 3) for i, c in enumerate(m.ground)],
         "info": (f"max δ {s.max_disp * 1e3:.2f} mm · thrust δ {np.linalg.norm(s.thrust_disp) * 1e3:.2f} mm · "
                  f"tilt {s.thrust_tilt_deg:.2f}° · λ {s.lam:.1f} · bearing iters {s.bearing_iters}"
                  if s.valid else s.note),
@@ -192,7 +194,15 @@ def payload(study: Study, env: Envelope, p) -> dict:
             "face": 25.4, "tri_t": 4.0, "plate_t": _r(pl.thickness * 1e3),
             "plate": [[-bw / 2, -h], [bw / 2, -h], [bw / 2, h], [sw / 2, te], [sw / 2, top], [-sw / 2, top],
                       [-sw / 2, te], [-bw / 2, h]]}
+    gpts = [_vec(c.P * 1e3) for c in m.ground]
+    bags = None
+    if getattr(study, "bags", None) is not None:
+        b = study.bags
+        bags = {"kg": _r(b.kg_each), "pts": [_vec(q * 1e3) for q in b.points(m)],
+                "L": [_r(L * 1e3) for _, _, L in b.stations],
+                "dir": [_vec(m.members[mid].e) for mid, _, _ in b.stations]}
     return {
+        "ground": gpts, "bags": bags,
         "dims": dims,
         "mode": m.mode, "x": [_vec(r, 5) for r in x_mm], "members": members, "brackets": brackets,
         "bearings": bearings, "joints": joints, "states": states,
@@ -353,6 +363,7 @@ ul { margin:4px 0 0; padding-left:18px; color:var(--ink2); } code { font-size:11
 <div class="bar">
   <select id="state" aria-label="result state"></select>
   <label><input type="checkbox" id="deformed"> deformed</label>
+  <label id="groundlab"><input type="checkbox" id="ground" checked> ground reaction</label>
   <span class="grp" id="cams"></span>
   <span class="grp"><button id="focus" title="zoom to the selection">focus</button><button id="clear">clear</button></span>
   <div id="stateinfo"></div>
@@ -377,7 +388,7 @@ const C = D.colors, X = D.x;
 const plot = document.getElementById('plot'), insp = document.getElementById('insp');
 const sel = { kind: null, id: null };
 let S = D.states[0];
-const ui = { deformed: false };
+const ui = { deformed: false, ground: true };
 // FBD palette (as the reference sketch): in-plane force orange, bolt-axis force green, moments purple
 const FB = { fxy: '#e0622c', fz: '#16a06c', m: '#6b5fd3', plate: '#d9d7d1', plateEdge: '#77756f',
   ghost: '#efeeea', face: '#a9a7a1', ink: '#1d1c1a', muted: '#8a8984', gov: '#fdf0d5' };
@@ -464,6 +475,36 @@ function memberTraces() {
     }
     out.push({ type: 'scatter3d', mode: 'lines', x, y, z, hoverinfo: 'skip', showlegend: false,
       line: { color: C.sel, width: 9 }, opacity: 0.3 });
+  }
+  return out;
+}
+function groundTraces() {
+  if (!ui.ground || !D.ground.length) return [];
+  const out = [];
+  if (S.ground) {
+    const qm = Math.max(...S.ground.map(q => q || 0)) || 1, L = 0.12 * D.span;
+    const x = [], y = [], z = [], t = [], lx = [], ly = [], lz = [];
+    D.ground.forEach((p, i) => {
+      const q = S.ground[i] || 0;
+      if (q <= 0) { lx.push(p[0]); ly.push(p[1]); lz.push(p[2]); return; }
+      const d = L * q / qm;
+      x.push(p[0], p[0], null); y.push(p[1], p[1], null); z.push(p[2] - d, p[2], null);
+      const h = `ground pressure ${(q / 1000).toFixed(2)} kN/m`; t.push(h, h, null);
+    });
+    out.push({ type: 'scatter3d', mode: 'lines', x, y, z, hovertext: t, hoverinfo: 'text', name: 'ground pressure (length ∝ q)',
+      line: { color: '#3987e5', width: 4 } });
+    if (lx.length) out.push({ type: 'scatter3d', mode: 'markers', x: lx, y: ly, z: lz, hoverinfo: 'skip', name: 'lift-off',
+      marker: { size: 2.5, color: C.crit } });
+  }
+  if (D.bags) {
+    const x = [], y = [], z = [], t = [];
+    D.bags.pts.forEach((p, k) => {
+      const d = D.bags.dir[k], h = D.bags.L[k] / 2;
+      x.push(p[0] - d[0] * h, p[0] + d[0] * h, null); y.push(p[1] - d[1] * h, p[1] + d[1] * h, null);
+      z.push(p[2] + 30, p[2] + 30, null); const s = `sandbag ${D.bags.kg} kg`; t.push(s, s, null);
+    });
+    out.push({ type: 'scatter3d', mode: 'lines', x, y, z, hovertext: t, hoverinfo: 'text', name: `sandbags (${D.bags.kg} kg each)`,
+      line: { color: '#c79a5b', width: 16 } });
   }
   return out;
 }
@@ -883,7 +924,7 @@ function render() {
   layout.showlegend = plot.clientWidth > 600;
   const fl = plot._fullLayout && plot._fullLayout.scene;
   if (fl) { layout.scene.camera = JSON.parse(JSON.stringify(fl.camera)); layout.scene.aspectratio = { ...fl.aspectratio }; }
-  const tr = [...memberTraces(), ...deformedTrace(), ...thrustTrace(), jointTrace(), ...bracketTraces(), ...bearingTraces()];
+  const tr = [...memberTraces(), ...deformedTrace(), ...groundTraces(), ...thrustTrace(), jointTrace(), ...bracketTraces(), ...bearingTraces()];
   Plotly.react(plot, tr, layout, { displaylogo: false, responsive: true,
     toImageButtonOptions: { format: 'png', scale: 3, filename: 'stand' } });
 }
@@ -917,6 +958,8 @@ function setState(k) {
 }
 sSel.addEventListener('change', e => setState(+e.target.value));
 document.getElementById('deformed').addEventListener('change', e => { ui.deformed = e.target.checked; render(); });
+document.getElementById('ground').addEventListener('change', e => { ui.ground = e.target.checked; render(); });
+if (!D.ground.length) document.getElementById('groundlab').style.display = 'none';
 const cams = document.getElementById('cams');
 for (const [k, v] of Object.entries(CAMS)) {
   const b = document.createElement('button'); b.textContent = k;

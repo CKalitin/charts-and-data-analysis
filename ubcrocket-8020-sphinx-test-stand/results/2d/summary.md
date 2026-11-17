@@ -15,7 +15,7 @@ params: `params.yaml` · 12 solves + 7 sweep · targets: member SF ≥ 2, joint 
 | frame buckling λ | **60.02** (pass vs 2) | k=1-bON/+x |
 | thrust-point deflection | 15.38 mm (x -12.63, y +0.00, z +8.77) | k=1-bON/+x |
 | thrust-point tilt | 1.968° **> 0.25° flag** | k=1-bON/+x |
-| sandbag mass (net uplift / g) | **98.2 kg** (963 N) | all cases |
+| sandbag mass (net uplift / g, FS 1) | **98.2 kg** (963 N) | all cases |
 | sandbag mass if spread uniformly on the base | 369 kg (overturning 681 N·m about the base centroid) | worst case |
 | 3-2-1 restraint reactions | 3.3e-10 × thrust (ok) | all valid solves |
 
@@ -108,6 +108,12 @@ Items whose utilisation peaks at an interior k_θ (value used in the envelope):
 | `loads.misalign_y` | 0.03 - | assumption | horizontal y load as fraction of factored thrust |
 | `bolts.preload_N` | 5000 N | assumption | 1/4-20 bolt preload F_i |
 | `bolts.mu` | 0.2 - | assumption | friction coefficient, one surface |
+| `base.mode` | line | assumption | line = brief: sandbag line load that exactly balances the stand | ground = base on compression-only gravel springs + discrete sandbags (3D only; `run --ground`) |
+| `ground.k_s_MN_per_m3` | 150 MN/m3 | assumption | modulus of subgrade reaction, compacted gravel (typical 100-200) |
+| `ground.kh_ratio` | 0.5 - | assumption | horizontal / vertical contact stiffness (friction, sticking) |
+| `ground.mu` | 0.5 - | assumption | aluminium on gravel friction, for the sliding check |
+| `sandbags.stations` | [[19, 225, 300], [25, 225, 300], [22, 522.5, 155], [22, 77.5, 155]] | assumption | bags: [member, centre along member mm, length mm]; default = thrust-end outriggers M19/M25 under the thrust line + both stubs of cross beam M22 |
+| `sandbags.FS_tip` | 1.5 - | assumption | stabilising / overturning moment about every footprint edge (and lift) |
 | plate_other brackets | — | no capacity | forces reported only |
 
 ## Figures

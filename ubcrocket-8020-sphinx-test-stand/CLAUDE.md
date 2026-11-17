@@ -13,7 +13,8 @@ stand/fem.py        element k, geometric kg, consistent linear loads, springs w/
                     Solver (cached inverse + iterative refinement), force recovery, eigen
 stand/model.py      build(): stations, sub-elements, bracket + bearing springs, 2D variant,
                     3-2-1 restraint, relative_to_base()
-stand/loads.py      load cases + sandbag base line load (exact 6x6 resultant balance)
+stand/loads.py      load cases + sandbag base line load (exact 6x6 resultant balance);
+                    ground mode: size_sandbags (rigid-body tipping/lift statics) + bag loads
 stand/joints.py     leg/bolt-group geometry (prepare) and checks; capacities()
 stand/members.py    yield, braced-length Euler/Johnson, beam-column, tau
 stand/analysis.py   Engine: runs x cases, bearing active set, mechanism eig, buckling, sweep
@@ -37,7 +38,7 @@ every stand run, sandbag 196.4 kg, compression-only bearing, 2D run). Full 3D ru
 
 ## Results layout
 
-results/{3d,2d}/ {summary.md, viewer.html, figures/NN_*.png, tables/*.csv, params_used.yaml};
+results/{3d,3d_ground,2d}/ {summary.md, viewer.html, figures/NN_*.png, tables/*.csv, params_used.yaml};
 non-default runs -> results/variants/<mode>_<changes>[_case_...]/ (stand/__main__._out_dir).
 
 ## viewer.html (2026-11-17)
@@ -47,6 +48,14 @@ SF, FBD drawn in SVG (not in the 3D scene: overlapping 3D arrows were unreadable
 from plotly_click must be deferred (setTimeout) or plotly's hover label recurses; render()
 copies the live camera + aspectratio into the layout before Plotly.react. Envelope legs of one
 bracket may come from different solves (each leg's own governing solve) — stated in the panel.
+
+## Ground mode (2026-11-17, `run --ground`)
+
+base.mode = ground: compression-only Winkler springs per base node (model.GroundContact,
+Engine.K_for/contact_gap/ground_forces), no 3-2-1 restraint, bags sized by
+loads.size_sandbags. Memory: every contact pattern is a dense ~2200-DOF inverse, so
+buckling runs inside solve() and contact solvers are dropped (else OOM). charts/ground.py
+draws the reaction (iso "curtains" + plan per case); viewer shows q under the base.
 
 ## Findings so far (defaults)
 

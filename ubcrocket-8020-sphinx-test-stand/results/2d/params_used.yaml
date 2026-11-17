@@ -91,6 +91,34 @@ model:
   g_m_s2: 9.80665
   front_frame_y_mm: -20.0
   front_frame_tol_mm: 5.0
+base:
+  mode: line
+ground:
+  k_s_MN_per_m3: 150.0
+  k_s_sweep_MN_per_m3:
+  - 50.0
+  - 150.0
+  - 500.0
+  contact_width_mm: 25.4
+  spacing_mm: 25.0
+  kh_ratio: 0.5
+  mu: 0.5
+sandbags:
+  stations:
+  - - 19
+    - 225.0
+    - 300.0
+  - - 25
+    - 225.0
+    - 300.0
+  - - 22
+    - 522.5
+    - 155.0
+  - - 22
+    - 77.5
+    - 155.0
+  FS_tip: 1.5
+  round_to_kg: 5.0
 output:
   dir: results
   svg: false
