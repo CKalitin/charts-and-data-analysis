@@ -1,0 +1,436 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="532.8pt" height="302.4pt" viewBox="0 0 532.8 302.4" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <metadata>
+  <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+   <cc:Work>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:date>2026-11-17T11:12:19.362652</dc:date>
+    <dc:format>image/svg+xml</dc:format>
+    <dc:creator>
+     <cc:Agent>
+      <dc:title>Matplotlib v3.11.2, https://matplotlib.org/</dc:title>
+     </cc:Agent>
+    </dc:creator>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="figure_1">
+  <g id="patch_1">
+   <path d="M 0 302.4 
+L 532.8 302.4 
+L 532.8 0 
+L 0 0 
+z
+" style="fill: #ffffff"/>
+  </g>
+  <g id="axes_1">
+   <g id="patch_2">
+    <path d="M 44.034873 260.15976 
+L 529.79976 260.15976 
+L 529.79976 31.80024 
+L 44.034873 31.80024 
+z
+" style="fill: #ffffff"/>
+   </g>
+   <g id="FillBetweenPolyCollection_1"/>
+   <g id="FillBetweenPolyCollection_2">
+    <defs>
+     <path id="mbb29204596" d="M 66.115095 -118.599679 
+L 66.115095 -118.599679 
+L 97.007326 -118.599679 
+L 97.007326 -118.599679 
+L 97.007326 -67.142748 
+L 66.115095 -52.620218 
+z
+"/>
+    </defs>
+    <g clip-path="url(#p5868b43df9)">
+     <use xlink:href="#mbb29204596" x="0" y="302.4" style="fill: #2a78d6; fill-opacity: 0.55"/>
+    </g>
+   </g>
+   <g id="FillBetweenPolyCollection_3"/>
+   <g id="FillBetweenPolyCollection_4">
+    <defs>
+     <path id="m320ff49214" d="M 97.007326 -118.599679 
+L 97.007326 -118.599679 
+L 127.899557 -118.599679 
+L 127.899557 -118.599679 
+L 127.899557 -81.665278 
+L 97.007326 -67.142748 
+z
+"/>
+    </defs>
+    <g clip-path="url(#p5868b43df9)">
+     <use xlink:href="#m320ff49214" x="0" y="302.4" style="fill: #2a78d6; fill-opacity: 0.55"/>
+    </g>
+   </g>
+   <g id="FillBetweenPolyCollection_5"/>
+   <g id="FillBetweenPolyCollection_6">
+    <defs>
+     <path id="mc3942d36f8" d="M 127.899557 -118.599679 
+L 127.899557 -118.599679 
+L 158.791788 -118.599679 
+L 158.791788 -118.599679 
+L 158.791788 -96.187808 
+L 127.899557 -81.665278 
+z
+"/>
+    </defs>
+    <g clip-path="url(#p5868b43df9)">
+     <use xlink:href="#mc3942d36f8" x="0" y="302.4" style="fill: #2a78d6; fill-opacity: 0.55"/>
+    </g>
+   </g>
+   <g id="FillBetweenPolyCollection_7"/>
+   <g id="FillBetweenPolyCollection_8">
+    <defs>
+     <path id="m73d237acb0" d="M 171.056004 -118.599679 
+L 171.056004 -118.599679 
+L 191.135954 -118.599679 
+L 191.135954 -118.599679 
+L 191.135954 -111.392896 
+L 171.056004 -101.953252 
+z
+"/>
+    </defs>
+    <g clip-path="url(#p5868b43df9)">
+     <use xlink:href="#m73d237acb0" x="0" y="302.4" style="fill: #2a78d6; fill-opacity: 0.55"/>
+    </g>
+   </g>
+   <g id="FillBetweenPolyCollection_9">
+    <defs>
+     <path id="m3da979a468" d="M 206.466176 -118.599679 
+L 211.215904 -118.599679 
+L 211.215904 -118.599679 
+L 211.215904 -120.832541 
+z
+"/>
+    </defs>
+    <g clip-path="url(#p5868b43df9)">
+     <use xlink:href="#m3da979a468" x="0" y="302.4" style="fill: #eb6834; fill-opacity: 0.55"/>
+    </g>
+   </g>
+   <g id="FillBetweenPolyCollection_10">
+    <defs>
+     <path id="m64769793d3" d="M 191.135954 -118.599679 
+L 191.135954 -118.599679 
+L 206.466176 -118.599679 
+L 191.135954 -111.392896 
+z
+"/>
+    </defs>
+    <g clip-path="url(#p5868b43df9)">
+     <use xlink:href="#m64769793d3" x="0" y="302.4" style="fill: #2a78d6; fill-opacity: 0.55"/>
+    </g>
+   </g>
+   <g id="FillBetweenPolyCollection_11">
+    <defs>
+     <path id="m748430d17b" d="M 211.215904 -118.599679 
+L 211.215904 -118.599679 
+L 237.989171 -118.599679 
+L 237.989171 -118.599679 
+L 237.989171 -133.418733 
+L 211.215904 -120.832541 
+z
+"/>
+    </defs>
+    <g clip-path="url(#p5868b43df9)">
+     <use xlink:href="#m748430d17b" x="0" y="302.4" style="fill: #eb6834; fill-opacity: 0.55"/>
+    </g>
+   </g>
+   <g id="FillBetweenPolyCollection_12"/>
+   <g id="FillBetweenPolyCollection_13">
+    <defs>
+     <path id="m1da688b6f8" d="M 237.989171 -118.599679 
+L 237.989171 -118.599679 
+L 264.762438 -118.599679 
+L 264.762438 -118.599679 
+L 264.762438 -146.004926 
+L 237.989171 -133.418733 
+z
+"/>
+    </defs>
+    <g clip-path="url(#p5868b43df9)">
+     <use xlink:href="#m1da688b6f8" x="0" y="302.4" style="fill: #eb6834; fill-opacity: 0.55"/>
+    </g>
+   </g>
+   <g id="FillBetweenPolyCollection_14"/>
+   <g id="FillBetweenPolyCollection_15">
+    <defs>
+     <path id="m8ea13dee58" d="M 264.762438 -118.599679 
+L 264.762438 -118.599679 
+L 291.535705 -118.599679 
+L 291.535705 -118.599679 
+L 291.535705 -158.591118 
+L 264.762438 -146.004926 
+z
+"/>
+    </defs>
+    <g clip-path="url(#p5868b43df9)">
+     <use xlink:href="#m8ea13dee58" x="0" y="302.4" style="fill: #eb6834; fill-opacity: 0.55"/>
+    </g>
+   </g>
+   <g id="FillBetweenPolyCollection_16"/>
+   <g id="FillBetweenPolyCollection_17">
+    <defs>
+     <path id="m510031f14a" d="M 316.24949 -118.599679 
+L 316.24949 -118.599679 
+L 347.141721 -118.599679 
+L 347.141721 -118.599679 
+L 347.141721 -184.731672 
+L 316.24949 -170.209142 
+z
+"/>
+    </defs>
+    <g clip-path="url(#p5868b43df9)">
+     <use xlink:href="#m510031f14a" x="0" y="302.4" style="fill: #eb6834; fill-opacity: 0.55"/>
+    </g>
+   </g>
+   <g id="FillBetweenPolyCollection_18"/>
+   <g id="FillBetweenPolyCollection_19">
+    <defs>
+     <path id="ma56dec511c" d="M 347.141721 -118.599679 
+L 347.141721 -118.599679 
+L 378.033952 -118.599679 
+L 378.033952 -118.599679 
+L 378.033952 -199.254202 
+L 347.141721 -184.731672 
+z
+"/>
+    </defs>
+    <g clip-path="url(#p5868b43df9)">
+     <use xlink:href="#ma56dec511c" x="0" y="302.4" style="fill: #eb6834; fill-opacity: 0.55"/>
+    </g>
+   </g>
+   <g id="FillBetweenPolyCollection_20"/>
+   <g id="FillBetweenPolyCollection_21">
+    <defs>
+     <path id="mbb57b6c138" d="M 390.32906 -118.599679 
+L 390.32906 -118.599679 
+L 415.104629 -118.599679 
+L 415.104629 -118.599679 
+L 415.104629 -216.681237 
+L 390.32906 -205.034169 
+z
+"/>
+    </defs>
+    <g clip-path="url(#p5868b43df9)">
+     <use xlink:href="#mbb57b6c138" x="0" y="302.4" style="fill: #eb6834; fill-opacity: 0.55"/>
+    </g>
+   </g>
+   <g id="FillBetweenPolyCollection_22"/>
+   <g id="FillBetweenPolyCollection_23">
+    <defs>
+     <path id="m292cfef6ce" d="M 415.104629 -118.599679 
+L 415.104629 -118.599679 
+L 445.976265 -118.599679 
+L 445.976265 -118.599679 
+L 445.976265 -231.194086 
+L 415.104629 -216.681237 
+z
+"/>
+    </defs>
+    <g clip-path="url(#p5868b43df9)">
+     <use xlink:href="#m292cfef6ce" x="0" y="302.4" style="fill: #eb6834; fill-opacity: 0.55"/>
+    </g>
+   </g>
+   <g id="FillBetweenPolyCollection_24"/>
+   <g id="FillBetweenPolyCollection_25">
+    <defs>
+     <path id="m7b033969d8" d="M 445.976265 -118.599679 
+L 445.976265 -118.599679 
+L 476.847902 -118.599679 
+L 476.847902 -118.599679 
+L 476.847902 -245.706934 
+L 445.976265 -231.194086 
+z
+"/>
+    </defs>
+    <g clip-path="url(#p5868b43df9)">
+     <use xlink:href="#m7b033969d8" x="0" y="302.4" style="fill: #eb6834; fill-opacity: 0.55"/>
+    </g>
+   </g>
+   <g id="FillBetweenPolyCollection_26"/>
+   <g id="FillBetweenPolyCollection_27">
+    <defs>
+     <path id="m82ec7ff155" d="M 476.847902 -118.599679 
+L 476.847902 -118.599679 
+L 507.719538 -118.599679 
+L 507.719538 -118.599679 
+L 507.719538 -260.219782 
+L 476.847902 -245.706934 
+z
+"/>
+    </defs>
+    <g clip-path="url(#p5868b43df9)">
+     <use xlink:href="#m82ec7ff155" x="0" y="302.4" style="fill: #eb6834; fill-opacity: 0.55"/>
+    </g>
+   </g>
+   <g id="FillBetweenPolyCollection_28"/>
+   <g id="matplotlib.axis_1">
+    <g id="xtick_1">
+     <g id="line2d_1"/>
+     <g id="text_1">
+      <text style="font-size: 7.4px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #52514e" x="67.505245" y="269.282026" transform="rotate(-0 67.505245 269.282026)">0</text>
+     </g>
+    </g>
+    <g id="xtick_2">
+     <g id="line2d_2"/>
+     <g id="text_2">
+      <text style="font-size: 7.4px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #52514e" x="129.289707" y="269.282026" transform="rotate(-0 129.289707 269.282026)">200</text>
+     </g>
+    </g>
+    <g id="xtick_3">
+     <g id="line2d_3"/>
+     <g id="text_3">
+      <text style="font-size: 7.4px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #52514e" x="191.07417" y="269.282026" transform="rotate(-0 191.07417 269.282026)">400</text>
+     </g>
+    </g>
+    <g id="xtick_4">
+     <g id="line2d_4"/>
+     <g id="text_4">
+      <text style="font-size: 7.4px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #52514e" x="252.858632" y="269.282026" transform="rotate(-0 252.858632 269.282026)">600</text>
+     </g>
+    </g>
+    <g id="xtick_5">
+     <g id="line2d_5"/>
+     <g id="text_5">
+      <text style="font-size: 7.4px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #52514e" x="314.643094" y="269.282026" transform="rotate(-0 314.643094 269.282026)">800</text>
+     </g>
+    </g>
+    <g id="xtick_6">
+     <g id="line2d_6"/>
+     <g id="text_6">
+      <text style="font-size: 7.4px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #52514e" x="376.427556" y="269.282026" transform="rotate(-0 376.427556 269.282026)">1000</text>
+     </g>
+    </g>
+    <g id="xtick_7">
+     <g id="line2d_7"/>
+     <g id="text_7">
+      <text style="font-size: 7.4px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #52514e" x="438.212018" y="269.282026" transform="rotate(-0 438.212018 269.282026)">1200</text>
+     </g>
+    </g>
+    <g id="xtick_8">
+     <g id="line2d_8"/>
+     <g id="text_8">
+      <text style="font-size: 7.4px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #52514e" x="499.99648" y="269.282026" transform="rotate(-0 499.99648 269.282026)">1400</text>
+     </g>
+    </g>
+    <g id="text_9">
+     <text style="font-size: 8.5px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #52514e" x="286.917316" y="281.517768" transform="rotate(-0 286.917316 281.517768)">x (mm)</text>
+    </g>
+   </g>
+   <g id="matplotlib.axis_2">
+    <g id="ytick_1">
+     <g id="line2d_9"/>
+     <g id="text_10">
+      <text style="font-size: 7.4px; font-family: 'DejaVu Sans'; text-anchor: end; fill: #52514e" x="40.534873" y="236.303996" transform="rotate(-0 40.534873 236.303996)">−1000</text>
+     </g>
+    </g>
+    <g id="ytick_2">
+     <g id="line2d_10"/>
+     <g id="text_11">
+      <text style="font-size: 7.4px; font-family: 'DejaVu Sans'; text-anchor: end; fill: #52514e" x="40.534873" y="186.611453" transform="rotate(-0 40.534873 186.611453)">0</text>
+     </g>
+    </g>
+    <g id="ytick_3">
+     <g id="line2d_11"/>
+     <g id="text_12">
+      <text style="font-size: 7.4px; font-family: 'DejaVu Sans'; text-anchor: end; fill: #52514e" x="40.534873" y="136.91891" transform="rotate(-0 40.534873 136.91891)">1000</text>
+     </g>
+    </g>
+    <g id="ytick_4">
+     <g id="line2d_12"/>
+     <g id="text_13">
+      <text style="font-size: 7.4px; font-family: 'DejaVu Sans'; text-anchor: end; fill: #52514e" x="40.534873" y="87.226367" transform="rotate(-0 40.534873 87.226367)">2000</text>
+     </g>
+    </g>
+    <g id="ytick_5">
+     <g id="line2d_13"/>
+     <g id="text_14">
+      <text style="font-size: 7.4px; font-family: 'DejaVu Sans'; text-anchor: end; fill: #52514e" x="40.534873" y="37.533824" transform="rotate(-0 40.534873 37.533824)">3000</text>
+     </g>
+    </g>
+    <g id="text_15">
+     <text style="font-size: 8.5px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #52514e" x="9.458912" y="145.98" transform="rotate(-90 9.458912 145.98)">sandbag demand −q_z (N/m)</text>
+    </g>
+   </g>
+   <g id="line2d_14">
+    <path d="M 44.034873 183.800321 
+L 529.79976 183.800321 
+" clip-path="url(#p5868b43df9)" style="fill: none; stroke: #52514e; stroke-width: 0.8; stroke-linecap: square"/>
+   </g>
+   <g id="patch_3">
+    <path d="M 44.034873 260.15976 
+L 44.034873 31.80024 
+" style="fill: none; stroke: #e4e3df; stroke-width: 0.8; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
+   <g id="patch_4">
+    <path d="M 44.034873 260.15976 
+L 529.79976 260.15976 
+" style="fill: none; stroke: #e4e3df; stroke-width: 0.8; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
+   <g id="text_16">
+    <g id="patch_5">
+     <path d="M 415.016538 258.56257 
+L 523.701007 258.56257 
+Q 526.671007 258.56257 526.671007 255.59257 
+L 526.671007 200.139937 
+Q 526.671007 197.169937 523.701007 197.169937 
+L 415.016538 197.169937 
+Q 412.046538 197.169937 412.046538 200.139937 
+L 412.046538 255.59257 
+Q 412.046538 258.56257 415.016538 258.56257 
+z
+" style="fill: #ffffff; opacity: 0.92; stroke: #e4e3df; stroke-width: 0.8; stroke-linejoin: miter"/>
+    </g>
+    <text style="font-size: 6.6px; font-family: 'DejaVu Sans'; fill: #0b0b0b" transform="translate(415.016538 205.81555)">thrust 1112 N × DF 2 × ½ (2D)</text>
+    <text style="font-size: 6.6px; font-family: 'DejaVu Sans'; fill: #0b0b0b" transform="translate(415.016538 213.737355)">misalignment 0.03·F</text>
+    <text style="font-size: 6.6px; font-family: 'DejaVu Sans'; fill: #0b0b0b" transform="translate(415.016538 221.659159)">bolt F_i 5 kN, μ 0.2</text>
+    <text style="font-size: 6.6px; font-family: 'DejaVu Sans'; fill: #0b0b0b" transform="translate(415.016538 229.580964)">case R-bON/-x</text>
+    <text style="font-size: 6.6px; font-family: 'DejaVu Sans'; fill: #0b0b0b" transform="translate(415.016538 237.502769)">net uplift 963 N → 98 kg total</text>
+    <text style="font-size: 6.6px; font-family: 'DejaVu Sans'; fill: #0b0b0b" transform="translate(415.016538 245.424574)">q_z from -2850 to +1328 N/m</text>
+    <text style="font-size: 6.6px; font-family: 'DejaVu Sans'; fill: #0b0b0b" transform="translate(415.016538 253.346378)">uniform bags would need 369 kg</text>
+   </g>
+   <g id="legend_1">
+    <g id="patch_6">
+     <path d="M 50.694873 44.083084 
+L 65.494873 44.083084 
+L 65.494873 38.903084 
+L 50.694873 38.903084 
+z
+" style="fill: #eb6834; opacity: 0.55; stroke: #eb6834; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_17">
+     <text style="font-size: 7.4px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #0b0b0b" x="71.414873" y="44.083084" transform="rotate(-0 71.414873 44.083084)">sandbag demand (pull down)</text>
+    </g>
+    <g id="patch_7">
+     <path d="M 50.694873 55.183662 
+L 65.494873 55.183662 
+L 65.494873 50.003662 
+L 50.694873 50.003662 
+z
+" style="fill: #2a78d6; opacity: 0.55; stroke: #2a78d6; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_18">
+     <text style="font-size: 7.4px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #0b0b0b" x="71.414873" y="55.183662" transform="rotate(-0 71.414873 55.183662)">ground bearing (push up)</text>
+    </g>
+   </g>
+  </g>
+  <g id="text_19">
+   <text style="font-weight: 700; font-size: 11px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #0b0b0b" x="5.328" y="13.398281" transform="rotate(-0 5.328 13.398281)">Sandbag Demand on the Base</text>
+  </g>
+  <g id="text_20">
+   <text style="font-size: 6.6px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #8a8984" x="5.328" y="297.185653" transform="rotate(-0 5.328 297.185653)">Linear line load on the base members that exactly cancels the applied loads (force and moment); kg = bags each member needs so no part of it lifts.</text>
+  </g>
+ </g>
+ <defs>
+  <clipPath id="p5868b43df9">
+   <rect x="44.034873" y="31.80024" width="485.764887" height="228.35952"/>
+  </clipPath>
+ </defs>
+</svg>
