@@ -1,6 +1,7 @@
 # Sphinx stand model — handoff
 
-Read this first; `ASSUMPTIONS.md` lists every unconfirmed number. The original brief is
+Read this first, then `SESSION_SUMMARY.md` (what was asked/found/open, the user's mental model);
+`ASSUMPTIONS.md` lists every unconfirmed number. The original brief is
 `references/prompt/PROMPT.md` (+ geometry.json, brackets.json, burrard_validation.json).
 
 ## Layout
@@ -29,12 +30,13 @@ stand/viz.py        viewer.html: JSON payload + client-side plotly 3D; click bra
 tests/              validation suite (brief section 9 + unit checks)
 ```
 
-## Status (2026-11-17)
+## Status (2026-11-19)
 
-Everything in the brief is implemented, plus 11 document figures; 18 tests pass (cantilever, UDL, Euler column,
+Everything in the brief is implemented, plus 11 document figures (13 in ground mode); 20 tests pass (cantilever, UDL, Euler column,
 Burrard truss incl. AB = −5.763P, pinned rectangle couple + mechanism, bolt group B
 869 N, statics of the wrench transfer, global equilibrium + vanishing 3-2-1 reactions on
-every stand run, sandbag 196.4 kg, compression-only bearing, 2D run). Full 3D run ≈ 40 s.
+every stand run, sandbag 196.4 kg, compression-only bearing, 2D run, ground-mode equilibrium +
+compression-only contact, bag FS). Full 3D run ≈ 40 s; ground run ≈ 3 min.
 
 ## Results layout
 
@@ -73,8 +75,8 @@ draws the reaction (iso "curtains" + plan per case); viewer shows q under the ba
 ## Answered (2026-11-17) — see ASSUMPTIONS.md "Confirmed"
 
 No anti-rotation key on triangles; plate = 80/20 aluminium (172 MPa); plate sections from
-the brief's outline. Still open: a ground-contact base option (compression-only ground +
-sandbag loads) instead of the brief's sandbag line load — not requested yet.
+the brief's outline. Ground-contact base: built (`run --ground`); base-joint failures persist
+(lowest 0.10 vs 0.08) -> real, not a line-load artifact. Next offered: joint-slip model.
 
 ## Decisions worth knowing (why)
 
