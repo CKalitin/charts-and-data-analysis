@@ -1,0 +1,127 @@
+# exact parameters of this run
+inputs:
+  geometry: references/prompt/geometry.json
+  brackets: references/prompt/brackets.json
+  burrard: references/prompt/burrard_validation.json
+material:
+  E_GPa: 68.9
+  G_GPa: 26.5
+  sigma_y_MPa: 172.0
+section_1010:
+  A_mm2: 281.9
+  I_strong_mm4: 18400.0
+  I_weak_mm4: 18400.0
+  c_strong_mm: 12.7
+  c_weak_mm: 12.7
+  J_mm4: auto
+  weight_N_per_m: 7.43
+section_1020:
+  A_mm2: 507.7
+  I_strong_mm4: 128100.0
+  I_weak_mm4: 34670.0
+  c_strong_mm: 25.4
+  c_weak_mm: 12.7
+  J_mm4: auto
+  weight_N_per_m: 13.45
+loads:
+  thrust_N: 1112.0
+  DF: 2.0
+  rocket_weight_N: 133.0
+  self_weight: true
+  misalign_x: 0.03
+  misalign_y: 0.03
+  cases:
+  - none
+  - +x
+  - -x
+  - +y
+  - -y
+  - +x+y
+springs:
+  k_t_factor: 1000.0
+  k_theta_pinned: 0.001
+  k_theta_rigid: 1000.0
+  k_theta_sweep:
+  - 0.001
+  - 0.01
+  - 0.1
+  - 1.0
+  - 10.0
+  - 100.0
+  - 1000.0
+  k_bearing_factor: 1000.0
+  snap_tol_mm: 70.0
+bolts:
+  preload_N: 5000.0
+  mu: 0.2
+  hole_radius_mm: 3.57
+  head_radius_mm: 5.55
+triangle:
+  tilt_arm_mm: 12.7
+  bolt_from_corner_mm: 20.0
+  min_leg_extent_mm: 12.7
+plate:
+  fy_MPa: 172.0
+  thickness_mm: 6.35
+  groupA_u_mm:
+  - -25.4
+  - 0.0
+  - 25.4
+  groupB_v_mm:
+  - 38.1
+  - 63.5
+  base_width_mm: 76.2
+  base_half_height_mm: 12.7
+  stem_taper_end_v_mm: 63.5
+  stem_width_mm: 25.4
+  top_edge_v_mm: 76.2
+checks:
+  SF_target_member: 2.0
+  SF_target_joint: 2.0
+  K_buckling: 1.0
+  brace_cos_min: 0.5
+  mechanism_disp_mm: 1.0
+  sweep_mech_ratio: 5.0
+  tilt_limit_deg: 0.25
+  restraint_tol_rel: 1.0e-06
+  mech_eig_rel_tol: 1.0e-12
+model:
+  max_subelement_mm: 125.0
+  station_merge_mm: 2.0
+  g_m_s2: 9.80665
+  front_frame_y_mm: -20.0
+  front_frame_tol_mm: 5.0
+base:
+  mode: line
+ground:
+  k_s_MN_per_m3: 150.0
+  k_s_sweep_MN_per_m3:
+  - 50.0
+  - 150.0
+  - 500.0
+  contact_width_mm: 25.4
+  spacing_mm: 25.0
+  kh_ratio: 0.5
+  mu: 0.5
+sandbags:
+  stations:
+  - - 19
+    - 225.0
+    - 300.0
+  - - 25
+    - 225.0
+    - 300.0
+  - - 22
+    - 522.5
+    - 155.0
+  - - 22
+    - 77.5
+    - 155.0
+  FS_tip: 1.5
+  round_to_kg: 5.0
+output:
+  dir: results
+  svg: false
+  deform_frac: 0.06
+  plotlyjs: inline
+  n_lowest: 10

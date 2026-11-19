@@ -1,0 +1,96 @@
+# Mojave Sphinx test stand — model parameters (all editable).
+# Generated from stand/params.py:SCHEMA.  Units are in the key suffix.
+# Every run prints the values that differ from these defaults.
+# Flags: [placeholder] must be confirmed, [unverified] estimate, [assumption] modelling choice.
+
+inputs:
+  geometry:                      references/prompt/geometry.json # member centrelines (mm)
+  brackets:                      references/prompt/brackets.json # joints / brackets / bearing (mm)
+  burrard:                       references/prompt/burrard_validation.json # truss validation case
+
+material:
+  E_GPa:                         68.9                         # Young's modulus
+  G_GPa:                         26.5                         # shear modulus
+  sigma_y_MPa:                   172.0                        # yield strength, 6063-T6
+
+section_1010:
+  A_mm2:                         281.9                        # 0.437 in^2
+  I_strong_mm4:                  18400.0                      # 0.0442 in^4 (square: both axes)
+  I_weak_mm4:                    18400.0                      # 0.0442 in^4
+  c_strong_mm:                   12.7                         # outer fibre
+  c_weak_mm:                     12.7                         # outer fibre
+  J_mm4:                         auto                         # torsion constant; auto = 0.5*(Iy+Iz)  [unverified]
+  weight_N_per_m:                7.43                         # 0.0424 lb/in
+
+section_1020:
+  A_mm2:                         507.7                        # 0.787 in^2
+  I_strong_mm4:                  128100.0                     # 0.3078 in^4, depth along strong_axis_depth_along
+  I_weak_mm4:                    34670.0                      # 0.0833 in^4
+  c_strong_mm:                   25.4                         # outer fibre, strong-axis bending
+  c_weak_mm:                     12.7                         # outer fibre, weak-axis bending
+  J_mm4:                         auto                         # torsion constant; auto = 0.5*(Iy+Iz)  [unverified]
+  weight_N_per_m:                13.45                        # 0.0768 lb/in
+
+loads:
+  thrust_N:                      1112.0                       # static thrust, 250 lbf, +z at thrust_point
+  DF:                            2.0                          # dynamic factor on thrust (and on misalignment)
+  rocket_weight_N:               133.0                        # 30 lb wet, -z at thrust_point, unfactored
+  self_weight:                   true                         # distributed member self-weight on/off
+  misalign_x:                    0.03                         # horizontal x load as fraction of factored thrust  [assumption]
+  misalign_y:                    0.03                         # horizontal y load as fraction of factored thrust  [assumption]
+  cases:                         [none, +x, -x, +y, -y, +x+y] # misalignment load cases (names parsed as signs on x/y)
+
+springs:
+  k_t_factor:                    1000.0                       # bracket translational k = factor * EA/L (min of the two members)
+  k_theta_pinned:                0.001                        # run P: rotational k = factor * EI/L (solver stability only)
+  k_theta_rigid:                 1000.0                       # run R: rotational k = factor * EI/L
+  k_theta_sweep:                 [0.001, 0.01, 0.1, 1.0, 10.0, 100.0, 1000.0] # assumption test: k_theta factors swept on the governing case
+  k_bearing_factor:              1000.0                       # bearing (compression-only) k = factor * EA/L of the bearing member
+  snap_tol_mm:                   70.0                         # a joint/load point lies on a member if within this of its centreline
+
+bolts:
+  preload_N:                     5000.0                       # 1/4-20 bolt preload F_i  [assumption]
+  mu:                            0.2                          # friction coefficient, one surface  [assumption]
+  hole_radius_mm:                3.57                         # r_i (hole)
+  head_radius_mm:                5.55                         # r_o (head bearing)
+
+triangle:
+  tilt_arm_mm:                   12.7                         # gap-opening arm a: Mx,max = My,max = F_i*a  [placeholder]
+  bolt_from_corner_mm:           20.0                         # bolt distance from the corner along each member
+  min_leg_extent_mm:             12.7                         # a leg can lie along a member direction only if the member extends this far past the joint
+
+plate:
+  fy_MPa:                        172.0                        # plate yield strength (80/20 aluminium, as the extrusions; user-confirmed)
+  thickness_mm:                  6.35                         # plate thickness t  [placeholder]
+  groupA_u_mm:                   [-25.4, 0.0, 25.4]           # bolt positions on member a (u along a, v = 0)
+  groupB_v_mm:                   [38.1, 63.5]                 # bolt positions on member b (u = 0, v along b)
+  base_width_mm:                 76.2                         # outline (brief's plate diagram; user: use the diagram): base width along u
+  base_half_height_mm:           12.7                         # outline: base spans v = -12.7..+12.7
+  stem_taper_end_v_mm:           63.5                         # outline: tapers from base_width at v=+12.7 to stem_width here
+  stem_width_mm:                 25.4                         # outline: stem width from taper end to top edge
+  top_edge_v_mm:                 76.2                         # outline: top edge
+
+checks:
+  SF_target_member:              2.0                          # member target SF (DF already in loads)
+  SF_target_joint:               2.0                          # joint target SF (DF already in loads)
+  K_buckling:                    1.0                          # effective length factor between bracing joints
+  brace_cos_min:                 0.5                          # a joint braces a member axis if a connected member's axis has |cos| >= this with it
+  mechanism_disp_mm:             1.0                          # run P invalid (mechanism) if any node moves more than this
+  sweep_mech_ratio:              5.0                          # k_theta sweep point is mechanism-dominated if max displacement > this x run R (and > mechanism_disp)
+  tilt_limit_deg:                0.25                         # serviceability flag for thrust-point tilt
+  restraint_tol_rel:             1.0e-06                      # 3-2-1 restraint reactions must be below this * factored thrust
+  mech_eig_rel_tol:              1.0e-12                      # K eigenvalue / max diag below this = mechanism
+
+model:
+  max_subelement_mm:             125.0                        # members are split so no sub-element is longer than this
+  station_merge_mm:              2.0                          # nodes on a member closer than this are merged
+  g_m_s2:                        9.80665                      # gravity, for sandbag mass
+  front_frame_y_mm:              -20.0                        # 2D mode: side frame kept
+  front_frame_tol_mm:            5.0                          # 2D mode: |y - front_frame_y| tolerance
+
+output:
+  dir:                           results                      # results root: <dir>/3d, <dir>/2d, <dir>/variants/<name>
+  svg:                           false                        # also write editable SVG next to every PNG figure
+  deform_frac:                   0.06                         # plot: max deformed displacement as a fraction of stand height
+  plotlyjs:                      inline                       # inline (offline, ~4.5 MB) | cdn
+  n_lowest:                      10                           # rows in the lowest-SF tables
