@@ -332,6 +332,94 @@ def write_all(study: Study, env: Envelope, p, out: Path, figures: list[str] | No
     return files
 
 
+# --------------------------------------------------------------------------- burrard back test
+# N/P is the notes' convention: a member's axial force divided by the unit load P, so the
+# answer is independent of P. Both are tabulated below so neither has to be taken on trust.
+BURRARD_UNITS = ("`N/P` is the member's axial force **N** divided by the applied unit load "
+                 "**P = {P:g} MN** — the form the course notes tabulate, independent of P. "
+                 "Positive is tension.")
+
+
+def _burrard_rows(res) -> list[list[str]]:
+    z = lambda v: 0.0 if abs(v) < 5e-4 else v                 # no "-0.000"
+    return [[m.name, f"{z(m.N_in_P * res.P / 1e6):+.3f}", f"{z(m.N_in_P):+.3f}", f"{z(m.ref_in_P):+.3f}",
+             "yes" if round(m.N_in_P, 3) == round(m.ref_in_P, 3) else "NO"]
+            for m in sorted(res.bars, key=lambda m: m.ref_in_P)]
+
+
+def _burrard_sf_rows(res) -> list[list[str]]:
+    """Both checks for every member, each beside the value the notes print for it."""
+    def num(v, nd=2):
+        return "" if v is None else ("—" if v == float("inf") else f"{v:.{nd}f}")
+    out = []
+    for m in sorted(res.bars, key=lambda b: b.SF_yield):
+        pcr = res.P_crit_MN(m)
+        out.append([m.name, num(m.SF_yield), num(m.ref_SF_yield),
+                    num(pcr), num(m.ref_P_crit_MN),
+                    num(m.SF_buckling), num(m.ref_SF_buckling)])
+    return out
+
+
+SF_HDR = ["member", "SF yield", "notes", "P_crit MN", "notes", "SF buckling", "notes"]
+
+
+def burrard_console(res) -> str:
+    hdr = ["member", "N MN", "N/P", "notes N/P", "match"]
+    out = ["\n" + bold("burrard half truss — member forces"),
+           table(_burrard_rows(res), hdr, "lrrrl"),
+           "\n" + bold("safety factors (— = tension, no buckling check; blank = not printed)"),
+           table(_burrard_sf_rows(res), SF_HDR, "lrrrrrr")]
+    n_ok = sum(1 for m in res.bars if round(m.N_in_P, 3) == round(m.ref_in_P, 3))
+    nb = sum(1 for m in res.bars if m.ref_SF_buckling is not None
+             and abs(m.SF_buckling - m.ref_SF_buckling) < 0.006)
+    out.append(f"\nbuckling: {nb}/{sum(1 for m in res.bars if m.ref_SF_buckling)} printed SFs "
+               f"reproduce (AB differs only through the notes' transposed force)")
+    out.append(f"\n{n_ok}/{len(res.bars)} members match the notes to 3 decimals "
+               f"(every digit they print); governing {res.min_yield().name} yield "
+               f"{res.min_yield().SF_yield:.2f} and {res.min_buckling().name} buckling "
+               f"{res.min_buckling().SF_buckling:.2f} both reproduce.")
+    return "\n".join(out)
+
+
+def burrard_summary(res, figures: list[str] | None = None) -> str:
+    n_ok = sum(1 for m in res.bars if round(m.N_in_P, 3) == round(m.ref_in_P, 3))
+    md = [f"# Burrard truss back test\n",
+          f"The solver against a published worked example — same `fem.py` element, assembly and",
+          f"force recovery the stand runs on, so agreement here is what licenses trusting those",
+          f"pieces on a frame nobody has solved by hand.\n",
+          f"**{n_ok} of {len(res.bars)} members match to 3 decimals — every digit the notes print.**",
+          f"Governing {res.min_yield().name} yield {res.min_yield().SF_yield:.2f} "
+          f"(notes {res.ref_min['yield']:g}) and {res.min_buckling().name} buckling "
+          f"{res.min_buckling().SF_buckling:.2f} (notes {res.ref_min['buckling_euler_K1']:g}) "
+          f"both reproduce.\n",
+          f"Source: {res.source}.",
+          BURRARD_UNITS.format(P=res.P / 1e6),
+          f"E = {res.E / 1e9:g} GPa, σy = {res.fy / 1e6:g} MPa, pin-jointed, Euler K = 1.\n",
+          "## Member forces\n",
+          _md_table(_burrard_rows(res), ["member", "N (MN)", "N/P", "notes N/P", "match"]),
+          "\n## Safety factors\n",
+          "Both checks for every member, against the notes' own table. `P_crit` is the Euler",
+          "critical load behind each buckling SF — it is printed too, so it is checked as well.",
+          "A dash means the member is in tension and has no buckling check.\n",
+          _md_table(_burrard_sf_rows(res), SF_HDR),
+          "\nEvery buckling safety factor reproduces, and so does every `P_crit`. **AB is the",
+          "one row that differs** — the notes print 16.69, which is their P_crit 142.03 MN over",
+          "the transposed T = 8.51 MN. Over the corrected 8.644 MN it is 16.43, which is what",
+          "this model gives and what their own correction states (16.4).\n",
+          "\nJK carries no force, so its yield SF is infinite and it has no buckling check.",
+          f"\n{res.note}\n"]
+    for fig in figures or []:
+        md.append(f"\n![{Path(fig).stem}]({fig})")
+    return "\n".join(md) + "\n"
+
+
+def _md_table(rows: list[list[str]], header: list[str]) -> str:
+    out = ["| " + " | ".join(header) + " |",
+           "|" + "|".join("---" for _ in header) + "|"]
+    out += ["| " + " | ".join(c if c else " " for c in r) + " |" for r in rows]
+    return "\n".join(out)
+
+
 RESULTS_INDEX = """# Results
 
 Generated by `python -m stand run` (3D) and `python -m stand run --2d`. Do not edit by hand;
@@ -344,6 +432,7 @@ tables and every figure inline.
 | [`3d_ground/`](3d_ground/summary.md) | full 3D stand resting on compression-only gravel springs with discrete sandbags (`run --ground`): real ground reaction, bag sizing, lift-off |
 | [`2d/`](2d/summary.md) | 2D side frame (cross-check of the 3D model, in-plane cases only) |
 | `variants/` | runs with changed parameters or a subset of cases, e.g. `variants/3d_DF2.5/` (created by `--set` / `--case`) |
+| `validation/` | Burrard half-truss back test against the worked example (`python -m stand burrard`) |
 
 Each run folder has the same layout:
 

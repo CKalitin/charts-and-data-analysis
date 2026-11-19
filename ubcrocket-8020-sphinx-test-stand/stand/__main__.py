@@ -162,6 +162,35 @@ def cmd_model(args) -> None:
     print(report.table(rows, ["joint", "end of", "bears on", "axis n", "gap to node mm"], "llllr"))
 
 
+def cmd_burrard(args) -> None:
+    """Back test: solve the Burrard half truss, print the comparison tables, write the
+    truss figure + summary.md + a CSV."""
+    from . import burrard, report
+    from .charts import _render as R
+    from .charts import burrard as burrard_charts
+
+    out = Path(args.out) if args.out else PROJECT_DIR / "results" / "validation"
+    res = burrard.solve()
+    print(report.burrard_console(res))
+    print()
+
+    figs = []
+    for i, (name, build) in enumerate(burrard_charts.figures(res), 1):
+        figs += R.save_fig(build(), out / "figures" / f"{i:02d}_{name}")
+
+    (out / "tables").mkdir(parents=True, exist_ok=True)
+    report.write_csv(out / "tables" / "members.csv",
+                     [{"member": m.name, "node_a": m.a, "node_b": m.b,
+                       "N_MN": m.N_in_P * res.P / 1e6, "N_in_P": m.N_in_P,
+                       "notes_N_in_P": m.ref_in_P, "SF_yield": m.SF_yield,
+                       "SF_buckling_euler_K1": m.SF_buckling} for m in res.bars])
+    rel = [f"figures/{p_.name}" for p_ in figs if p_.suffix == ".png"]
+    (out / "summary.md").write_text(report.burrard_summary(res, rel))
+
+    for p_ in [*figs, out / "tables" / "members.csv", out / "summary.md"]:
+        print(f"wrote   {p_.relative_to(PROJECT_DIR) if p_.is_relative_to(PROJECT_DIR) else p_}")
+
+
 def main(argv=None) -> None:
     ap = argparse.ArgumentParser(prog="python -m stand", description="Mojave Sphinx test stand frame + joint SF model")
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -199,6 +228,10 @@ def main(argv=None) -> None:
     q.add_argument("--reset", action="store_true", help="rewrite params.yaml from the defaults")
     q.add_argument("--yes", action="store_true", help="confirm --reset overwrite")
     q.set_defaults(fn=cmd_params)
+
+    bz = sub.add_parser("burrard", help="back test against the Burrard truss worked example")
+    bz.add_argument("--out", help="output directory (default results/validation)")
+    bz.set_defaults(fn=cmd_burrard)
 
     mm = sub.add_parser("model", help="print how every joint/bracket/bearing was modelled")
     common(mm)

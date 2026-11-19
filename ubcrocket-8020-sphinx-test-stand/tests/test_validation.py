@@ -4,12 +4,11 @@ Run with `python -m stand test` (or `pytest`).
 """
 from __future__ import annotations
 
-import json
 
 import numpy as np
 import pytest
 
-from stand import analysis, fem, geometry, joints, loads, members, model, params
+from stand import analysis, burrard, fem, geometry, joints, loads, members, model, params
 from stand.geometry import Bearing, BracketSpec, Geometry, Joint, Member
 
 E, G = 68.9e9, 26.5e9
@@ -92,41 +91,18 @@ def test_euler_column_geometric_stiffness(p):
 
 
 # --------------------------------------------------------------------------- 2. Burrard truss
-def test_burrard_truss(p):
-    data = json.loads((params.PROJECT_DIR / p.si.inputs.burrard).read_text())
-    Eb, fy, P = data["E"], data["sigma_y"], data["P"]
-    names = list(data["nodes"])
-    idx = {k: i for i, k in enumerate(names)}
-    x = np.array([[*data["nodes"][k], 0.0] for k in names], float)
-    els, ids = [], []
-    for mid, (A, I) in data["members"].items():
-        a, b = idx[mid[0]], idx[mid[1]]
-        ax = x[b] - x[a]
-        R = fem.rotation(ax, np.array([0, 0, 1.0]))
-        els.append(fem.FrameElement(a, b, R, float(np.linalg.norm(ax)),
-                                    fem.Section(A, I, I, 2 * I, 1, 1), kind="truss"))
-        ids.append(mid)
-    K = fem.assemble(len(x), els, [], Eb, Eb / 2.6)
-    fixed = [6 * i + k for i in range(len(x)) for k in (2, 3, 4, 5)]   # 2D, pin-jointed
-    for node, dirs in data["supports"].items():
-        fixed += [6 * idx[node] + {"x": 0, "y": 1}[d] for d in dirs]
-    F = np.zeros(K.shape[0])
-    for node, v in data["loads_in_P"].items():
-        F[6 * idx[node] + 1] = v * P
-    u = fem.Solver(K, fixed).solve(F)
-    sf_y, sf_b = {}, {}
-    for mid, e in zip(ids, els):
-        N = -fem.element_end_forces(e, u, Eb, Eb / 2.6, None)[0]
-        assert N / P == pytest.approx(data["expected_force_in_P"][mid], abs=max(5e-3 * abs(N / P), 2e-3)), mid
-        sf_y[mid] = fy / abs(N / e.sec.A) if abs(N) > 1e-9 * P else np.inf
-        if N < 0:
-            sf_b[mid] = (np.pi**2 * Eb * e.sec.Iy / e.L**2) / -N
-    assert min(sf_y, key=sf_y.get) == data["expected_min_SF"]["yield_member"]
-    assert min(sf_y.values()) == pytest.approx(data["expected_min_SF"]["yield"], abs=0.01)
-    assert min(sf_b, key=sf_b.get) == data["expected_min_SF"]["buckling_member"]
-    assert min(sf_b.values()) == pytest.approx(data["expected_min_SF"]["buckling_euler_K1"], abs=0.01)
-    N_AB = -fem.element_end_forces(els[ids.index("AB")], u, Eb, Eb / 2.6, None)[0]
-    assert N_AB / P == pytest.approx(-5.763, abs=2e-3)               # not the notes' 5.673
+def test_burrard_truss():
+    """Every member against the worked example, through the same fem.py path the stand uses.
+    stand/burrard.py holds the solve so this check and the figures can never diverge."""
+    res = burrard.solve()
+    for m in res.bars:
+        assert m.N_in_P == pytest.approx(m.ref_in_P, abs=m.tol), m.name
+    assert res.min_yield().name == res.ref_min["yield_member"]
+    assert res.min_yield().SF_yield == pytest.approx(res.ref_min["yield"], abs=0.01)
+    assert res.min_buckling().name == res.ref_min["buckling_member"]
+    assert res.min_buckling().SF_buckling == pytest.approx(res.ref_min["buckling_euler_K1"], abs=0.01)
+    ab = next(m for m in res.bars if m.name == "AB")
+    assert ab.N_in_P == pytest.approx(-5.763, abs=2e-3)              # not the notes' 5.673
 
 
 # --------------------------------------------------------------------------- 3/4. pinned rectangle

@@ -54,6 +54,7 @@ springs:
 bolts:
   preload_N: 5000.0
   mu: 0.2
+  M_twist_Nm: 0.0
   hole_radius_mm: 3.57
   head_radius_mm: 5.55
 triangle:

@@ -16,11 +16,13 @@ stand/model.py      build(): stations, sub-elements, bracket + bearing springs, 
 stand/loads.py      load cases + sandbag base line load (exact 6x6 resultant balance);
                     ground mode: size_sandbags (rigid-body tipping/lift statics) + bag loads
 stand/joints.py     leg/bolt-group geometry (prepare) and checks; capacities()
+stand/burrard.py    Burrard half-truss back test solve (shared by the pytest check and figures)
 stand/members.py    yield, braced-length Euler/Johnson, beam-column, tau
 stand/analysis.py   Engine: runs x cases, bearing active set, mechanism eig, buckling, sweep
 stand/envelope.py   worst over valid solves -> rows for CSV/plots
 stand/report.py     terminal tables, CSVs, summary.md (+ figures inline), results/README.md index
 stand/charts/       one module per figure family (runnable alone from results/3d/.cache);
+                    layout.py = the node/member key every other figure is read against;
                     files numbered by _render.FIGURE_ORDER; PNG only unless output.svg
                     _render.py = the only matplotlib config (from the charting skill's
                     render.py) + palette, info box (skill's info_box.py), labels, views
@@ -29,9 +31,9 @@ stand/viz.py        viewer.html: JSON payload + client-side plotly 3D; click bra
 tests/              validation suite (brief section 9 + unit checks)
 ```
 
-## Status (2026-11-17)
+## Status (2026-11-18)
 
-Everything in the brief is implemented, plus 11 document figures; 18 tests pass (cantilever, UDL, Euler column,
+Everything in the brief is implemented, plus 11 document figures; 20 tests pass (cantilever, UDL, Euler column,
 Burrard truss incl. AB = −5.763P, pinned rectangle couple + mechanism, bolt group B
 869 N, statics of the wrench transfer, global equilibrium + vanishing 3-2-1 reactions on
 every stand run, sandbag 196.4 kg, compression-only bearing, 2D run). Full 3D run ≈ 40 s.
@@ -56,6 +58,55 @@ Engine.K_for/contact_gap/ground_forces), no 3-2-1 restraint, bags sized by
 loads.size_sandbags. Memory: every contact pattern is a dense ~2200-DOF inverse, so
 buckling runs inside solve() and contact solvers are dropped (else OOM). charts/ground.py
 draws the reaction (iso "curtains" + plan per case); viewer shows q under the base.
+
+## Joint Mz capacity override (2026-11-18)
+
+`bolts.M_twist_Nm` (0 = computed μ·F_i·r_f ≈ 4.6 N·m) models a fix that resists twist — a
+second bolt, a key, a pinned bracket. Runs at 36 N·m are in
+`results/variants/{2d,3d}_M_twist_Nm36/`. **36 N·m is not enough**: the worst twist demand is
+54.4 N·m (3D) / 56.7 N·m (2D), and even with twist free the SF ceiling is 0.47 (3D) / 0.31 (2D)
+because **shear slip** (F_fric = μ·F_i = 1000 N) takes over as the governing term. Fixing twist
+alone cannot reach SF 1; the bolt preload / friction area has to go up too.
+
+## Burrard back test (2026-11-18)
+
+`python -m stand burrard` -> `results/validation/`: summary.md (the comparison tables),
+tables/members.csv, one figure (the truss coloured by member force).
+
+- **Forces:** all 19 members match the notes to 3 decimals, every digit they print.
+- **Safety factors:** the notes' table prints yield AND buckling for every member
+  (`burrard.NOTES_TABLE`, transcribed from the scan in the user's FBD doc, "Model Validation").
+  Every buckling SF reproduces, and so does every `P_crit` (142.03 / 213.69 / 223.96 / 230.62 /
+  232.92 / 5.84 / 2.63 MN).
+- **The three rows that differ, and why:** AB 3.82 vs 3.88 and 16.43 vs 16.69 — their row is
+  computed from the transposed T = −8.51 MN; over the corrected 8.644 MN their own P_crit gives
+  16.43, which is ours and matches the correction they state (16.4). HK 9.48 vs 9.47 and
+  HI 16.55 vs 16.53 — ~0.15 %, their σ rounded in the intermediate step.
+- **IK's yield cell is not legible in the scan** — left as None, not guessed. Our 3.17.
+
+The numeric comparison is a **table, not a chart**: 19 values against 19 reference values is
+tabular data, and a chart of it only ever says "they match" (tried; rejected). `N/P` is the
+notes' convention — axial force ÷ the unit load P = 1.5 MN — and must be spelled out wherever
+it appears. `stand/burrard.py` holds the solve so the pytest check and the report share it;
+`charts/burrard.py` is outside `charts.FAMILIES` because it takes no study.
+
+## Node/member key + label placement (2026-11-18)
+
+`charts/layout.py` -> figure 01 in every run: every member labelled along its own line, every
+joint at its node, on the same true-scale front/side/plan views. Items projecting onto one spot
+share a label ("M7/M9"); the other views separate them.
+
+`_render.place_point_labels` is the shared greedy placer behind it (candidate offsets around
+each point, first one clearing all boxes already placed wins). Three traps, all hit:
+- Place labels only once the figure geometry is **final** — after `finish_view` sets equal
+  aspect and after the legend/title. Placing earlier solves against a different data->display
+  mapping and the result is meaningless.
+- `fig.canvas.draw()` re-runs constrained_layout and **moves the axes**, invalidating every
+  box measured before it. Draw once, then `set_layout_engine("none")`, then measure extents
+  straight off the renderer with no further draws (also ~5x faster).
+- One call per chart, not one per label — `placed` has to accumulate across all of them.
+  Pass the most constrained labels first (a member id may only slide to either side of its
+  own line; a node id can go anywhere).
 
 ## Findings so far (defaults)
 

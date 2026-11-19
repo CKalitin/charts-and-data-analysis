@@ -68,7 +68,8 @@ def capacities(p) -> Caps:
     b_neck = plate_width(pl.base_half_height, pl)     # across the stem where it meets the base
     return Caps(
         F_fric=b.mu * b.preload, F_pull=b.preload,
-        M_tilt=b.preload * tri.tilt_arm, M_twist=b.mu * b.preload * r_f, r_f=r_f,
+        M_tilt=b.preload * tri.tilt_arm,
+        M_twist=b.M_twist if b.M_twist > 0 else b.mu * b.preload * r_f, r_f=r_f,
         plate_M_line_A=fy_t2_6 * bA, plate_M_line_B=fy_t2_6 * bB,
         plate_M_lower_hole=fy_t2_6 * b_low, plate_M_neck=fy_t2_6 * b_neck,
         v_neck=pl.base_half_height,

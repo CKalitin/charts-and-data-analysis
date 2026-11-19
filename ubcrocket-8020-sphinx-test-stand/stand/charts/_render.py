@@ -61,7 +61,7 @@ def new_figure(w_in: float, h_in: float, foot: bool = True) -> Figure:
 
 
 # reading order of the figures; files are numbered from it (01_stand_sf.png, ...)
-FIGURE_ORDER = ["stand_sf", "sf_ranking", "joint_sf_terms", "sf_by_case", "thrust_by_case", "axial_force",
+FIGURE_ORDER = ["layout", "stand_sf", "sf_ranking", "joint_sf_terms", "sf_by_case", "thrust_by_case", "axial_force",
                 "peak_stress", "deflection", "buckling_mode", "sandbag_demand", "ground_reaction", "ground_by_case", "ktheta_sweep"]
 
 
@@ -168,6 +168,76 @@ def view_labels(ax, labels, base_z: float = 120.0) -> None:
     if base:
         lo, hi = ax.get_ylim()
         ax.set_ylim(min(lo, -340), hi)
+
+
+def place_point_labels(ax, fig, labels, *, candidates=None, fontsize=FS_SMALL,
+                       settle=True) -> list:
+    """Greedy non-overlapping point labels.
+
+    `labels` is [(x, y, text, kwargs)] in data coords, optionally with a 5th element giving
+    that label's own candidate offsets (a member id may only slide to either side of its own
+    line, a node id may go anywhere). Place the most constrained first — one call for the
+    whole chart, so every label sees the ones already down. Each label is created once as an
+    annotation in *offset points*, then moved: the first candidate offset whose rendered box
+    clears every box already placed wins; if none does, the least-overlapping one is kept.
+    Solved here rather than per chart so a fix lands everywhere (see also view_labels, which
+    is the leader-line variant for a handful of called-out points).
+    """
+    if candidates is None:                      # 8 compass directions at two radii
+        candidates = [(round(r * np.cos(a), 1), round(r * np.sin(a), 1))
+                      for r in (9.0, 15.0, 22.0)        # crowded views need the outer ring
+                      for a in np.radians([45, 135, 225, 315, 0, 90, 180, 270])]
+    arts, cands = [], []
+    for lab in labels:
+        x, y, text, kw = lab[:4]
+        cands.append(list(lab[4]) if len(lab) > 4 else candidates)
+        arts.append(ax.annotate(text, xy=(x, y), xytext=cands[-1][0],
+                                textcoords="offset points", fontsize=fontsize,
+                                bbox=HALO, **kw))
+    # Placement is only valid against the FINAL geometry: axis limits, equal aspect, legend
+    # and title must all be set first, or the data->display mapping changes underneath it.
+    # One draw settles constrained_layout, then it is frozen — it re-solves on every draw and
+    # would shift the axes, invalidating every box already measured. Pass settle=False when
+    # the caller has already done this (placing across several axes of one figure).
+    if settle:
+        fig.canvas.draw()
+        fig.set_layout_engine("none")
+    renderer = fig.canvas.get_renderer()
+
+    def put(t, dx, dy):
+        t.set_position((dx, dy))
+        t.set_ha("left" if dx > 1 else "right" if dx < -1 else "center")
+        t.set_va("bottom" if dy > 1 else "top" if dy < -1 else "center")
+        return t.get_window_extent(renderer)
+
+    ax_bb = ax.get_window_extent(renderer)
+    placed: list = []
+    for t, cand in zip(arts, cands):
+        best, best_bb, best_score = cand[0], None, None
+        for dx, dy in cand:
+            bb = put(t, dx, dy)
+            # overlapping a neighbour is the real defect; leaving the axes is a lesser one
+            score = sum(_overlap(bb, q) for q in placed) + 0.25 * _outside(bb, ax_bb)
+            if score == 0:
+                best, best_bb = (dx, dy), bb
+                break
+            if best_score is None or score < best_score:
+                best, best_bb, best_score = (dx, dy), bb, score
+        placed.append(put(t, *best) if best_bb is None else (put(t, *best) or best_bb))
+    return arts
+
+
+def _outside(bb, ax_bb) -> float:
+    """Area of `bb` sticking out past the axes rectangle."""
+    inside_w = max(0.0, min(bb.x1, ax_bb.x1) - max(bb.x0, ax_bb.x0))
+    inside_h = max(0.0, min(bb.y1, ax_bb.y1) - max(bb.y0, ax_bb.y0))
+    return max(0.0, (bb.x1 - bb.x0) * (bb.y1 - bb.y0) - inside_w * inside_h)
+
+
+def _overlap(a, b) -> float:
+    w = min(a.x1, b.x1) - max(a.x0, b.x0)
+    h = min(a.y1, b.y1) - max(a.y0, b.y0)
+    return w * h if w > 0 and h > 0 else 0.0
 
 
 def bracket_name(r) -> str:
