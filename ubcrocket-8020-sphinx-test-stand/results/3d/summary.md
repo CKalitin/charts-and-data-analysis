@@ -13,7 +13,7 @@ params: `params.yaml` · 24 solves + 7 sweep · targets: member SF ≥ 2, joint 
 | thrust-point tilt | 1.926° **> 0.25° flag** | k=1-bOFF/+x+y |
 | sandbag mass (net uplift / g, FS 1) | **196.4 kg** (1926 N) | all cases |
 | sandbag mass if spread uniformly on the base | 911 kg (overturning 1368 N·m about the base centroid) | worst case |
-| 3-2-1 restraint reactions | 2.3e-09 × thrust (ok) | all valid solves |
+| 3-2-1 restraint reactions | 3.1e-09 × thrust (ok) | all valid solves |
 
 Displacements are relative to the best-fit rigid motion of the base nodes (i.e. to the ground).
 
@@ -47,7 +47,7 @@ SF = 1/U with U = Σ term demand/capacity (linear interaction). *Share* = that t
 | 2.02 | M25 | 1010 | yield | 85.0 | 58 | 4.5 | -118.3 | 2.02 | 3114.86 | 2.88 | R-bOFF/+y |
 | 2.41 | M23 | 1010 | beam-col | 71.2 | -19 | 0.0 | 103.0 | 2.42 | 2153.30 | 2.41 | R-bON/+y |
 | 2.41 | M28 | 1010 | beam-col | 71.2 | -19 | -0.0 | 103.0 | 2.42 | 2154.61 | 2.41 | R-bON/-y |
-| 3.27 | M9 | 1010 | beam-col | 48.3 | -423 | -13.3 | 54.5 | 3.56 | 23.90 | 3.27 | R-bOFF/+y |
+| 3.27 | M9 | 1010 | beam-col | 48.3 | -423 | -13.3 | 54.5 | 3.56 | 23.90 | 3.27 | R-bON/+y |
 | 3.27 | M7 | 1010 | beam-col | 48.3 | -423 | 13.2 | 54.5 | 3.56 | 23.92 | 3.27 | R-bON/-y |
 | 3.94 | M6 | 1010 | yield | 43.7 | 4 | 0.9 | 62.4 | 3.94 | 524.04 | 4.92 | k=1-bOFF/+x+y |
 
@@ -75,10 +75,8 @@ Items whose utilisation peaks at an interior k_θ (value used in the envelope):
 
 - M14: U = 0.123 at k = 10 (ends 0.122 / 0.085)
 - M16: U = 0.066 at k = 100 (ends 0.066 / 0.066)
-- M22: U = 0.067 at k = 100 (ends 0.067 / 0.067)
-- M33: U = 0.146 at k = 10 (ends 0.146 / 0.146)
-- N1#0.0:a: U = 0.700 at k = 100 (ends 0.700 / 0.700)
-- N1#0.0:b: U = 3.444 at k = 100 (ends 3.444 / 3.444)
+- M20: U = 0.028 at k = 100 (ends 0.028 / 0.028)
+- N1#0.0:a: U = 0.700 at k = 10 (ends 0.700 / 0.700)
 - N10#0.0:a: U = 3.004 at k = 10 (ends 2.757 / 2.987)
 - N10#0.0:b: U = 2.008 at k = 10 (ends 1.994 / 1.932)
 - N11#0.0:b: U = 2.384 at k = 10 (ends 2.310 / 2.355)
@@ -110,6 +108,7 @@ Items whose utilisation peaks at an interior k_θ (value used in the envelope):
 | `loads.misalign_y` | 0.03 - | assumption | horizontal y load as fraction of factored thrust |
 | `bolts.preload_N` | 5000 N | assumption | 1/4-20 bolt preload F_i |
 | `bolts.mu` | 0.2 - | assumption | friction coefficient, one surface |
+| `bolts.M_twist_Nm` | 0 Nm | assumption | twist capacity about the bolt axis per leg; 0 = computed as mu*F_i*r_f (one bolt, friction only). Set it to model a fix that resists twist: a second bolt, a key, a pinned bracket |
 | `base.mode` | line | assumption | line = brief: sandbag line load that exactly balances the stand | ground = base on compression-only gravel springs + discrete sandbags (3D only; `run --ground`) |
 | `ground.k_s_MN_per_m3` | 150 MN/m3 | assumption | modulus of subgrade reaction, compacted gravel (typical 100-200) |
 | `ground.kh_ratio` | 0.5 - | assumption | horizontal / vertical contact stiffness (friction, sticking) |
@@ -120,47 +119,51 @@ Items whose utilisation peaks at an interior k_θ (value used in the envelope):
 
 ## Figures
 
+### layout
+
+![layout](figures/01_layout.png)
+
 ### Safety factor by member and joint (front / side / plan)
 
-![stand_sf](figures/01_stand_sf.png)
+![stand_sf](figures/02_stand_sf.png)
 
 ### Lowest safety factors
 
-![sf_ranking](figures/02_sf_ranking.png)
+![sf_ranking](figures/03_sf_ranking.png)
 
 ### Joint SF and the share of each failure term
 
-![joint_sf_terms](figures/03_joint_sf_terms.png)
+![joint_sf_terms](figures/04_joint_sf_terms.png)
 
 ### SF of the critical items in every load case
 
-![sf_by_case](figures/04_sf_by_case.png)
+![sf_by_case](figures/05_sf_by_case.png)
 
 ### Thrust-point tilt and deflection by load case
 
-![thrust_by_case](figures/05_thrust_by_case.png)
+![thrust_by_case](figures/06_thrust_by_case.png)
 
 ### Member axial force (load path)
 
-![axial_force](figures/06_axial_force.png)
+![axial_force](figures/07_axial_force.png)
 
 ### Peak combined stress
 
-![peak_stress](figures/07_peak_stress.png)
+![peak_stress](figures/08_peak_stress.png)
 
 ### Deflected shape (worst-tilt case)
 
-![deflection](figures/08_deflection.png)
+![deflection](figures/09_deflection.png)
 
 ### Frame buckling mode
 
-![buckling_mode](figures/09_buckling_mode.png)
+![buckling_mode](figures/10_buckling_mode.png)
 
 ### Sandbag demand on the base
 
-![sandbag_demand](figures/10_sandbag_demand.png)
+![sandbag_demand](figures/11_sandbag_demand.png)
 
 ### SF vs joint rotational stiffness
 
-![ktheta_sweep](figures/11_ktheta_sweep.png)
+![ktheta_sweep](figures/12_ktheta_sweep.png)
 

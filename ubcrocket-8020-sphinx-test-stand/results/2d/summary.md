@@ -17,7 +17,7 @@ params: `params.yaml` · 12 solves + 7 sweep · targets: member SF ≥ 2, joint 
 | thrust-point tilt | 1.968° **> 0.25° flag** | k=1-bON/+x |
 | sandbag mass (net uplift / g, FS 1) | **98.2 kg** (963 N) | all cases |
 | sandbag mass if spread uniformly on the base | 369 kg (overturning 681 N·m about the base centroid) | worst case |
-| 3-2-1 restraint reactions | 3.3e-10 × thrust (ok) | all valid solves |
+| 3-2-1 restraint reactions | 6.3e-10 × thrust (ok) | all valid solves |
 
 Displacements are relative to the best-fit rigid motion of the base nodes (i.e. to the ground).
 
@@ -77,16 +77,13 @@ SF = 1/U with U = Σ term demand/capacity (linear interaction). *Share* = that t
 
 Items whose utilisation peaks at an interior k_θ (value used in the envelope):
 
-- M19: U = 0.384 at k = 10 (ends 0.384 / 0.384)
+- M19: U = 0.384 at k = 100 (ends 0.384 / 0.384)
 - M29: U = 0.046 at k = 10 (ends 0.043 / 0.042)
+- M33: U = 0.107 at k = 100 (ends 0.107 / 0.107)
 - N12#0.0:a: U = 0.290 at k = 10 (ends 0.274 / 0.275)
 - N12#0.0:b: U = 0.200 at k = 10 (ends 0.194 / 0.179)
 - N14#0.0:a: U = 0.424 at k = 100 (ends 0.289 / 0.422)
 - N14#0.0:b: U = 0.523 at k = 100 (ends 0.355 / 0.518)
-- N2#0.0:a: U = 5.892 at k = 10 (ends 5.892 / 5.892)
-- N2#0.0:b: U = 1.231 at k = 10 (ends 1.231 / 1.231)
-- N2#1.0:a: U = 7.130 at k = 10 (ends 7.130 / 7.130)
-- N2#1.0:b: U = 1.231 at k = 10 (ends 1.231 / 1.231)
 - N28#0.0:b: U = 3.500 at k = 10 (ends 3.154 / 3.405)
 - N28#1.0:b: U = 0.449 at k = 10 (ends 0.195 / 0.400)
 - N28#2.0:a: U = 0.335 at k = 10 (ends 0.239 / 0.324)
@@ -108,6 +105,7 @@ Items whose utilisation peaks at an interior k_θ (value used in the envelope):
 | `loads.misalign_y` | 0.03 - | assumption | horizontal y load as fraction of factored thrust |
 | `bolts.preload_N` | 5000 N | assumption | 1/4-20 bolt preload F_i |
 | `bolts.mu` | 0.2 - | assumption | friction coefficient, one surface |
+| `bolts.M_twist_Nm` | 0 Nm | assumption | twist capacity about the bolt axis per leg; 0 = computed as mu*F_i*r_f (one bolt, friction only). Set it to model a fix that resists twist: a second bolt, a key, a pinned bracket |
 | `base.mode` | line | assumption | line = brief: sandbag line load that exactly balances the stand | ground = base on compression-only gravel springs + discrete sandbags (3D only; `run --ground`) |
 | `ground.k_s_MN_per_m3` | 150 MN/m3 | assumption | modulus of subgrade reaction, compacted gravel (typical 100-200) |
 | `ground.kh_ratio` | 0.5 - | assumption | horizontal / vertical contact stiffness (friction, sticking) |
@@ -118,47 +116,51 @@ Items whose utilisation peaks at an interior k_θ (value used in the envelope):
 
 ## Figures
 
+### layout
+
+![layout](figures/01_layout.png)
+
 ### Safety factor by member and joint (front / side / plan)
 
-![stand_sf](figures/01_stand_sf.png)
+![stand_sf](figures/02_stand_sf.png)
 
 ### Lowest safety factors
 
-![sf_ranking](figures/02_sf_ranking.png)
+![sf_ranking](figures/03_sf_ranking.png)
 
 ### Joint SF and the share of each failure term
 
-![joint_sf_terms](figures/03_joint_sf_terms.png)
+![joint_sf_terms](figures/04_joint_sf_terms.png)
 
 ### SF of the critical items in every load case
 
-![sf_by_case](figures/04_sf_by_case.png)
+![sf_by_case](figures/05_sf_by_case.png)
 
 ### Thrust-point tilt and deflection by load case
 
-![thrust_by_case](figures/05_thrust_by_case.png)
+![thrust_by_case](figures/06_thrust_by_case.png)
 
 ### Member axial force (load path)
 
-![axial_force](figures/06_axial_force.png)
+![axial_force](figures/07_axial_force.png)
 
 ### Peak combined stress
 
-![peak_stress](figures/07_peak_stress.png)
+![peak_stress](figures/08_peak_stress.png)
 
 ### Deflected shape (worst-tilt case)
 
-![deflection](figures/08_deflection.png)
+![deflection](figures/09_deflection.png)
 
 ### Frame buckling mode
 
-![buckling_mode](figures/09_buckling_mode.png)
+![buckling_mode](figures/10_buckling_mode.png)
 
 ### Sandbag demand on the base
 
-![sandbag_demand](figures/10_sandbag_demand.png)
+![sandbag_demand](figures/11_sandbag_demand.png)
 
 ### SF vs joint rotational stiffness
 
-![ktheta_sweep](figures/11_ktheta_sweep.png)
+![ktheta_sweep](figures/12_ktheta_sweep.png)
 

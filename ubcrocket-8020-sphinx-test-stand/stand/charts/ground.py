@@ -111,7 +111,8 @@ def build_hero(study, env, p):
     k = depth_mm / qmax * 1e-3                    # m of curtain per N/m
 
     fig = R.new_figure(10.6, 7.2)
-    ax = fig.add_axes([0.0, 0.06, 0.80, 0.86])
+    fig.set_layout_engine("none")      # this figure places its own axes; constrained_layout
+    ax = fig.add_axes([0.0, 0.06, 0.80, 0.86])     # finds no gridspec and warns otherwise
     ax.set_aspect("equal")
     ax.axis("off")
     items = []                                    # (depth, kind, artist-maker)

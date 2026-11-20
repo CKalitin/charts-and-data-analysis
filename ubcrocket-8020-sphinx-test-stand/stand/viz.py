@@ -945,6 +945,56 @@ function focus() {
       up: cam.up, projection: { type: 'orthographic' } } });
 }
 
+// ------------------------------------------------------------------ zoom to cursor
+// Plotly zooms an orthographic scene by scaling scene.aspectratio about the scene ORIGIN and
+// never touches camera.center, so its own wheel always pulls toward the middle of the stand.
+// Take the wheel first (capture phase, ahead of plotly's listener on the gl canvas) and move
+// the camera with the zoom: scaling the aspect ratio by s sends a scene point P to s*P, so the
+// point Q under the pointer holds its place on screen iff the camera moves to c + (s-1)*Q.
+// Ticks are accumulated in zState and flushed one relayout per frame -- reading the camera
+// back out of _fullLayout per tick races the in-flight relayout and the zoom then slides.
+const ZSTEP = 1.1, ZMIN = 0.25, ZMAX = 60;
+let zState = null, zBusy = false, zDirty = false;
+function cursorPoint(ev, st) {
+  // Q: the scene point under the pointer, on the view plane through the camera centre. The
+  // basis comes from the camera we are about to move, not from glplot's view matrix, which
+  // eases toward its target over several frames and so lags mid-scroll. Only the projection
+  // is read from glplot (orthographic: it carries the canvas aspect, nothing camera-bound).
+  const gl = plot._fullLayout.scene._scene.glplot, r = gl.canvas.getBoundingClientRect();
+  const P = gl.cameraParams.projection, c = [st.center.x, st.center.y, st.center.z];
+  const fwd = unit(sub(c, [st.eye.x, st.eye.y, st.eye.z]));
+  const rt = unit(cross(fwd, [st.up.x, st.up.y, st.up.z])), up = cross(rt, fwd);
+  const vx = (2 * (ev.clientX - r.left) / r.width - 1) / P[0];      // pointer offset from the
+  const vy = (1 - 2 * (ev.clientY - r.top) / r.height) / P[5];      // centre, in scene units
+  return c.map((ci, i) => ci + rt[i] * vx + up[i] * vy);
+}
+function zFlush() {
+  zDirty = false;
+  Plotly.relayout(plot, { 'scene.aspectratio': zState.ar, 'scene.camera.center': zState.center,
+    'scene.camera.eye': zState.eye })
+    .then(() => { if (zDirty) requestAnimationFrame(zFlush); else { zBusy = false; zState = null; } });
+}
+function wheelZoom(ev) {
+  const sc = plot._fullLayout.scene;
+  if (!sc || !sc._scene || !sc._scene.glplot || !sc._scene.glplot.cameraParams) return;
+  ev.preventDefault(); ev.stopPropagation();
+  if (!zState) {                       // nothing in flight: the layout is authoritative again,
+    const c = sc.camera;               // so pick up any rotate / pan / preset since last time
+    zState = { ar: { ...sc.aspectratio }, center: { ...c.center }, eye: { ...c.eye }, up: { ...c.up } };
+  }
+  const unit_ = ev.deltaMode === 1 ? 16 : ev.deltaMode === 2 ? 400 : 1;   // lines / pages -> px
+  const k = zState.ar.z / ar[2];                                         // zoom vs the base view
+  const s = Math.min(Math.max(Math.pow(ZSTEP, -ev.deltaY * unit_ / 120), ZMIN / k), ZMAX / k);
+  if (Math.abs(s - 1) < 1e-9) return;
+  const q = cursorPoint(ev, zState), m = q.map(v => (s - 1) * v);
+  zState = { up: zState.up, ar: { x: zState.ar.x * s, y: zState.ar.y * s, z: zState.ar.z * s },
+    center: { x: zState.center.x + m[0], y: zState.center.y + m[1], z: zState.center.z + m[2] },
+    eye: { x: zState.eye.x + m[0], y: zState.eye.y + m[1], z: zState.eye.z + m[2] } };
+  if (zBusy) { zDirty = true; return; }
+  zBusy = true; requestAnimationFrame(zFlush);
+}
+plot.addEventListener('wheel', wheelZoom, { capture: true, passive: false });
+
 // ------------------------------------------------------------------ wiring
 function select(kind, id) { sel.kind = kind; sel.id = id; render(); inspect(); insp.scrollTop = 0; }
 const sSel = document.getElementById('state');

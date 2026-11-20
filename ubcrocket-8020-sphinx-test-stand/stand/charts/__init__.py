@@ -11,7 +11,7 @@ import importlib
 import time
 from pathlib import Path
 
-FAMILIES = ["stand_sf", "ranking", "joint_terms", "cases", "forces", "deflection", "base_load", "ground", "sweep"]
+FAMILIES = ["layout", "stand_sf", "ranking", "joint_terms", "cases", "forces", "deflection", "base_load", "ground", "sweep"]
 
 
 def plan(study, env, p):

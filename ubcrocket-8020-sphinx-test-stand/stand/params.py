@@ -25,7 +25,7 @@ DEFAULT_PARAMS_PATH = PROJECT_DIR / "params.yaml"
 UNIT_SI = {
     "mm": 1e-3, "mm2": 1e-6, "mm4": 1e-12, "m": 1.0,
     "N": 1.0, "N/m": 1.0, "MPa": 1e6, "GPa": 1e9,
-    "m/s2": 1.0, "deg": 1.0, "-": 1.0, "": 1.0, "MN/m3": 1e6, "kg": 1.0,
+    "m/s2": 1.0, "deg": 1.0, "-": 1.0, "": 1.0, "MN/m3": 1e6, "kg": 1.0, "Nm": 1.0,
 }
 
 
@@ -89,6 +89,10 @@ SCHEMA: list[Param] = [
     # --- bolts / brackets -------------------------------------------------------
     S("bolts.preload_N", 5000.0, "N", "1/4-20 bolt preload F_i", "assumption"),
     S("bolts.mu", 0.2, "-", "friction coefficient, one surface", "assumption"),
+    S("bolts.M_twist_Nm", 0.0, "Nm",
+      "twist capacity about the bolt axis per leg; 0 = computed as mu*F_i*r_f (one bolt, "
+      "friction only). Set it to model a fix that resists twist: a second bolt, a key, a "
+      "pinned bracket", "assumption"),
     S("bolts.hole_radius_mm", 3.57, "mm", "r_i (hole)"),
     S("bolts.head_radius_mm", 5.55, "mm", "r_o (head bearing)"),
 
