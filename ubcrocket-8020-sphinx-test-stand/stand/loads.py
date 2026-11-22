@@ -114,16 +114,17 @@ def _applied(model: StandModel, p, case: str):
 
 
 def spread_on_patches(model: StandModel, point: list, elem_q: dict) -> list:
-    """Rigid load plate: loads acting at the thrust node are shared equally between the
-    plate's bearing patches (uniform line load over each patch); other point loads stay."""
+    """Load plate spreading the stand loads evenly over every member it bears on: one uniform
+    line load over all patches (each patch's share = its length / total patch length)."""
     if not model.thrust_patches:
         return point
     keep = [pt for pt in point if pt[0] != model.thrust_node]
     moved = [pt for pt in point if pt[0] == model.thrust_node]
-    share = 1.0 / len(model.thrust_patches)
+    L_tot = sum(s1 - s0 for _, s0, s1 in model.thrust_patches)
     for (_, F, _, _) in moved:
         for mid, s0, s1 in model.thrust_patches:
             Lp = s1 - s0
+            share = Lp / L_tot
             for k in model.member_elements[mid]:
                 e = model.elements[k]
                 a, b = model.node_s[e.n1], model.node_s[e.n2]

@@ -14,7 +14,7 @@ triangle:
   bolt_from_corner_mm: 20.0
   min_leg_extent_mm: 20.0
   face_width_mm: 40.0
-plate:                        # 40-series 5-hole T plate, the brief's outline scaled 40/25.4 (placeholder)
+plate:                        # 40-series 5-hole T plate (fy below in the standard-properties block), the brief's outline scaled 40/25.4 (placeholder)
   thickness_mm: 6.35
   groupA_u_mm: [-40.0, 0.0, 40.0]
   groupB_v_mm: [60.0, 100.0]
@@ -23,7 +23,27 @@ plate:                        # 40-series 5-hole T plate, the brief's outline sc
   stem_taper_end_v_mm: 100.0
   stem_width_mm: 40.0
   top_edge_v_mm: 120.0
+  fy_MPa: 145.0               # conservative alloy, as the extrusions
 sandbags:                     # ground mode: both ends of base beam M6, tail and middle of base beam M0
   stations: [[6, 150.0, 300.0], [6, 1350.0, 300.0], [0, 150.0, 300.0], [0, 850.0, 300.0]]
 ground:
   contact_width_mm: 80.0      # base beams M0, M6 are 4080 lying flat (80 mm face on the ground)
+# Standard properties, chosen on the conservative side (user, 2026-11-22). Catalogue sites are not
+# reachable from the model's environment: low-end typical values for 40-series 8-slot profiles.
+material:
+  sigma_y_MPa: 145.0          # 6063-T5, the weakest common T-slot alloy (6063-T6 214, 6105-T5 241)
+section_4040:
+  A_mm2: 600.0                # typical 5.6-7.6 cm2
+  I_strong_mm4: 90000.0       # typical 9-14 cm4
+  I_weak_mm4: 90000.0
+  weight_N_per_m: 15.9        # A x 2700 kg/m3 x g
+section_4080:
+  A_mm2: 1100.0               # typical 11-14 cm2
+  I_strong_mm4: 500000.0      # typical 50-70 cm4 (depth 80)
+  I_weak_mm4: 170000.0        # typical 17-25 cm4
+  weight_N_per_m: 29.1
+section_8080:
+  A_mm2: 1950.0               # typical 19-26 cm2
+  I_strong_mm4: 1200000.0     # typical 120-190 cm4
+  I_weak_mm4: 1200000.0
+  weight_N_per_m: 51.6
