@@ -162,12 +162,14 @@ def build_hero(study, env, p):
         if mid not in m.members:
             continue
         mem = m.members[mid]
+        hgt = 2 * m.sections[mid].cz
+        wid = p.si.ground.contact_width
         c = 0.5 * (mem.p0 + mem.p1)
         c = c.copy()
-        c[2] = z0 + 0.0127
+        c[2] = z0 + hgt / 2
         e = np.abs(mem.p1 - mem.p0)
-        ext = np.where(e > 1e-6, e, 0.0254)
-        ext[2] = 0.0254
+        ext = np.where(e > 1e-6, e, wid)
+        ext[2] = hgt
         for pts, n in box(c, *ext):
             beam_faces.append((depth(pts), pts, n, mid))
     for _, pts, n, _ in sorted(beam_faces, key=lambda t: t[0]):
@@ -180,7 +182,7 @@ def build_hero(study, env, p):
         ext = np.abs(e) * L + (1 - np.abs(e)) * 0.075
         ext[2] = 0.045
         c = P.copy()
-        c[2] = z0 + 0.0254 + 0.0225
+        c[2] = z0 + 2 * m.sections[mid].cz + 0.0225
         for pts, n in box(c, *ext):
             bag_faces.append((depth(pts), pts, n))
         tp = proj(c + np.array([0, 0, 0.0225]))[0]
@@ -197,8 +199,8 @@ def build_hero(study, env, p):
     ax.annotate("", xy=b[0], xytext=b[0] - (b[0] - a[0]) * 0.25, zorder=10,
                 arrowprops=dict(arrowstyle="-|>,head_length=0.6,head_width=0.3", color=R.INK, lw=1.4))
     ax.annotate(f"thrust line\n{s.loads.summary['thrust_factored_N']:.0f} N up, {tp[2] * 1e3:.0f} mm above",
-                b[0], xytext=(6, 0), textcoords="offset points", fontsize=R.FS_SMALL, color=R.INK2,
-                va="center", zorder=12)
+                b[0], xytext=(-8, 6), textcoords="offset points", fontsize=R.FS_SMALL, color=R.INK2,
+                va="bottom", ha="right", zorder=12, bbox=R.HALO)
     # member labels and peak q
     for mid, d in data.items():
         i = int(np.argmax(d["q"]))
@@ -246,7 +248,7 @@ def build_hero(study, env, p):
     lg.legend(handles=hs, loc="upper left", frameon=False, fontsize=R.FS_SMALL)
     R.title(fig, "Ground Reaction on the Base")
     R.note(fig, f"Base on compression-only springs (k_s = {s.k_s / 1e6:.0f} MN/m³, compacted gravel, "
-                f"{p.si.ground.contact_width * 1e3:.1f} mm contact width); "
+                f"{p.si.ground.contact_width * 1e3:.0f} mm contact width); "
                 f"curtain depth under each beam = contact pressure; governing case = lowest base-joint SF.")
     return fig
 

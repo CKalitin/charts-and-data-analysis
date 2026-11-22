@@ -24,7 +24,7 @@ class Member:
     p0: np.ndarray
     p1: np.ndarray
     profile: str
-    depth_along: str | None = None    # 1020: global axis of the 2" depth
+    depth_along: object = None        # rectangular profiles: global axis letter or a vector (depth dir)
 
     @property
     def L(self) -> float:
@@ -79,6 +79,7 @@ class Geometry:
     base_members: list[int]
     thrust_point: np.ndarray
     thrust_member: int
+    thrust_patches: list = field(default_factory=list)   # [(member, s0, s1)] SI: rigid plate spreads loads
 
 
 def _resolve(path: str | Path) -> Path:
@@ -103,5 +104,6 @@ def load(geometry_path, brackets_path) -> Geometry:
             [BracketSpec(x["type"], x["a"], x["b"], x.get("face", "+y"), int(x.get("count", 1)),
                          x.get("note", "")) for x in j.get("brackets", [])],
         ))
+    patches = [(int(t["member"]), float(t["s0"]) * MM, float(t["s1"]) * MM) for t in g.get("thrust_patches", [])]
     return Geometry(members, joints, list(g["base_members"]),
-                    np.array(g["thrust_point"], float) * MM, int(g["thrust_member"]))
+                    np.array(g["thrust_point"], float) * MM, int(g["thrust_member"]), patches)

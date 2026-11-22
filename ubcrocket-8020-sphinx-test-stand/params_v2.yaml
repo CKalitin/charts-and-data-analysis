@@ -1,0 +1,29 @@
+# V2 stand (40-series). Only the values that differ from the schema defaults; everything else
+# (loads, springs, checks) comes from stand/params.py. Run:  python -m stand run --params params_v2.yaml [--ground]
+inputs:
+  geometry: references/v2/geometry.json
+  brackets: references/v2/brackets.json
+output:
+  dir: results_v2
+bolts:
+  preload_N: 10000.0          # M8 into a T-nut, ~16 N·m (placeholder: confirm torque / preload)
+  hole_radius_mm: 4.5         # M8 clearance (9 mm)
+  head_radius_mm: 6.5         # M8 socket head (13 mm)
+triangle:
+  tilt_arm_mm: 20.0           # half a 40 mm leg (placeholder)
+  bolt_from_corner_mm: 20.0
+  min_leg_extent_mm: 20.0
+  face_width_mm: 40.0
+plate:                        # 40-series 5-hole T plate, the brief's outline scaled 40/25.4 (placeholder)
+  thickness_mm: 6.35
+  groupA_u_mm: [-40.0, 0.0, 40.0]
+  groupB_v_mm: [60.0, 100.0]
+  base_width_mm: 120.0
+  base_half_height_mm: 20.0
+  stem_taper_end_v_mm: 100.0
+  stem_width_mm: 40.0
+  top_edge_v_mm: 120.0
+sandbags:                     # ground mode: both ends of base beam M6, tail and middle of base beam M0
+  stations: [[6, 150.0, 300.0], [6, 1350.0, 300.0], [0, 150.0, 300.0], [0, 850.0, 300.0]]
+ground:
+  contact_width_mm: 80.0      # base beams M0, M6 are 4080 lying flat (80 mm face on the ground)

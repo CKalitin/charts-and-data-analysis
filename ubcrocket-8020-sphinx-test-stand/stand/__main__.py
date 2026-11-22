@@ -72,11 +72,12 @@ def _out_dir(args, p, mode) -> Path:
     from .charts._render import suffix
     root = PROJECT_DIR / p.si.output.dir
     cases = getattr(args, "case", None)
-    if not p.changes and not cases:
+    cli = [c for c in p.changes if c.source == "--set"]
+    if not cli and not cases:
         return root / mode
-    if [c.key for c in p.changes] == ["base.mode"] and p.si.base.mode == "ground" and not cases:
+    if [c.key for c in cli] == ["base.mode"] and p.si.base.mode == "ground" and not cases:
         return root / f"{mode}_ground"
-    name = mode + suffix(p)
+    name = mode + ("_" + "_".join(f"{c.key.split('.')[-1]}{c.value}" for c in cli).replace(" ", "") if cli else "")
     if cases:
         name += "_case_" + "_".join(cases).replace("+", "p").replace("-", "m")
     return root / "variants" / name

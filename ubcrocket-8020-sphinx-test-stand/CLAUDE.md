@@ -111,6 +111,20 @@ each point, first one clearing all boxes already placed wins). Three traps, all 
   Pass the most constrained labels first (a member id may only slide to either side of its
   own line; a node id can go anywhere).
 
+## V2 stand (2026-11-22): 40-series, `--params params_v2.yaml`
+
+Onshape "Test Stand New" (V2 Prototype). Inputs in `references/v2/` (STEP, extraction scripts,
+geometry.json, brackets.json from the bracket tool https://claude.ai/artifact/Nsq6kQay9ChoT8JhyCZBR1).
+`params_v2.yaml` holds only V2 overrides (40-series bolts/brackets/plate placeholders, sandbag
+stations, 80 mm ground contact, output.dir results_v2). Results: `results_v2/{3d,3d_ground}` (no 2D).
+Code generalised for it: section_4040/4080/8080 params (CAD-derived, unverified), depth direction
+may be a vector (tilted braces), `thrust_patches` (rigid load-cell plate M8 spreads stand loads
+equally over M1/M4/M9/M12; thrust kinematics = mean of patch nodes), params-file baseline (only
+--set/--case make variants). User merged the two top 4040s into one 4080 (M5).
+Findings: corner-bracket joints SF 0.23–0.45 (twist about one bolt), worst N6 (frame to column)
+and N2 (column foot); T-plate brace joints 0.7–2.4 (bolt slip); members SF ≥ 4.6; run R tilt
+≈ 0.5° (> 0.25°); 4 × 125 kg bags on the gravel base.
+
 ## Findings so far (defaults)
 
 - Every triangle-bracket joint is SF < 1, governed by **twist about its single bolt**

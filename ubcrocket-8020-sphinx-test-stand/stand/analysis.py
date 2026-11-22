@@ -223,7 +223,10 @@ class Engine:
         ur = relative_to_base(m, u)               # deformation relative to the ground
         disp = np.linalg.norm(ur.reshape(-1, 6)[:, :3], axis=1)
         i_max = int(np.argmax(disp))
-        ut = ur[6 * m.thrust_node:6 * m.thrust_node + 6]
+        if m.thrust_patch_nodes:          # rigid load plate: mean motion of its bearing points
+            ut = np.mean([ur[6 * n:6 * n + 6] for n in m.thrust_patch_nodes], axis=0)
+        else:
+            ut = ur[6 * m.thrust_node:6 * m.thrust_node + 6]
         tilt = np.degrees(np.hypot(ut[3], ut[4]))
         # equilibrium audit: applied + base (in F) + reactions must vanish
         R = np.zeros(m.n_dof)

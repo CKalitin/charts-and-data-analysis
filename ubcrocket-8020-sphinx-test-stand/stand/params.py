@@ -66,6 +66,29 @@ SCHEMA: list[Param] = [
     S("section_1020.c_weak_mm", 12.7, "mm", "outer fibre, weak-axis bending"),
     S("section_1020.J_mm4", "auto", "mm4", "torsion constant; auto = 0.5*(Iy+Iz)", "unverified"),
     S("section_1020.weight_N_per_m", 13.45, "N/m", "0.0768 lb/in"),
+    # 40-series (V2 stand): from the CAD end faces (references/v2/cad_sections.json) - the CAD 4040
+    # is a simplified solid profile, so A / weight are high; replace with catalogue values
+    S("section_4040.A_mm2", 1058.6, "mm2", "CAD profile", "unverified"),
+    S("section_4040.I_strong_mm4", 151020.0, "mm4", "CAD profile (square)", "unverified"),
+    S("section_4040.I_weak_mm4", 151020.0, "mm4", "CAD profile", "unverified"),
+    S("section_4040.c_strong_mm", 20.0, "mm", "outer fibre"),
+    S("section_4040.c_weak_mm", 20.0, "mm", "outer fibre"),
+    S("section_4040.J_mm4", "auto", "mm4", "torsion constant; auto = 0.5*(Iy+Iz)", "unverified"),
+    S("section_4040.weight_N_per_m", 28.04, "N/m", "A x 2700 kg/m3 x g (CAD area)", "unverified"),
+    S("section_4080.A_mm2", 2388.0, "mm2", "CAD profile", "unverified"),
+    S("section_4080.I_strong_mm4", 1160140.0, "mm4", "CAD profile, depth (80) along strong_axis_depth_along", "unverified"),
+    S("section_4080.I_weak_mm4", 307220.0, "mm4", "CAD profile", "unverified"),
+    S("section_4080.c_strong_mm", 40.0, "mm", "outer fibre, strong-axis bending"),
+    S("section_4080.c_weak_mm", 20.0, "mm", "outer fibre, weak-axis bending"),
+    S("section_4080.J_mm4", "auto", "mm4", "torsion constant; auto = 0.5*(Iy+Iz)", "unverified"),
+    S("section_4080.weight_N_per_m", 63.25, "N/m", "A x 2700 kg/m3 x g (CAD area)", "unverified"),
+    S("section_8080.A_mm2", 3538.8, "mm2", "CAD profile", "unverified"),
+    S("section_8080.I_strong_mm4", 2257760.0, "mm4", "CAD profile (square)", "unverified"),
+    S("section_8080.I_weak_mm4", 2257760.0, "mm4", "CAD profile", "unverified"),
+    S("section_8080.c_strong_mm", 40.0, "mm", "outer fibre"),
+    S("section_8080.c_weak_mm", 40.0, "mm", "outer fibre"),
+    S("section_8080.J_mm4", "auto", "mm4", "torsion constant; auto = 0.5*(Iy+Iz)", "unverified"),
+    S("section_8080.weight_N_per_m", 93.70, "N/m", "A x 2700 kg/m3 x g (CAD area)", "unverified"),
 
     # --- loads ------------------------------------------------------------------
     S("loads.thrust_N", 1112.0, "N", "static thrust, 250 lbf, +z at thrust_point"),
@@ -98,6 +121,7 @@ SCHEMA: list[Param] = [
 
     S("triangle.tilt_arm_mm", 12.7, "mm", "gap-opening arm a: Mx,max = My,max = F_i*a", "placeholder"),
     S("triangle.bolt_from_corner_mm", 20.0, "mm", "bolt distance from the corner along each member"),
+    S("triangle.face_width_mm", 25.4, "mm", "bracket / extrusion face width (drawings only)"),
     S("triangle.min_leg_extent_mm", 12.7, "mm",
       "a leg can lie along a member direction only if the member extends this far past the joint"),
 
@@ -276,7 +300,7 @@ def load(path: Path | str | None = None, overrides: dict | None = None) -> Param
         if v != SCHEMA_BY_KEY[k].default or prev != v:
             changes.append(Change(k, SCHEMA_BY_KEY[k].default, v, "--set"))
     flat_si = {k: _to_si(k, v) for k, v in raw.items()}
-    for prof in ("1010", "1020"):           # J = auto -> 0.5 (Iy + Iz)
+    for prof in ("1010", "1020", "4040", "4080", "8080"):           # J = auto -> 0.5 (Iy + Iz)
         kj = f"section_{prof}.J_mm4"
         if flat_si[kj] == "auto":
             flat_si[kj] = 0.5 * (flat_si[f"section_{prof}.I_strong_mm4"] + flat_si[f"section_{prof}.I_weak_mm4"])

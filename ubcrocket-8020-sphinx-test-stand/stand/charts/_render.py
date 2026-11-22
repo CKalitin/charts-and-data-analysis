@@ -99,8 +99,10 @@ def param_lines(study, p, extra: list[str] | None = None) -> list[str]:
              + (" × ½ (2D)" if study.model.mode == "2d" else ""),
              f"misalignment {si.loads.misalign_x:g}·F",
              f"bolt F_i {si.bolts.preload / 1e3:g} kN, μ {si.bolts.mu:g}"]
+    skip = ("inputs.", "output.", "plate.", "sandbags.", "triangle.face_width")   # bookkeeping / geometry
     changed = [c for c in p.changes if c.key not in ("loads.thrust_N", "loads.DF", "loads.misalign_x",
-                                                     "bolts.preload_N", "bolts.mu")]
+                                                     "bolts.preload_N", "bolts.mu")
+               and not c.key.startswith(skip)]
     lines += [f"{c.key.split('.')[-1]} = {c.value}" for c in changed]
     return lines + (extra or [])
 

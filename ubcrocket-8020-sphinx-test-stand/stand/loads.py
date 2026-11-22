@@ -109,7 +109,32 @@ def _applied(model: StandModel, p, case: str):
     for k, (q1, q2) in elem_q.items():
         e = model.elements[k]
         R_grav += _segment_resultant(X[e.n1], X[e.n2], q1, q2, c)
-    return dest + grav, elem_q, R_dest, R_grav, c, Ls
+    point = spread_on_patches(model, dest + grav, elem_q)
+    return point, elem_q, R_dest, R_grav, c, Ls
+
+
+def spread_on_patches(model: StandModel, point: list, elem_q: dict) -> list:
+    """Rigid load plate: loads acting at the thrust node are shared equally between the
+    plate's bearing patches (uniform line load over each patch); other point loads stay."""
+    if not model.thrust_patches:
+        return point
+    keep = [pt for pt in point if pt[0] != model.thrust_node]
+    moved = [pt for pt in point if pt[0] == model.thrust_node]
+    share = 1.0 / len(model.thrust_patches)
+    for (_, F, _, _) in moved:
+        for mid, s0, s1 in model.thrust_patches:
+            Lp = s1 - s0
+            for k in model.member_elements[mid]:
+                e = model.elements[k]
+                a, b = model.node_s[e.n1], model.node_s[e.n2]
+                ov = max(0.0, min(b, s1) - max(a, s0))
+                if ov <= 0:
+                    continue
+                q = share * F / Lp * ov / e.L          # exact total per element, smeared over it
+                cur = elem_q.setdefault(k, [np.zeros(3), np.zeros(3)])
+                cur[0] = cur[0] + q
+                cur[1] = cur[1] + q
+    return keep
 
 
 def footprint(model: StandModel) -> tuple[np.ndarray, float]:
@@ -252,6 +277,7 @@ def _build_line_case(model: StandModel, p, case: str) -> CaseLoads:
         for k, e in enumerate(model.elements):
             q = np.array([0, 0, -e.sec.w])
             elem_q[k] = [q.copy(), q.copy()]
+    point = spread_on_patches(model, point, elem_q)
 
     # ---- resultant of applied loads about the base centroid
     X = model.x

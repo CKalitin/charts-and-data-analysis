@@ -123,6 +123,8 @@ class StandModel:
     E: float = 0.0
     G: float = 0.0
     ground: list = field(default_factory=list)    # ground mode: GroundContact per base node
+    thrust_patches: list = field(default_factory=list)   # [(member, s0, s1)]: plate spreads stand loads
+    thrust_patch_nodes: list = field(default_factory=list)
 
     @property
     def ground_mode(self) -> bool:
@@ -151,10 +153,10 @@ class StandModel:
 # --------------------------------------------------------------------------- sections
 def member_section(m: Member, p) -> tuple[fem.Section, np.ndarray]:
     sp = getattr(p.si, f"section_{m.profile}")
-    if m.profile == "1020":
-        if not m.depth_along:
-            raise ModelError(f"{m.name}: 1020 member needs strong_axis_depth_along")
-        y_hint = AXES[m.depth_along]
+    if abs(sp.I_strong - sp.I_weak) > 1e-12:
+        if m.depth_along is None:
+            raise ModelError(f"{m.name}: {m.profile} member needs strong_axis_depth_along")
+        y_hint = AXES[m.depth_along] if isinstance(m.depth_along, str) else np.asarray(m.depth_along, float)
         # local y = depth direction: v-deflection along the depth -> strong (Iz)
         sec = fem.Section(sp.A, Iy=sp.I_weak, Iz=sp.I_strong, J=sp.J, cy=sp.c_strong, cz=sp.c_weak,
                           w=sp.weight)
@@ -334,6 +336,9 @@ def build(geo: Geometry, p, mode: str = "3d") -> StandModel:
                 stations[mid].append(members[mid].project(j.at)[0])
     stub_members = {c: m for c, m in stub_members.items() if any(k[1] == c for k in stubs)}
     stations[thrust_member].append(members[thrust_member].project(thrust_point)[0])
+    for (pm, s0, s1) in geo.thrust_patches:
+        if pm in members:
+            stations[pm] += [s0, s1, 0.5 * (s0 + s1)]
 
     x, node_member, node_s = [], [], []
     member_nodes, member_elements, elements, sections = {}, {}, [], {}
@@ -461,7 +466,7 @@ def build(geo: Geometry, p, mode: str = "3d") -> StandModel:
         for mid in base_members:
             ns = member_nodes[mid]
             ss = [node_s[n] for n in ns]
-            half = 0.5 * sections[mid].depth_z if hasattr(sections[mid], "depth_z") else 0.0127
+            half = sections[mid].cz            # half the vertical depth (weak-axis fibre) of a flat base beam
             for k, n in enumerate(ns):
                 lo = ss[k] - (ss[k] - ss[k - 1]) / 2 if k > 0 else ss[k]
                 hi = ss[k] + (ss[k + 1] - ss[k]) / 2 if k < len(ns) - 1 else ss[k]
@@ -473,7 +478,9 @@ def build(geo: Geometry, p, mode: str = "3d") -> StandModel:
     return StandModel(geo, mode, members, sections, x, node_member, node_s, member_nodes, elements,
                       member_elements, joint_node, brackets, bearings, joints, thrust_node,
                       thrust_point, load_scale, base_elements, base_nodes, fixed, fixed_plane, desc, lumped,
-                      notes, stub_members, E, G, ground)
+                      notes, stub_members, E, G, ground,
+                      [t for t in geo.thrust_patches if t[0] in members],
+                      [nearest_node(t[0], 0.5 * (t[1] + t[2])) for t in geo.thrust_patches if t[0] in members])
 
 
 def sections_weight(m: Member, p) -> float:

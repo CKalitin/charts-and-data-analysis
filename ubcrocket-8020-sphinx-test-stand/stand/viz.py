@@ -191,7 +191,7 @@ def payload(study: Study, env: Envelope, p) -> dict:
     h, bw, sw = pl.base_half_height * 1e3, pl.base_width * 1e3, pl.stem_width * 1e3
     te, top = pl.stem_taper_end_v * 1e3, pl.top_edge_v * 1e3
     dims = {"tri_bolt": _r(tri.bolt_from_corner * 1e3), "tri_leg": _r(tri.bolt_from_corner * 1e3 + 12.7),
-            "face": 25.4, "tri_t": 4.0, "plate_t": _r(pl.thickness * 1e3),
+            "face": _r(tri.face_width * 1e3), "tri_t": 4.0, "plate_t": _r(pl.thickness * 1e3),
             "plate": [[-bw / 2, -h], [bw / 2, -h], [bw / 2, h], [sw / 2, te], [sw / 2, top], [-sw / 2, top],
                       [-sw / 2, te], [-bw / 2, h]]}
     gpts = [_vec(c.P * 1e3) for c in m.ground]
